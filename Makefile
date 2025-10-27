@@ -1,8 +1,8 @@
-.PHONY: help build up down restart logs ps clean setup
+.PHONY: help build up down restart logs ps clean setup migrate makemigrations createsuperuser collectstatic shell-backend shell-db shell-redis shell-frontend test
 
 help:
 	@echo "Comandos disponibles:"
-	@echo "  make setup      - Setup inicial (build + migrate)"
+	@echo "  make setup      - Setup inicial (build + migrate + collectstatic)"
 	@echo "  make build      - Construir todas las imágenes"
 	@echo "  make up         - Levantar todos los servicios"
 	@echo "  make down       - Bajar todos los servicios"
@@ -11,10 +11,18 @@ help:
 	@echo "  make ps         - Ver estado de los servicios"
 	@echo "  make clean      - Limpiar containers y volúmenes"
 	@echo ""
-	@echo "Comandos específicos:"
-	@echo "  make backend-shell   - Shell de Django"
-	@echo "  make backend-migrate - Correr migraciones"
-	@echo "  make frontend-shell  - Shell del frontend"
+	@echo "Django:"
+	@echo "  make migrate        - Correr migraciones"
+	@echo "  make makemigrations - Crear nuevas migraciones"
+	@echo "  make createsuperuser - Crear usuario admin"
+	@echo "  make collectstatic  - Recolectar archivos estáticos"
+	@echo "  make test           - Correr tests"
+	@echo ""
+	@echo "Shell/Debug:"
+	@echo "  make shell-backend  - Shell de Django"
+	@echo "  make shell-db      - Shell de PostgreSQL"
+	@echo "  make shell-redis   - Shell de Redis"
+	@echo "  make shell-frontend - Shell del frontend"
 
 build:
 	docker-compose build
@@ -38,23 +46,54 @@ clean:
 	docker-compose down -v
 	docker system prune -f
 
-setup: build
-	docker-compose up -d db redis
-	@echo "Esperando a que la DB esté lista..."
-	@sleep 5
-	docker-compose up -d backend
-	docker-compose exec backend python manage.py makemigrations
+migrate:
 	docker-compose exec backend python manage.py migrate
-	docker-compose up -d frontend
-	@echo "✅ Setup completo! Servicios corriendo:"
-	@docker-compose ps
 
-backend-shell:
+makemigrations:
+	docker-compose exec backend python manage.py makemigrations
+
+createsuperuser:
+	docker-compose exec backend python manage.py createsuperuser
+
+collectstatic:
+	docker-compose exec backend python manage.py collectstatic --noinput
+
+test:
+	docker-compose exec backend python manage.py test
+
+shell-backend:
 	docker-compose exec backend python manage.py shell
 
-backend-migrate:
-	docker-compose exec backend python manage.py makemigrations
-	docker-compose exec backend python manage.py migrate
+shell-db:
+	docker-compose exec db psql -U hornero_user -d hornero_db
 
-frontend-shell:
+shell-redis:
+	docker-compose exec redis redis-cli
+
+shell-frontend:
 	docker-compose exec frontend sh
+
+setup: build
+	@echo "🚀 Iniciando setup del proyecto..."
+	docker-compose up -d db redis
+	@echo "⏳ Esperando a que la DB esté lista..."
+	@sleep 5
+	docker-compose up -d backend
+	@echo "📝 Creando migraciones..."
+	docker-compose exec backend python manage.py makemigrations
+	@echo "🗄️ Aplicando migraciones..."
+	docker-compose exec backend python manage.py migrate
+	@echo "📦 Recolectando archivos estáticos..."
+	docker-compose exec backend python manage.py collectstatic --noinput
+	@echo "🎨 Levantando frontend..."
+	docker-compose up -d frontend
+	@echo ""
+	@echo "✅ Setup completo! Servicios corriendo:"
+	@docker-compose ps
+	@echo ""
+	@echo "📌 URLs disponibles:"
+	@echo "   Frontend: http://localhost:5173"
+	@echo "   Backend API: http://localhost:8000/api"
+	@echo "   Django Admin: http://localhost:8000/admin"
+	@echo ""
+	@echo "💡 Próximo paso: make createsuperuser"
