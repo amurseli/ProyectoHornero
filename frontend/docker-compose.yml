@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    container_name: hornero-frontend
+    command: npm run dev -- --host
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env.frontend
+    networks:
+      - hornero-network
+
+networks:
+  hornero-network:
+    driver: bridge
