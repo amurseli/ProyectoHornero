@@ -1,7 +1,8 @@
 .default-button {
   /* Fallback CSS for environments without styled-components. */
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-  color: var(--btn-color, #111827);
+  /* dark-green text on light backgrounds by default */
+  color: var(--btn-color, #064e3b);
   font-size: var(--btn-font-size, 1.125rem);
   font-weight: 600;
   line-height: 26px;
@@ -24,13 +25,14 @@
 }
 
 .default-button:hover {
-  color: var(--btn-hover-color, #535bf2);
-  box-shadow: var(--btn-shadow-soft, 0 2px 7px rgba(0, 0, 0, 0.15));
+  /* subtle green tint on hover */
+  color: var(--btn-hover-color, #065f46);
+  box-shadow: var(--btn-shadow-soft, 0 2px 7px rgba(0, 0, 0, 0.12));
 }
 
 .default-button:active {
-  background-color: var(--btn-active-bg, #4f46e5);
-  box-shadow: 0 5px #666;
+  background-color: var(--btn-active-bg, #059669);
+  box-shadow: 0 5px rgba(0,0,0,0.12);
   transform: translateY(4px);
 }
 
@@ -40,12 +42,13 @@
 }
 
 .default-button--secondary {
-  background: var(--btn-secondary-bg, #646cff);
+  /* primary (filled) button uses green scale */
+  background: var(--btn-secondary-bg, #10b981); /* emerald-500 */
   color: var(--btn-secondary-color, #ffffff);
 }
 
 .default-button--secondary:hover {
-  background: var(--btn-secondary-hover, #535bf2);
+  background: var(--btn-secondary-hover, #059669); /* emerald-600 */
   color: var(--btn-secondary-color, #ffffff);
 }
 
@@ -56,4 +59,15 @@
     line-height: 22px;
     height: 44px;
   }
+}
+
+/* Optional CSS variables to override the green scale in consuming apps */
+:root {
+  --btn-color: #064e3b;
+  --btn-bg: #ffffff;
+  --btn-hover-color: #065f46;
+  --btn-active-bg: #059669;
+  --btn-secondary-bg: #10b981;
+  --btn-secondary-hover: #059669;
+  --btn-secondary-color: #ffffff;
 }
