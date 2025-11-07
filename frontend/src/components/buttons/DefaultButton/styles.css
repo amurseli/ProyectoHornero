@@ -1,0 +1,59 @@
+.default-button {
+  /* Fallback CSS for environments without styled-components. */
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  color: var(--btn-color, #111827);
+  font-size: var(--btn-font-size, 1.125rem);
+  font-weight: 600;
+  line-height: 26px;
+  padding-left: 20px;
+  padding-right: 20px;
+  background: var(--btn-bg, #ffffff);
+  min-width: 124px;
+  height: 55px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  cursor: pointer;
+  transition: box-shadow 0.25s ease, color 0.2s ease, transform 0.08s ease;
+}
+
+.default-button:disabled {
+  opacity: 0.5;
+}
+
+.default-button:hover {
+  color: var(--btn-hover-color, #535bf2);
+  box-shadow: var(--btn-shadow-soft, 0 2px 7px rgba(0, 0, 0, 0.15));
+}
+
+.default-button:active {
+  background-color: var(--btn-active-bg, #4f46e5);
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+
+.default-button:focus,
+.default-button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.default-button--secondary {
+  background: var(--btn-secondary-bg, #646cff);
+  color: var(--btn-secondary-color, #ffffff);
+}
+
+.default-button--secondary:hover {
+  background: var(--btn-secondary-hover, #535bf2);
+  color: var(--btn-secondary-color, #ffffff);
+}
+
+@media (max-width: 768px) {
+  .default-button {
+    font-size: var(--btn-font-size-md, 1rem);
+    font-weight: 500;
+    line-height: 22px;
+    height: 44px;
+  }
+}

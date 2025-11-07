@@ -1,0 +1,43 @@
+.home-background {
+  position: fixed;
+  inset: 0; /* top:0; right:0; bottom:0; left:0 */
+  background-image: url('$images/hornero.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover; /* fill viewport, may crop */
+  background-position: center center;
+  z-index: 0;
+}
+
+.home-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 1;
+}
+
+.home-content {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #f5f5f5;
+  text-shadow: 2px 2px 20px black;
+}
+
+.home-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* small utility in case buttons need spacing on narrow viewports */
+@media (max-width: 480px) {
+  .home-buttons {
+    gap: 16px;
+  }
+}
