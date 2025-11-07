@@ -8,7 +8,10 @@ function Home() {
       <div className="home-background" />
       <div className="home-overlay" />
       <div className="home-content">
-        <h1>Welcome to the Home Page</h1>
+        <div className="home-hero-headings">
+          <h1>Proyecto Hornero</h1>
+          <h3>Plataforma de financiación colectiva para proyectos</h3>
+        </div>
         <div className="home-buttons">
           <DefaultButton
             type="button"
