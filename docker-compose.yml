@@ -1,47 +1,69 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:15
-    container_name: hornero_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+  postgres:
+    image: postgres:15-alpine
+    container_name: hornero-postgres
     environment:
-      - POSTGRES_DB=hornero_db
-      - POSTGRES_USER=hornero_user
-      - POSTGRES_PASSWORD=hornero_pass
+      POSTGRES_DB: hornero
+      POSTGRES_USER: hornero  
+      POSTGRES_PASSWORD: hornero123
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - hornero_network
+      - hornero-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hornero"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: hornero_redis
+    container_name: hornero-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
-      - hornero_network
+      - hornero-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
-    build: ./backend
-    container_name: hornero_backend
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./backend:/app
+    build: .
+    container_name: hornero-backend
     ports:
-      - "8000:8000"
-    env_file:
-      - ./backend/.env
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hornero
+      DB_USER: hornero
+      DB_PASSWORD: hornero123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
-      - db
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - hornero_network
+      - hornero-network
+    volumes:
+      - ./src:/app/src:ro
+      - maven_cache:/root/.m2
+
+
 
   frontend:
     build: ./frontend
-    container_name: hornero_frontend
+    container_name: hornero-frontend
     command: npm run dev -- --host
     volumes:
       - ./frontend:/app
@@ -53,11 +75,13 @@ services:
     depends_on:
       - backend
     networks:
-      - hornero_network
+      - hornero-network
 
 volumes:
   postgres_data:
+  redis_data:
+  maven_cache:
 
 networks:
-  hornero_network:
+  hornero-network:
     driver: bridge
