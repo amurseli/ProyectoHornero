@@ -13,6 +13,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Ensure the document root fills the viewport so components using 100vh behave correctly */
+html, body, #root {
+  height: 100%;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
