@@ -4,6 +4,9 @@ import Home from './pages/Home/Home.jsx';
 import Login from './pages/Login/Login.jsx';
 import Register from './pages/Register/Register.jsx';
 import Navbar from '$components/navbar/Navbar'
+import CampaignsList from './pages/Campaigns/CampaignsList';
+import MyCampaigns from './pages/Campaigns/MyCampaigns';
+import CampaignForm from './pages/Campaigns/CampaignForm';
 
 // function Popover({ children, content }) {
 //   const [isOpen, setIsOpen] = useState(false);
@@ -52,6 +55,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/campaigns" element={<CampaignsList />} />
+        <Route path="/my-campaigns" element={<MyCampaigns />} />
+        <Route path="/my-campaigns/new" element={<CampaignForm />} />
+        <Route path="/my-campaigns/edit/:id" element={<CampaignForm />} />
       </Routes>
     </Router>
   )
