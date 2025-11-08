@@ -54,11 +54,11 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/campaigns" element={<CampaignsList />} />
         <Route path="/my-campaigns" element={<MyCampaigns />} />
         <Route path="/my-campaigns/new" element={<CampaignForm />} />
         <Route path="/my-campaigns/edit/:id" element={<CampaignForm />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   )

@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import './Campaigns.css'
 import api from '../../api'
 
-
 function CampaignForm() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -13,26 +12,25 @@ function CampaignForm() {
     shortDescription: '',
     idOwner: 1,
     idType: null,
-    idCategory: null
+    idCategory: null,
   })
 
   useEffect(() => {
     if (id) {
       api.get(`/api/campaigns/${id}`)
-        .then((res) => res.json())
         .then((data) => setCampaign(data))
-        .catch(console.error)
+        .catch((err) => console.error('Error al cargar la campaña:', err))
     }
   }, [id])
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setCampaign({ ...campaign, [name]: value })
+    setCampaign((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-  
+
     try {
       if (id) {
         await api.put(`/api/campaigns/${id}`, campaign)
@@ -49,17 +47,34 @@ function CampaignForm() {
   return (
     <main className="campaign-form-page">
       <h2>{id ? 'Editar Campaña' : 'Crear Nueva Campaña'}</h2>
+
       <form className="campaign-form" onSubmit={handleSubmit}>
-        <label>Título
-          <input name="title" value={campaign.title} onChange={handleChange} required />
+        <label>
+          Título
+          <input
+            name="title"
+            value={campaign.title}
+            onChange={handleChange}
+            required
+          />
         </label>
 
-        <label>Descripción corta
-          <input name="shortDescription" value={campaign.shortDescription} onChange={handleChange} />
+        <label>
+          Descripción corta
+          <input
+            name="shortDescription"
+            value={campaign.shortDescription}
+            onChange={handleChange}
+          />
         </label>
 
-        <label>Descripción completa
-          <textarea name="description" value={campaign.description} onChange={handleChange} />
+        <label>
+          Descripción completa
+          <textarea
+            name="description"
+            value={campaign.description}
+            onChange={handleChange}
+          />
         </label>
 
         <button type="submit">
