@@ -45,3 +45,22 @@ make logs
 
 # Apagar todo
 make down
+```
+
+
+## PG ADMIN
+
+Te logueas en http://localhost:5050
+
+admin@admin.com
+admin
+
+Y agregás un servidor nuevo
+
+| Campo                    | Valor        |
+| ------------------------ | ------------ |
+| **Host name/address**    | `postgres`   |
+| **Port**                 | `5432`       |
+| **Maintenance database** | `hornero`    |
+| **Username**             | `hornero`    |
+| **Password**             | `hornero123` |
