@@ -24,17 +24,16 @@ export default function Register() {
   }
 
   return (
-    <>
-      <div className="home-background" />
-      <div className="home-overlay" />
-
-      <main className="register-page">
-        <section className="register-card" aria-labelledby="register-title">
-          <h2 id="register-title">Crear cuenta</h2>
-          <form className="register-form" onSubmit={handleSubmit}>
-            <label className="label">Nombre completo
+    <div className="page-wrapper">
+      <div className="page-container">
+        <section className="content-card auth-card" aria-labelledby="register-title">
+          <header className="card-header">
+            <h2 id="register-title" className="card-title">Crear cuenta</h2>
+          </header>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label className="form-label">Nombre completo
               <input
-                className="input"
+                className="form-input"
                 type="text"
                 required
                 value={name}
@@ -43,9 +42,9 @@ export default function Register() {
               />
             </label>
 
-            <label className="label">Correo electrónico
+            <label className="form-label">Correo electrónico
               <input
-                className="input"
+                className="form-input"
                 type="email"
                 required
                 value={email}
@@ -54,9 +53,9 @@ export default function Register() {
               />
             </label>
 
-            <label className="label">Contraseña
+            <label className="form-label">Contraseña
               <input
-                className="input"
+                className="form-input"
                 type="password"
                 required
                 value={password}
@@ -65,9 +64,9 @@ export default function Register() {
               />
             </label>
 
-            <label className="label">Confirmar contraseña
+            <label className="form-label">Confirmar contraseña
               <input
-                className="input"
+                className="form-input"
                 type="password"
                 required
                 value={confirm}
@@ -83,7 +82,7 @@ export default function Register() {
             </div>
           </form>
         </section>
-      </main>
-    </>
+      </div>
+    </div>
   )
 }
