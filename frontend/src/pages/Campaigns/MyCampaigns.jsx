@@ -12,7 +12,7 @@ function MyCampaigns() {
   useEffect(() => {
     api.get('/api/campaigns')
       .then((data) => {
-        // 🔹 Filtro temporal por usuario 1 (hasta que tengamos login real)
+        // Filtro temporal por usuario 1 (hasta que tengamos login real)
         const myCampaigns = data.filter(c => c.idOwner === 1)
         setCampaigns(myCampaigns)
       })
