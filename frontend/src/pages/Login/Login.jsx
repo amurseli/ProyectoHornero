@@ -18,17 +18,16 @@ function Login() {
   }
 
   return (
-    <>
-      <div className="home-background" />
-      <div className="home-overlay" />
-
-      <main className="login-page">
-        <section className="login-card" aria-labelledby="login-title">
-          <h2 id="login-title">Iniciar sesión</h2>
-          <form className="login-form" onSubmit={handleSubmit}>
-            <label className="label">Correo electrónico
+    <div className="page-wrapper">
+      <div className="page-container">
+        <section className="content-card auth-card" aria-labelledby="login-title">
+          <header className="card-header">
+            <h2 id="login-title" className="card-title">Iniciar sesión</h2>
+          </header>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label className="form-label">Correo electrónico
               <input
-                className="input"
+                className="form-input"
                 type="email"
                 required
                 value={email}
@@ -37,9 +36,9 @@ function Login() {
               />
             </label>
 
-            <label className="label">Contraseña
+            <label className="form-label">Contraseña
               <input
-                className="input"
+                className="form-input"
                 type="password"
                 required
                 value={password}
@@ -65,8 +64,8 @@ function Login() {
             </div>
           </form>
         </section>
-      </main>
-    </>
+      </div>
+    </div>
   )
 }
 
