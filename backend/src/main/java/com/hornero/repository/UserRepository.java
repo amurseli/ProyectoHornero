@@ -8,16 +8,13 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-
-    // Buscar por email
+    
+    // Spring crea automáticamente las queries basándose en el nombre del método
     Optional<User> findByEmail(String email);
-
-    // Buscar por nombre de usuario
-    Optional<User> findByUserName(String userName);
-
-    // Verificar si existe un email registrado
+    
+    Optional<User> findByUsername(String username);
+    
     boolean existsByEmail(String email);
-
-    // Verificar si existe un nombre de usuario registrado
-    boolean existsByUserName(String userName);
+    
+    boolean existsByUsername(String username);
 }
