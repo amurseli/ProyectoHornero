@@ -13,24 +13,24 @@ import java.util.List;
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")  // Por ahora permitimos todo, después lo ajustamos
 public class UserController {
-    
+
     @Autowired
     private UserService userService;
-    
+
     // GET /api/users - Obtener todos los usuarios
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
-    
+
     // GET /api/users/{id} - Obtener usuario por ID
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
-                .map(user -> ResponseEntity.ok(user))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     // POST /api/users - Crear nuevo usuario
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
@@ -41,7 +41,7 @@ public class UserController {
             return ResponseEntity.badRequest().build();
         }
     }
-    
+
     // PUT /api/users/{id} - Actualizar usuario
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
@@ -52,7 +52,7 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     // DELETE /api/users/{id} - Eliminar usuario
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
@@ -63,20 +63,20 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     // GET /api/users/email/{email} - Buscar por email
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         return userService.getUserByEmail(email)
-                .map(user -> ResponseEntity.ok(user))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    
-    // GET /api/users/username/{username} - Buscar por username
-    @GetMapping("/username/{username}")
-    public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
-        return userService.getUserByUsername(username)
-                .map(user -> ResponseEntity.ok(user))
+
+    // GET /api/users/username/{userName} - Buscar por userName
+    @GetMapping("/username/{userName}")
+    public ResponseEntity<User> getUserByUserName(@PathVariable String userName) {
+        return userService.getUserByUserName(userName)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 }
