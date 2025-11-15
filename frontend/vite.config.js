@@ -11,8 +11,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      '$images': path.resolve(__dirname, 'src/assets/images'),
-      '$components': path.resolve(__dirname, 'src/components'),
+      '$images': path.resolve(__dirname, 'src/lib/assets/images'),
+      '$fonts': path.resolve(__dirname, 'src/lib/assets/fonts'),
+      '$commons': path.resolve(__dirname, 'src/lib/assets/commons'),
+      '$styles': path.resolve(__dirname, 'src/lib/assets/styles'),
+      '$components': path.resolve(__dirname, 'src/lib/components'),
+      '$utils': path.resolve(__dirname, 'src/lib/utils'),
       '$pages': path.resolve(__dirname, 'src/pages'),
     }
   }
