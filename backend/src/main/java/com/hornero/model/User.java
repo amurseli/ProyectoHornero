@@ -97,6 +97,7 @@ public class User {
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     public LocalDateTime getDisabledAt() { return disabledAt; }
     public void setDisabledAt(LocalDateTime disabledAt) { this.disabledAt = disabledAt; }
@@ -108,4 +109,21 @@ public class User {
     public void setEmailVerified(Boolean emailVerified) { this.emailVerified = emailVerified; }
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    // Helper methods for compatibility with UserService
+    public Long getIdRole() {
+        return role != null ? role.getId() : null;
+    }
+
+    public void setIdRole(Long idRole) {
+        // This is a helper that assumes you'll look up the role separately or handle it in the service
+        // For now, we'll just create a Role stub with the id
+        if (idRole != null) {
+            Role r = new Role();
+            r.setId(idRole);
+            this.role = r;
+        } else {
+            this.role = null;
+        }
+    }
 }
