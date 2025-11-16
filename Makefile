@@ -5,8 +5,9 @@
 # Variables
 BACKEND_DIR=backend
 FRONTEND_DIR=frontend
+DEV_MODE?=docker
 
-.PHONY: help up down restart build logs ps clean
+.PHONY: help up down restart build logs ps clean run dev
 
 # ------------------------------------------------------------
 # 📚 Ayuda
@@ -14,13 +15,16 @@ FRONTEND_DIR=frontend
 help:
 	@echo ""
 	@echo "Comandos disponibles:"
-	@echo "  make up         Levanta backend y frontend (en ese orden)"
-	@echo "  make down       Detiene y elimina ambos entornos"
-	@echo "  make restart    Reinicia ambos contenedores"
-	@echo "  make build      Reconstruye las imágenes"
-	@echo "  make logs       Muestra logs combinados"
-	@echo "  make ps         Lista los contenedores activos"
-	@echo "  make clean      Elimina todos los contenedores e imágenes del proyecto"
+	@echo "  make build               Reconstruye las imágenes"
+	@echo "  make run                 Levanta el sistema (backend en Docker)"
+	@echo "  make run DEV_MODE=local  Levanta backend en Docker, frontend local (npm run dev)"
+	@echo "  make dev                 Atajo para make run DEV_MODE=local"
+	@echo "  make up                  Levanta backend y frontend en Docker"
+	@echo "  make down                Detiene y elimina ambos entornos"
+	@echo "  make restart             Reinicia ambos contenedores"
+	@echo "  make logs                Muestra logs combinados"
+	@echo "  make ps                  Lista los contenedores activos"
+	@echo "  make clean               Elimina todos los contenedores e imágenes del proyecto"
 	@echo ""
 
 # ------------------------------------------------------------
@@ -81,3 +85,25 @@ clean:
 	cd $(FRONTEND_DIR) && docker-compose down -v --rmi all --remove-orphans || true
 	cd $(BACKEND_DIR) && docker-compose down -v --rmi all --remove-orphans || true
 	@echo "✅ Limpieza completa"
+
+# ------------------------------------------------------------
+# 🚀 Ejecutar sistema (con opción de frontend local)
+# ------------------------------------------------------------
+run:
+	@echo "🟢 Levantando backend..."
+	cd $(BACKEND_DIR) && docker-compose up -d
+ifeq ($(DEV_MODE),local)
+	@echo "🟢 Levantando frontend en modo desarrollo local..."
+	@echo "⚠️  Asegúrate de tener las dependencias instaladas (npm install)"
+	cd $(FRONTEND_DIR) && npm run dev
+else
+	@echo "🟢 Levantando frontend en Docker..."
+	cd $(FRONTEND_DIR) && docker-compose up -d
+	@echo "✅ Proyecto Hornero levantado con éxito"
+endif
+
+# ------------------------------------------------------------
+# 🛠️ Atajo para desarrollo local (frontend con npm run dev)
+# ------------------------------------------------------------
+dev:
+	@$(MAKE) run DEV_MODE=local
