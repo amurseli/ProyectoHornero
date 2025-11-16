@@ -1,7 +1,11 @@
 import './Home.css';
 import DefaultButton from '$components/buttons/DefaultButton';
+import { Icon } from '@iconify/react';
 
 function Home() {
+  const googleOauth = () => {
+    // window.location.href = import.meta.env.VITE_API_URL + '/auth/google';
+  }
 
   return (
     <div className="page-wrapper">
@@ -16,6 +20,12 @@ function Home() {
             </p>
           </header>
           <div className="home-buttons">
+            <button className="google-button" onClick={googleOauth} aria-label="Iniciar sesión con Google">
+              <div className="button-content">
+                <Icon icon="devicon:google" width="20" height="20" className="google-icon" />
+                <span className="button-text">Iniciar sesión con Google</span>
+              </div>
+            </button>
             <DefaultButton
               type="button"
               destination="/login"
@@ -33,7 +43,7 @@ function Home() {
         <section className="logo-section">
           <div className="logo-container">
             <img 
-              src="/src/assets/images/hornero.jpg" 
+              src="/src/lib/assets/images/hornero.jpg" 
               className="logo" 
               alt="Proyecto Hornero Logo" 
             />

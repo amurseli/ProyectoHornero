@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Campaigns.css'
-import api from '../../api'
+import api from '$utils/api/api'
 
 function MyCampaigns() {
   const [campaigns, setCampaigns] = useState([])

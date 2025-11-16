@@ -1,12 +1,12 @@
 import {BrowserRouter as Router, Route, Routes, Navigate} from 'react-router-dom';
 import './App.css'
-import Home from './pages/Home/Home.jsx';
-import Login from './pages/Login/Login.jsx';
-import Register from './pages/Register/Register.jsx';
+import Home from '$pages/Home/Home.jsx';
+import Login from '$pages/Login/Login.jsx';
+import Register from '$pages/Register/Register.jsx';
 import Navbar from '$components/navbar/Navbar'
-import CampaignsList from './pages/Campaigns/CampaignsList';
-import MyCampaigns from './pages/Campaigns/MyCampaigns';
-import CampaignForm from './pages/Campaigns/CampaignForm';
+import CampaignsList from '$pages/Campaigns/CampaignsList';
+import MyCampaigns from '$pages/Campaigns/MyCampaigns';
+import CampaignForm from '$pages/Campaigns/CampaignForm';
 
 // function Popover({ children, content }) {
 //   const [isOpen, setIsOpen] = useState(false);
