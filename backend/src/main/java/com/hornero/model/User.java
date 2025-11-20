@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user")
+@Table(name = "\"user\"")
 public class User {
 
     @Id
@@ -12,6 +12,7 @@ public class User {
     private Long id;
 
     @Column(name = "user_name", unique = true, nullable = false)
+    @com.fasterxml.jackson.annotation.JsonProperty("userName")
     private String userName;
 
     @Column(name = "first_name")
@@ -81,12 +82,21 @@ public class User {
         this.email = email;
     }
     
-    public String getUsername() {
-        return username;
+    public String getUserName() {
+        return userName;
     }
     
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+    
+    // Alias for compatibility
+    public String getUsername() {
+        return userName;
+    }
+    
+    public void setUsername(String userName) {
+        this.userName = userName;
     }
     
     public String getPassword() {
@@ -143,6 +153,14 @@ public class User {
     
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+    
+    public Role getRole() {
+        return role;
+    }
+    
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     // Helper methods for compatibility with UserService

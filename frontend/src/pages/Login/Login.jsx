@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DefaultButton from '$components/buttons/DefaultButton'
+import api from '$utils/api/api'
+import { saveAuth } from '$utils/auth/auth'
 import './Login.css'
 
 function Login() {
@@ -8,13 +10,32 @@ function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // TODO: replace with real auth call
-    console.log('login', { email, password, remember })
-    // naive redirect to home
-    navigate('/')
+    setError('')
+    setLoading(true)
+    
+    try {
+      const response = await api.post('/api/users/login', { email, password })
+      console.log('Login exitoso:', response)
+      
+      // Save authentication data (token and user info)
+      saveAuth(response, remember)
+      
+      // Trigger storage event for navbar to update
+      window.dispatchEvent(new Event('storage'))
+      
+      // Redirigir al home
+      navigate('/')
+    } catch (err) {
+      console.error('Error al iniciar sesión:', err)
+      setError('Credenciales inválidas. Por favor verifica tu email y contraseña.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -59,8 +80,10 @@ function Login() {
               <a className="forgot-link" href="#">¿Olvidaste tu contraseña?</a>
             </div>
 
+            {error && <div className="form-error" role="alert">{error}</div>}
+
             <div className="login-actions">
-              <DefaultButton type="submit" content="Entrar" />
+              <DefaultButton type="submit" content={loading ? "Iniciando..." : "Entrar"} disabled={loading} />
             </div>
           </form>
         </section>

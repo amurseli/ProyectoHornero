@@ -1,26 +1,56 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DefaultButton from '$components/buttons/DefaultButton'
+import api from '$utils/api/api'
+import { saveAuth } from '$utils/auth/auth'
 import './Register.css'
 
 export default function Register() {
   const navigate = useNavigate()
-  const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
+  const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    
     if (password !== confirm) {
       setError('Las contraseñas no coinciden')
       return
     }
-    // TODO: call API to register
-    console.log('register', { name, email, password })
-    navigate('/')
+    
+    setLoading(true)
+    try {
+      const userData = {
+        userName: username,
+        firstName: firstName,
+        email: email,
+        password: password,
+        enabled: true
+      }
+      
+      const response = await api.post('/api/users/register', userData)
+      console.log('Usuario registrado:', response)
+      
+      // Save authentication data (token and user info)
+      saveAuth(response, true)
+      
+      // Trigger storage event for navbar to update
+      window.dispatchEvent(new Event('storage'))
+      
+      // Redirigir al home después del registro exitoso
+      navigate('/')
+    } catch (err) {
+      console.error('Error al registrar:', err)
+      setError(err.message || 'Error al crear la cuenta. Por favor intenta de nuevo.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -31,13 +61,24 @@ export default function Register() {
             <h2 id="register-title" className="card-title">Crear cuenta</h2>
           </header>
           <form className="auth-form" onSubmit={handleSubmit}>
-            <label className="form-label">Nombre completo
+            <label className="form-label">Nombre de usuario
               <input
                 className="form-input"
                 type="text"
                 required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Tu nombre de usuario"
+              />
+            </label>
+
+            <label className="form-label">Nombre
+              <input
+                className="form-input"
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Tu nombre"
               />
             </label>
@@ -78,7 +119,7 @@ export default function Register() {
             {error && <div className="form-error" role="alert">{error}</div>}
 
             <div className="register-actions">
-              <DefaultButton type="submit" content="Crear cuenta" />
+              <DefaultButton type="submit" content={loading ? "Creando cuenta..." : "Crear cuenta"} disabled={loading} />
             </div>
           </form>
         </section>
