@@ -2,7 +2,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  height: var(--navbar-height);
+  padding: 0 2rem; /* horizontal padding only; height handles vertical spacing */
   background-color: rgba(0, 0, 0, 0.7);
   position: fixed;
   top: 0;
@@ -86,7 +87,6 @@
   transition: background-color 0.3s ease, color 0.2s ease;
   border: none;
   background: none;
-  width: 100%;
   text-align: left;
   cursor: pointer;
 }

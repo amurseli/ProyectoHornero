@@ -21,6 +21,13 @@ html, body, #root {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Use the Home dark gradient for auth pages when requested */
+.page-wrapper.auth-bg {
+  background: linear-gradient(to bottom, #0f171e 0%, #1a1a2e 50%, #0f0f0f 100%);
+  background-size: cover;
+  animation: none;
+}
+
 @keyframes circularGradient {
   0% {
     background-position: 50% 0%;

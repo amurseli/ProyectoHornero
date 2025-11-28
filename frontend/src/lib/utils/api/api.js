@@ -22,14 +22,23 @@ async function request(path, options = {}) {
   // Handle error responses
   if (!response.ok) {
     // If unauthorized, clear user data and redirect to login
+    // BUT skip redirect for public endpoints (like GET /api/campaigns)
     if (response.status === 401) {
-      localStorage.removeItem('user')
-      sessionStorage.removeItem('user')
+      const isPublicEndpoint = 
+        (options.method === 'GET' && path.includes('/api/campaigns')) ||
+        path.includes('/login') ||
+        path.includes('/register')
       
-      // Only redirect if not already on login/register page
-      if (!window.location.pathname.includes('/login') && 
-          !window.location.pathname.includes('/register')) {
-        window.location.href = '/login'
+      if (!isPublicEndpoint) {
+        localStorage.removeItem('user')
+        sessionStorage.removeItem('user')
+        
+        // Only redirect if not already on login/register page or home
+        if (!window.location.pathname.includes('/login') && 
+            !window.location.pathname.includes('/register') &&
+            window.location.pathname !== '/') {
+          window.location.href = '/login'
+        }
       }
     }
     

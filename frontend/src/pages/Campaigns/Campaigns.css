@@ -1,7 +1,18 @@
 /* Layout general para páginas de campañas y formulario */
 .campaigns-page,
 .campaign-form-page {
-  padding: 6rem 2rem 2rem;
+  /* Full-bleed layout so background covers full viewport (escape centered #root) */
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
+
+  /* Add top padding so content sits below fixed navbar. Use box-sizing so padding is included in min-height. */
+  padding: calc(var(--navbar-height) + 1rem) 2rem 2rem;
+  min-height: 100vh;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;

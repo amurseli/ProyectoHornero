@@ -3,6 +3,8 @@
   line-height: 1.5;
   font-weight: 400;
 
+  /* Centralized UI sizes */
+  --navbar-height: 64px;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
@@ -29,10 +31,12 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  /* Use same dark base as Home so scrolling doesn't reveal a different color */
+  background: linear-gradient(to bottom, #0f171e 0%, #1a1a2e 50%, #0f0f0f 100%);
+  color: rgba(255,255,255,0.92);
+  overflow-x: hidden; /* prevent horizontal scroll from full-bleed negatives */
 }
 
 h1 {
