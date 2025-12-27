@@ -9,8 +9,8 @@
   margin-right: -50vw;
   width: 100vw;
   min-height: 100vh;
-  /* Use the same animated green gradient used by auth pages (the "other way around") */
-  background: linear-gradient(135deg, #16a085 0%, #2ecc71 25%, #4caf50 50%, #2ecc71 75%, #16a085 100%);
+  /* Use the new palette gradient with 4-color cycle */
+  background: linear-gradient(135deg, #F27649 0%, #E08A5D 33%, #CD6B42 66%, #F27649 100%);
   background-size: 400% 400%;
   animation: circularGradient 15s ease infinite;
   color: #ffffff;
@@ -43,7 +43,7 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background-image: url('https://images.unsplash.com/photo-1503264116251-35a269479413?w=1920&h=1080&fit=crop');
+  background-image: url('$images/fondo_home.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -137,7 +137,7 @@
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(140, 47, 27, 0.8);
   color: #fff;
   border: none;
   display: flex;
@@ -205,7 +205,7 @@
   position: relative;
   width: 100%;
   padding-top: 56.25%; /* 16:9 aspect ratio */
-  background: #1a1a1a;
+  background: #8C2F1B;
   border-radius: 8px 8px 0 0;
   overflow: hidden;
   z-index: 1;
@@ -238,7 +238,7 @@
 }
 
 .campaign-card:hover .campaign-title {
-  color: #171717; /* dark when hovered (on white background) */
+  color: #8C2F1B; /* dark when hovered (on light background) */
 }
 
 /* Expanding white background - mimics Kickstarter */
@@ -251,7 +251,7 @@
   right: 0;
   bottom: auto;
   height: 180px; /* fixed expansion height */
-  background: #ffffff;
+  background: #D9B0A7;
   border-radius: 8px;
   opacity: 0;
   transform: scaleY(0);

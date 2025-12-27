@@ -25,14 +25,14 @@
 }
 
 .default-button:hover {
-  /* subtle green tint on hover */
-  color: var(--btn-hover-color, #065f46);
-  border-color: var(--btn-border-hover, #16a085);
+  /* subtle orange tint on hover */
+  color: var(--btn-hover-color, #8C2F1B);
+  border-color: var(--btn-border-hover, #F27649);
   box-shadow: var(--btn-shadow-soft, 0 2px 7px rgba(0, 0, 0, 0.12));
 }
 
 .default-button:active {
-  background-color: var(--btn-active-bg, #059669);
+  background-color: var(--btn-active-bg, #D94F30);
   box-shadow: 0 5px rgba(0,0,0,0.12);
   transform: translateY(4px);
 }
@@ -43,16 +43,16 @@
 }
 
 .default-button--secondary {
-  /* primary (filled) button uses green scale */
-  background: var(--btn-secondary-bg, #10b981); /* emerald-500 */
+  /* primary (filled) button uses red-orange scale */
+  background: var(--btn-secondary-bg, #D94F30);
   color: var(--btn-secondary-color, #ffffff);
-  border-color: var(--btn-secondary-bg, #10b981);
+  border-color: var(--btn-secondary-bg, #D94F30);
 }
 
 .default-button--secondary:hover {
-  background: var(--btn-secondary-hover, #059669); /* emerald-600 */
+  background: var(--btn-secondary-hover, #F27649);
   color: var(--btn-secondary-color, #ffffff);
-  border-color: var(--btn-secondary-hover, #059669);
+  border-color: var(--btn-secondary-hover, #F27649);
 }
 
 @media (max-width: 768px) {
@@ -64,15 +64,15 @@
   }
 }
 
-/* Optional CSS variables to override the green scale in consuming apps */
+/* Optional CSS variables to override the color scale in consuming apps */
 :root {
-  --btn-color: #064e3b;
+  --btn-color: #8C2F1B;
   --btn-bg: #ffffff;
   --btn-border: #e5e7eb;
-  --btn-border-hover: #16a085;
-  --btn-hover-color: #065f46;
-  --btn-active-bg: #059669;
-  --btn-secondary-bg: #10b981;
-  --btn-secondary-hover: #059669;
+  --btn-border-hover: #F27649;
+  --btn-hover-color: #8C2F1B;
+  --btn-active-bg: #D94F30;
+  --btn-secondary-bg: #D94F30;
+  --btn-secondary-hover: #F27649;
   --btn-secondary-color: #ffffff;
 }

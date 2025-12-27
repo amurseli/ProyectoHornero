@@ -34,7 +34,7 @@
 }
 
 .navbar-link:hover {
-  color: #ffd700; /* Amarillo dorado para resaltar al hover */
+  color: #F27649;
 }
 
 /* Parte derecha (login/logout o menú) */
@@ -92,7 +92,8 @@
 }
 
 .dropdown-item:hover {
-  background-color: #f0f0f0;
+  background-color: #F27649;
+  color: #ffffff;
 }
 
 /* User info in dropdown */
@@ -121,19 +122,22 @@
 /* Divider */
 .dropdown-divider {
   height: 1px;
-  background-color: #e0e0e0;
+  background-color: #BF2C1F;
   margin: 0.25rem 0;
 }
 
 /* Logout button styling */
 .logout-item {
-  color: #dc2626;
+  color: #BF2C1F;
   font-weight: 500;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 1rem;
 }
 
 .logout-item:hover {
-  background-color: #fee;
-  color: #b91c1c;
+  background-color: #D94F30;
+  color: #ffffff;
 }
 
 .navbar-button,
@@ -151,7 +155,7 @@
 
 .navbar-button:hover,
 .logout-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(242, 118, 73, 0.2);
 }
 
 /* Indicador rojo animado opcional */
@@ -162,7 +166,7 @@
   right: 0;
   width: 10px;
   height: 10px;
-  background-color: #ef4444;
+  background-color: #BF2C1F;
   border-radius: 50%;
   animation: pulse 1.5s infinite;
 }

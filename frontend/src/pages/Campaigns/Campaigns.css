@@ -16,7 +16,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #f3f4f6;
+  background-color: #D9B0A7;
   min-height: 100vh;
   box-sizing: border-box;
 }
@@ -74,7 +74,7 @@
 /* Botones */
 .campaign-card button,
 .campaign-form button {
-  background-color: #16a085;
+  background-color: #D94F30;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -87,7 +87,7 @@
 
 .campaign-card button:hover,
 .campaign-form button:hover {
-  background-color: #2ecc71;
+  background-color: #F27649;
 }
 
 /* Inputs y textarea */
@@ -112,8 +112,8 @@
 
 .campaign-form input:focus,
 .campaign-form textarea:focus {
-  border-color: #16a085;
-  box-shadow: 0 0 0 3px rgba(22,160,133,0.2);
+  border-color: #F27649;
+  box-shadow: 0 0 0 3px rgba(242, 118, 73, 0.2);
 }
 
 .campaign-form textarea {

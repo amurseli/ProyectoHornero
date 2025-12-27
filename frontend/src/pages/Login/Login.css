@@ -20,14 +20,14 @@
 }
 
 .forgot-link {
-  color: #16a085;
+  color: #D94F30;
   text-decoration: underline;
   font-size: 0.9rem;
   transition: color 0.2s ease;
 }
 
 .forgot-link:hover {
-  color: #2ecc71;
+  color: #F27649;
 }
 
 .login-actions {

@@ -7,7 +7,7 @@
   --navbar-height: 64px;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #8C2F1B;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -22,11 +22,11 @@ html, body, #root {
 
 a {
   font-weight: 500;
-  color: #16a085;
+  color: #F27649;
   text-decoration: inherit;
 }
 a:hover {
-  color: #2ecc71;
+  color: #D94F30;
 }
 
 body {
@@ -34,7 +34,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   /* Use same dark base as Home so scrolling doesn't reveal a different color */
-  background: linear-gradient(to bottom, #0f171e 0%, #1a1a2e 50%, #0f0f0f 100%);
+  background: linear-gradient(to bottom, #8C2F1B 0%, #BF2C1F 50%, #8C2F1B 100%);
   color: rgba(255,255,255,0.92);
   overflow-x: hidden; /* prevent horizontal scroll from full-bleed negatives */
 }
@@ -50,12 +50,12 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #D94F30;
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #16a085;
+  border-color: #F27649;
 }
 button:focus,
 button:focus-visible {
@@ -68,9 +68,9 @@ button:focus-visible {
     background-color: #ffffff;
   }
   a:hover {
-    color: #2ecc71;
+    color: #D94F30;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: #D9B0A7;
   }
 }

@@ -15,7 +15,7 @@ html, body, #root {
   position: fixed;
   inset: 0;
   z-index: 0;
-  background: linear-gradient(135deg, #16a085 0%, #2ecc71 25%, #4caf50 50%, #2ecc71 75%, #16a085 100%);
+  background: linear-gradient(135deg, #F27649 0%, #E08A5D 33%, #CD6B42 66%, #F27649 100%);
   background-size: 400% 400%;
   animation: circularGradient 15s ease infinite;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -23,7 +23,7 @@ html, body, #root {
 
 /* Use the Home dark gradient for auth pages when requested */
 .page-wrapper.auth-bg {
-  background: linear-gradient(to bottom, #0f171e 0%, #1a1a2e 50%, #0f0f0f 100%);
+  background: linear-gradient(to bottom, #8C2F1B 0%, #BF2C1F 50%, #8C2F1B 100%);
   background-size: cover;
   animation: none;
 }
@@ -85,7 +85,7 @@ html, body, #root {
 .card-title {
   font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #16a085 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, #F27649 0%, #D94F30 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -129,8 +129,8 @@ html, body, #root {
 
 .form-input:focus {
   outline: none;
-  border-color: #16a085;
-  box-shadow: 0 0 0 3px rgba(22, 160, 133, 0.1);
+  border-color: #F27649;
+  box-shadow: 0 0 0 3px rgba(242, 118, 73, 0.1);
 }
 
 .form-input::placeholder {

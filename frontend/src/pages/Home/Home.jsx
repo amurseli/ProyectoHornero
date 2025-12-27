@@ -232,7 +232,7 @@ const MOCK_CAMPAIGNS = [
     description: 'Plataforma de telemedicina y unidades móviles.',
     idOwner: 4,
     idCategory: 3,
-    imageUrl: 'https://images.unsplash.com/photo-1587502536263-3e0a6f0b0bde?w=800&h=450&fit=crop'
+    imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&h=450&fit=crop'
   },
   {
     id: 104,
@@ -268,7 +268,7 @@ const MOCK_CAMPAIGNS = [
     description: 'Integración de wearables con centros locales de salud.',
     idOwner: 8,
     idCategory: 3,
-    imageUrl: 'https://images.unsplash.com/photo-1582719478250-0c9f4a4f0b7e?w=800&h=450&fit=crop'
+    imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&h=450&fit=crop'
   },
   {
     id: 108,
