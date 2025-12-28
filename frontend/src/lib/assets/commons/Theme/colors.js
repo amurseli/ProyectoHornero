@@ -1,4 +1,11 @@
 export const colors = {
+  // New Palette Colors
+  paletteOrange: "#F27649",
+  paletteDarkRed: "#8C2F1B",
+  paletteRed: "#D94F30",
+  paletteLightPink: "#D9B0A7",
+  paletteBrightRed: "#BF2C1F",
+
   mainPrimary10: "#D6F3A2",
   mainPrimary20: "#A1DA39",
   mainPrimary30: "#94C639",

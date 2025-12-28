@@ -2,7 +2,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  height: var(--navbar-height);
+  padding: 0 2rem; /* horizontal padding only; height handles vertical spacing */
   background-color: rgba(0, 0, 0, 0.7);
   position: fixed;
   top: 0;
@@ -33,7 +34,7 @@
 }
 
 .navbar-link:hover {
-  color: #ffd700; /* Amarillo dorado para resaltar al hover */
+  color: #F27649;
 }
 
 /* Parte derecha (login/logout o menú) */
@@ -84,10 +85,59 @@
   text-decoration: none;
   white-space: nowrap;
   transition: background-color 0.3s ease, color 0.2s ease;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
 }
 
 .dropdown-item:hover {
-  background-color: #f0f0f0;
+  background-color: #F27649;
+  color: #ffffff;
+}
+
+/* User info in dropdown */
+.dropdown-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  cursor: default;
+}
+
+.dropdown-user-info:hover {
+  background-color: transparent;
+}
+
+.dropdown-user-info strong {
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.user-email {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Divider */
+.dropdown-divider {
+  height: 1px;
+  background-color: #BF2C1F;
+  margin: 0.25rem 0;
+}
+
+/* Logout button styling */
+.logout-item {
+  color: #BF2C1F;
+  font-weight: 500;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 1rem;
+}
+
+.logout-item:hover {
+  background-color: #D94F30;
+  color: #ffffff;
 }
 
 .navbar-button,
@@ -105,7 +155,7 @@
 
 .navbar-button:hover,
 .logout-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(242, 118, 73, 0.2);
 }
 
 /* Indicador rojo animado opcional */
@@ -116,7 +166,7 @@
   right: 0;
   width: 10px;
   height: 10px;
-  background-color: #ef4444;
+  background-color: #BF2C1F;
   border-radius: 50%;
   animation: pulse 1.5s infinite;
 }
