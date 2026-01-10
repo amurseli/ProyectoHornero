@@ -8,6 +8,7 @@ import com.hornero.model.User;
 import com.hornero.service.UserService;
 import com.hornero.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +35,43 @@ public class UserController {
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
+    }
+    
+    // GET /api/users/me - Get current user from JWT cookie
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
+        try {
+            // User info is already extracted by JwtAuthenticationFilter
+            Long userId = (Long) request.getAttribute("userId");
+            String email = (String) request.getAttribute("userEmail");
+            String role = (String) request.getAttribute("userRole");
+                        
+            if (userId == null || email == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+            
+            // Get full user details from database
+            User user = userService.getUserById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+                        
+            // Create response with user info
+            AuthResponse authResponse = new AuthResponse(
+                null, // No token in response body
+                user.getId(),
+                user.getEmail(),
+                user.getUsername(),
+                user.getFirstName(),
+                role
+            );
+            
+            return ResponseEntity.ok(authResponse);
+        } catch (Exception e) {
+            System.out.println("DEBUG /me - Exception: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
     }
     
     // GET /api/users/{id} - Obtener usuario por ID
@@ -63,12 +101,23 @@ public class UserController {
             String roleName = newUser.getRole() != null ? newUser.getRole().getName() : "USER";
             String token = jwtUtil.generateToken(newUser.getEmail(), newUser.getId(), roleName);
             
+            // Determine cookie maxAge based on remember flag
+            Boolean remember = request.getRemember();
+            int cookieMaxAge;
+            if (remember != null && remember) {
+                // Remember me: use configured expiration (e.g., 24 hours)
+                cookieMaxAge = (int) (jwtExpiration / 1000);
+            } else {
+                // Don't remember: session cookie (expires when browser closes)
+                cookieMaxAge = -1;
+            }
+            
             // Set JWT as HttpOnly cookie
             Cookie jwtCookie = new Cookie("jwt", token);
             jwtCookie.setHttpOnly(true);
             jwtCookie.setSecure(false); // Set to true in production with HTTPS
             jwtCookie.setPath("/");
-            jwtCookie.setMaxAge((int) (jwtExpiration / 1000)); // Convert milliseconds to seconds
+            jwtCookie.setMaxAge(cookieMaxAge);
             response.addCookie(jwtCookie);
             
             // Create response without token (user info only)
@@ -148,12 +197,23 @@ public class UserController {
             String roleName = user.getRole() != null ? user.getRole().getName() : "USER";
             String token = jwtUtil.generateToken(user.getEmail(), user.getId(), roleName);
             
+            // Determine cookie maxAge based on remember flag
+            Boolean remember = loginRequest.getRemember();
+            int cookieMaxAge;
+            if (remember != null && remember) {
+                // Remember me: use configured expiration (e.g., 24 hours)
+                cookieMaxAge = (int) (jwtExpiration / 1000);
+            } else {
+                // Don't remember: session cookie (expires when browser closes)
+                cookieMaxAge = -1;
+            }
+            
             // Set JWT as HttpOnly cookie
             Cookie jwtCookie = new Cookie("jwt", token);
             jwtCookie.setHttpOnly(true);
             jwtCookie.setSecure(false); // Set to true in production with HTTPS
             jwtCookie.setPath("/");
-            jwtCookie.setMaxAge((int) (jwtExpiration / 1000)); // Convert milliseconds to seconds
+            jwtCookie.setMaxAge(cookieMaxAge);
             response.addCookie(jwtCookie);
             
             // Create response without token (user info only)

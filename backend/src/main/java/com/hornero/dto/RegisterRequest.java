@@ -7,6 +7,7 @@ public class RegisterRequest {
     private String email;
     private String password;
     private Boolean enabled;
+    private Boolean remember;
 
     public RegisterRequest() {}
 
@@ -27,4 +28,7 @@ public class RegisterRequest {
 
     public Boolean getEnabled() { return enabled; }
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
+
+    public Boolean getRemember() { return remember; }
+    public void setRemember(Boolean remember) { this.remember = remember; }
 }

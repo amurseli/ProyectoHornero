@@ -3,6 +3,7 @@ package com.hornero.dto;
 public class LoginRequest {
     private String email;
     private String password;
+    private Boolean remember;
 
     public LoginRequest() {}
 
@@ -16,4 +17,7 @@ public class LoginRequest {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public Boolean getRemember() { return remember; }
+    public void setRemember(Boolean remember) { this.remember = remember; }
 }

@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      '$lib': path.resolve(__dirname, 'src/lib'),
       '$images': path.resolve(__dirname, 'src/lib/assets/images'),
       '$fonts': path.resolve(__dirname, 'src/lib/assets/fonts'),
       '$commons': path.resolve(__dirname, 'src/lib/assets/commons'),
