@@ -29,6 +29,31 @@ export function UserProvider({ children }) {
             firstName: userData.firstName,
             role: userData.role
           })
+        } else if (response.status === 401 || response.status === 403) {
+          // JWT expired or missing, try to refresh
+          const refreshResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include'
+          })
+          
+          if (refreshResponse.ok) {
+            // Refresh successful, retry fetching user
+            const retryResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/users/me`, {
+              credentials: 'include'
+            })
+            
+            if (retryResponse.ok) {
+              const userData = await retryResponse.json()
+              setUserState({
+                userId: userData.userId,
+                email: userData.email,
+                userName: userData.userName,
+                firstName: userData.firstName,
+                role: userData.role
+              })
+            }
+          }
+          // If refresh fails, user stays null (logged out)
         }
       } catch (error) {
         console.error('Error fetching user:', error)
@@ -60,7 +85,7 @@ export function UserProvider({ children }) {
    */
   const logout = async () => {
     try {
-      // Call backend to clear HttpOnly JWT cookie
+      // Call backend to clear HttpOnly JWT cookie and revoke refresh token
       await fetch(`${import.meta.env.VITE_API_URL}/api/users/logout`, {
         method: 'POST',
         credentials: 'include'
@@ -71,9 +96,17 @@ export function UserProvider({ children }) {
 
     // Clear user state
     setUserState(null)
-    // Trigger storage event for other tabs
-    window.dispatchEvent(new Event('storage'))
   }
+
+  // Listen for automatic logout from API (when refresh token fails)
+  useEffect(() => {
+    const handleAutoLogout = () => {
+      setUserState(null)
+    }
+    
+    window.addEventListener('auth:logout', handleAutoLogout)
+    return () => window.removeEventListener('auth:logout', handleAutoLogout)
+  }, [])
 
   /**
    * Check if user is authenticated

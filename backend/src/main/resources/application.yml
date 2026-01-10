@@ -32,7 +32,9 @@ server:
 
 jwt:
   secret: ${JWT_SECRET:hornero-secret-key-change-this-in-production-minimum-256-bits-for-security}
-  expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+  expiration: ${JWT_EXPIRATION:900000} # 15 minutes in milliseconds
+  refresh:
+    expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days in milliseconds
 
 logging:
   level:

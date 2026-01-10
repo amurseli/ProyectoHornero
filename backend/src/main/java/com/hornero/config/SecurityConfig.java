@@ -26,6 +26,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow all OPTIONS requests for CORS preflight
                 .requestMatchers("/api/users/register", "/api/users/login", "/api/users/logout", "/api/health/**").permitAll()
+                .requestMatchers("/api/auth/refresh").permitAll() // Allow refresh token endpoint without authentication
                 .requestMatchers(HttpMethod.GET, "/api/campaigns", "/api/campaigns/**").permitAll() // Allow public access to view campaigns
                 .requestMatchers("/api/users/me").authenticated() // Require authentication for /me endpoint
                 .requestMatchers("/api/**").authenticated()

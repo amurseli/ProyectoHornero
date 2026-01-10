@@ -20,7 +20,7 @@ public class JwtUtil {
     @Value("${jwt.secret:hornero-secret-key-change-this-in-production-minimum-256-bits}")
     private String secret;
 
-    @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds
+    @Value("${jwt.expiration:900000}") // 15 minutes in milliseconds
     private Long expiration;
 
     private SecretKey getSigningKey() {

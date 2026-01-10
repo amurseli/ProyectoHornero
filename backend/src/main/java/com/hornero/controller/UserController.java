@@ -4,7 +4,9 @@ import com.hornero.dto.AuthResponse;
 import com.hornero.dto.ErrorResponse;
 import com.hornero.dto.LoginRequest;
 import com.hornero.dto.RegisterRequest;
+import com.hornero.model.RefreshToken;
 import com.hornero.model.User;
+import com.hornero.service.RefreshTokenService;
 import com.hornero.service.UserService;
 import com.hornero.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
@@ -28,8 +30,14 @@ public class UserController {
     @Autowired
     private JwtUtil jwtUtil;
     
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+    
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
+    
+    @Value("${jwt.refresh.expiration}")
+    private Long refreshTokenExpiration;
     
     // GET /api/users - Obtener todos los usuarios
     @GetMapping
@@ -97,28 +105,40 @@ public class UserController {
             
             User newUser = userService.createUser(user);
             
-            // Generate JWT token
+            // Generate JWT access token (15 min)
             String roleName = newUser.getRole() != null ? newUser.getRole().getName() : "USER";
-            String token = jwtUtil.generateToken(newUser.getEmail(), newUser.getId(), roleName);
+            String accessToken = jwtUtil.generateToken(newUser.getEmail(), newUser.getId(), roleName);
             
-            // Determine cookie maxAge based on remember flag
+            // Generate refresh token (7 days)
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(newUser);
+            
+            // Determine refresh token cookie maxAge based on remember flag
             Boolean remember = request.getRemember();
-            int cookieMaxAge;
+            int refreshTokenMaxAge;
+            
             if (remember != null && remember) {
-                // Remember me: use configured expiration (e.g., 24 hours)
-                cookieMaxAge = (int) (jwtExpiration / 1000);
+                // Remember me: persist refresh token for 7 days
+                refreshTokenMaxAge = (int) (refreshTokenExpiration / 1000);
             } else {
-                // Don't remember: session cookie (expires when browser closes)
-                cookieMaxAge = -1;
+                // Don't remember: session cookie
+                refreshTokenMaxAge = -1;
             }
             
-            // Set JWT as HttpOnly cookie
-            Cookie jwtCookie = new Cookie("jwt", token);
+            // Set JWT access token as HttpOnly cookie (always 15 min)
+            Cookie jwtCookie = new Cookie("jwt", accessToken);
             jwtCookie.setHttpOnly(true);
             jwtCookie.setSecure(false); // Set to true in production with HTTPS
             jwtCookie.setPath("/");
-            jwtCookie.setMaxAge(cookieMaxAge);
+            jwtCookie.setMaxAge((int) (jwtExpiration / 1000)); // Always 15 min
             response.addCookie(jwtCookie);
+            
+            // Set refresh token as HttpOnly cookie
+            Cookie refreshCookie = new Cookie("refreshToken", refreshToken.getToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(false); // Set to true in production with HTTPS
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(refreshTokenMaxAge);
+            response.addCookie(refreshCookie);
             
             // Create response without token (user info only)
             AuthResponse authResponse = new AuthResponse(
@@ -187,36 +207,48 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
     
-    // POST /api/users/login - Login endpoint with JWT
+    // POST /api/users/login - Login endpoint with JWT and refresh token
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         try {
             User user = userService.login(loginRequest.getEmail(), loginRequest.getPassword());
             
-            // Generate JWT token
+            // Generate JWT access token (15 min)
             String roleName = user.getRole() != null ? user.getRole().getName() : "USER";
-            String token = jwtUtil.generateToken(user.getEmail(), user.getId(), roleName);
+            String accessToken = jwtUtil.generateToken(user.getEmail(), user.getId(), roleName);
             
-            // Determine cookie maxAge based on remember flag
+            // Generate refresh token (7 days)
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+            
+            // Determine refresh token cookie maxAge based on remember flag
             Boolean remember = loginRequest.getRemember();
-            int cookieMaxAge;
+            int refreshTokenMaxAge;
+            
             if (remember != null && remember) {
-                // Remember me: use configured expiration (e.g., 24 hours)
-                cookieMaxAge = (int) (jwtExpiration / 1000);
+                // Remember me: persist refresh token for 7 days
+                refreshTokenMaxAge = (int) (refreshTokenExpiration / 1000);
             } else {
-                // Don't remember: session cookie (expires when browser closes)
-                cookieMaxAge = -1;
+                // Don't remember: session cookie (expire when browser closes)
+                refreshTokenMaxAge = -1;
             }
             
-            // Set JWT as HttpOnly cookie
-            Cookie jwtCookie = new Cookie("jwt", token);
+            // Set JWT access token as HttpOnly cookie (always 15 min)
+            Cookie jwtCookie = new Cookie("jwt", accessToken);
             jwtCookie.setHttpOnly(true);
             jwtCookie.setSecure(false); // Set to true in production with HTTPS
             jwtCookie.setPath("/");
-            jwtCookie.setMaxAge(cookieMaxAge);
+            jwtCookie.setMaxAge((int) (jwtExpiration / 1000)); // Always 15 min
             response.addCookie(jwtCookie);
             
-            // Create response without token (user info only)
+            // Set refresh token as HttpOnly cookie
+            Cookie refreshCookie = new Cookie("refreshToken", refreshToken.getToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(false); // Set to true in production with HTTPS
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(refreshTokenMaxAge);
+            response.addCookie(refreshCookie);
+            
+            // Create response without tokens (user info only)
             AuthResponse authResponse = new AuthResponse(
                 null, // No token in response body
                 user.getId(),
@@ -233,17 +265,59 @@ public class UserController {
         }
     }
     
-    // POST /api/users/logout - Logout endpoint
+    // POST /api/users/logout - Logout endpoint with refresh token revocation
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
-        // Clear JWT cookie
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            // Extract refresh token from cookie and revoke it
+            String refreshTokenValue = getRefreshTokenFromCookie(request);
+            if (refreshTokenValue != null) {
+                refreshTokenService.revokeToken(refreshTokenValue);
+            }
+            
+            // Extract user ID from JWT to revoke all tokens (optional - more secure)
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId != null) {
+                userService.getUserById(userId).ifPresent(user -> 
+                    refreshTokenService.revokeAllUserTokens(user)
+                );
+            }
+        } catch (Exception e) {
+            // Log error but continue with logout
+            System.err.println("Error revoking refresh token: " + e.getMessage());
+        }
+        
+        // Clear JWT access token cookie
         Cookie jwtCookie = new Cookie("jwt", null);
         jwtCookie.setHttpOnly(true);
         jwtCookie.setSecure(false);
         jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(0); // Delete cookie
+        jwtCookie.setMaxAge(0);
         response.addCookie(jwtCookie);
         
+        // Clear refresh token cookie
+        Cookie refreshCookie = new Cookie("refreshToken", null);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(false);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(0);
+        response.addCookie(refreshCookie);
+        
         return ResponseEntity.ok().body("Logged out successfully");
+    }
+    
+    /**
+     * Extract refresh token from cookies
+     */
+    private String getRefreshTokenFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }
