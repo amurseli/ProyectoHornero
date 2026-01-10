@@ -6,15 +6,18 @@ import App from './App.jsx'
 import Fonts from '$fonts/fontFaces';
 import Theme from '$commons/Theme';
 import { ThemeStore } from '$commons/Theme/store.jsx';
+import { UserProvider } from '$lib/store/UserProvider';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Fonts />
-    <ThemeStore>
-      <Theme>
-        <App />
-      </Theme>
-    </ThemeStore>
+    <UserProvider>
+      <ThemeStore>
+        <Theme>
+          <App />
+        </Theme>
+      </ThemeStore>
+    </UserProvider>
   </StrictMode>,
 )
 

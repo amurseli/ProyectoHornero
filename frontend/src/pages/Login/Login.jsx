@@ -2,11 +2,12 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DefaultButton from '$components/buttons/DefaultButton'
 import api from '$utils/api/api'
-import { saveAuth } from '$utils/auth/auth'
+import { useUser } from '$lib/store/useUser'
 import './Login.css'
 
 function Login() {
   const navigate = useNavigate()
+  const { login } = useUser()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
@@ -19,14 +20,11 @@ function Login() {
     setLoading(true)
     
     try {
-      const response = await api.post('/api/users/login', { email, password })
+      const response = await api.post('/api/users/login', { email, password, remember })
       console.log('Login exitoso:', response)
       
-      // Save authentication data (token and user info)
-      saveAuth(response, remember)
-      
-      // Trigger storage event for navbar to update
-      window.dispatchEvent(new Event('storage'))
+      // Save user data to global store
+      login(response)
       
       // Redirigir al home
       navigate('/')

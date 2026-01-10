@@ -1,37 +1,17 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { isAuthenticated, getUser, logout } from '$utils/auth/auth'
+import { useUser } from '$lib/store/useUser'
 import './Navbar.css'
 
 function NavbarContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [authenticated, setAuthenticated] = useState(false)
-  const [user, setUser] = useState(null)
+  const { user, logout: logoutUser } = useUser()
   const navigate = useNavigate()
-
-  useEffect(() => {
-    // Check authentication status on mount and update state
-    const updateAuthState = () => {
-      setAuthenticated(isAuthenticated())
-      setUser(getUser())
-    }
-    
-    updateAuthState()
-    
-    // Listen for storage events (login/logout from other tabs or manual triggers)
-    window.addEventListener('storage', updateAuthState)
-    
-    return () => {
-      window.removeEventListener('storage', updateAuthState)
-    }
-  }, [])
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen)
 
   const handleLogout = async () => {
-    await logout(false) // Don't auto-redirect, we'll do it manually
-    setAuthenticated(false)
-    setUser(null)
+    await logoutUser()
     navigate('/login')
   }
 
@@ -55,7 +35,7 @@ function NavbarContent() {
       </div>
 
       <div className="navbar-right">
-        {authenticated ? (
+        {user ? (
           <div className="dropdown-container">
             <button
               className="dropdown-button"

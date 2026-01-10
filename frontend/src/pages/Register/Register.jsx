@@ -2,11 +2,12 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DefaultButton from '$components/buttons/DefaultButton'
 import api from '$utils/api/api'
-import { saveAuth } from '$utils/auth/auth'
+import { useUser } from '$lib/store/useUser'
 import './Register.css'
 
 export default function Register() {
   const navigate = useNavigate()
+  const { login } = useUser()
   const [username, setUsername] = useState('')
   const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
@@ -31,17 +32,15 @@ export default function Register() {
         firstName: firstName,
         email: email,
         password: password,
-        enabled: true
+        enabled: true,
+        remember: true // Always remember on registration
       }
       
       const response = await api.post('/api/users/register', userData)
       console.log('Usuario registrado:', response)
       
-      // Save authentication data (token and user info)
-      saveAuth(response, true)
-      
-      // Trigger storage event for navbar to update
-      window.dispatchEvent(new Event('storage'))
+      // Save user data to global store
+      login(response)
       
       // Redirigir al home después del registro exitoso
       navigate('/')
