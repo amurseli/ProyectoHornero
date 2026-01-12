@@ -33,9 +33,12 @@ public class CampaignService {
         existing.setTitle(details.getTitle());
         existing.setDescription(details.getDescription());
         existing.setShortDescription(details.getShortDescription());
-        existing.setIdOwner(details.getIdOwner());
-        existing.setIdType(details.getIdType());
-        existing.setIdCategory(details.getIdCategory());
+        existing.setStatus(details.getStatus());
+        existing.setStartDate(details.getStartDate());
+        existing.setEndDate(details.getEndDate());
+        existing.setTargetAmount(details.getTargetAmount());
+        existing.setOwner(details.getOwner());
+        existing.setCategory(details.getCategory());
 
         return campaignRepository.save(existing);
     }

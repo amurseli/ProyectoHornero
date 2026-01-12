@@ -57,9 +57,9 @@ restart: down up
 # ------------------------------------------------------------
 build:
 	@echo "🏗️ Reconstruyendo backend..."
-	cd $(BACKEND_DIR) && docker-compose build --no-cache
+	cd $(BACKEND_DIR) && docker-compose build 
 	@echo "🏗️ Reconstruyendo frontend..."
-	cd $(FRONTEND_DIR) && docker-compose build --no-cache
+	cd $(FRONTEND_DIR) && docker-compose build 
 	@echo "✅ Reconstrucción completa"
 
 # ------------------------------------------------------------

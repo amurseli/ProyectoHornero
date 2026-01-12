@@ -1,6 +1,11 @@
 package com.hornero.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "campaign")
@@ -10,6 +15,7 @@ public class Campaign {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -18,34 +24,78 @@ public class Campaign {
     @Column(name = "short_description")
     private String shortDescription;
 
-    @Column(name = "id_owner")
-    private Long idOwner;
+    @Column(length = 20)
+    private String status = "DRAFT";
 
-    @Column(name = "id_type")
-    private Long idType;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
-    @Column(name = "id_category")
-    private Long idCategory;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    // Getters y Setters
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(name = "current_amount", precision = 15, scale = 2)
+    private BigDecimal currentAmount = BigDecimal.ZERO;
+
+    @Column(name = "target_amount", precision = 15, scale = 2)
+    private BigDecimal targetAmount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_owner")
+    private User owner;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_category")
+    private CampaignCategory category;
+
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CampaignMedia> media = new ArrayList<>();
+
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CreatorsCampaign> creators = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    // Getters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
     public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
     public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
     public String getShortDescription() { return shortDescription; }
+    public String getStatus() { return status; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getEndDate() { return endDate; }
+    public BigDecimal getCurrentAmount() { return currentAmount; }
+    public BigDecimal getTargetAmount() { return targetAmount; }
+    public User getOwner() { return owner; }
+    public CampaignCategory getCategory() { return category; }
+    public List<CampaignMedia> getMedia() { return media; }
+    public List<CreatorsCampaign> getCreators() { return creators; }
+
+    // Setters
+    public void setTitle(String title) { this.title = title; }
+    public void setDescription(String description) { this.description = description; }
     public void setShortDescription(String shortDescription) { this.shortDescription = shortDescription; }
-
-    public Long getIdOwner() { return idOwner; }
-    public void setIdOwner(Long idOwner) { this.idOwner = idOwner; }
-
-    public Long getIdType() { return idType; }
-    public void setIdType(Long idType) { this.idType = idType; }
-
-    public Long getIdCategory() { return idCategory; }
-    public void setIdCategory(Long idCategory) { this.idCategory = idCategory; }
+    public void setStatus(String status) { this.status = status; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public void setCurrentAmount(BigDecimal currentAmount) { this.currentAmount = currentAmount; }
+    public void setTargetAmount(BigDecimal targetAmount) { this.targetAmount = targetAmount; }
+    public void setOwner(User owner) { this.owner = owner; }
+    public void setCategory(CampaignCategory category) { this.category = category; }
 }
