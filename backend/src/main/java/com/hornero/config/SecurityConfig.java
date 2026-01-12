@@ -35,6 +35,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow all OPTIONS requests for CORS preflight
                 .requestMatchers("/api/users/register", "/api/users/login", "/api/users/logout", "/api/health/**").permitAll()
+                .requestMatchers("/api/users/forgot-password", "/api/users/reset-password").permitAll() // Allow password reset endpoints without authentication
                 .requestMatchers("/api/auth/refresh").permitAll() // Allow refresh token endpoint without authentication
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll() // Allow OAuth2 endpoints
                 .requestMatchers(HttpMethod.GET, "/api/campaigns", "/api/campaigns/**").permitAll() // Allow public access to view campaigns

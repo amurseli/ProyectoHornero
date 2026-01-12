@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import DefaultButton from '$components/buttons/DefaultButton'
 import api from '$utils/api/api'
 import { useUser } from '$lib/store/useUser'
@@ -76,7 +76,9 @@ function Login() {
                 />
                 Recuérdame
               </label>
-              <a className="forgot-link" href="#">¿Olvidaste tu contraseña?</a>
+              <Link to="/forgot-password" className="forgot-link">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
 
             {error && <div className="form-error" role="alert">{error}</div>}

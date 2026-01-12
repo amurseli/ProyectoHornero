@@ -7,6 +7,7 @@ import com.hornero.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -106,5 +107,15 @@ public class UserService {
         }
         
         return user;
+    }
+    
+    /**
+     * Updates user password. Used for password reset functionality.
+     */
+    @Transactional
+    public void updatePassword(User user, String newPassword) {
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(hashedPassword);
+        userRepository.save(user);
     }
 }

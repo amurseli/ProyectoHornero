@@ -5,14 +5,19 @@ import com.hornero.model.Role;
 import com.hornero.model.User;
 import com.hornero.repository.RoleRepository;
 import com.hornero.repository.UserRepository;
+import com.hornero.service.EmailService;
+import com.hornero.service.PasswordResetService;
 import com.hornero.service.RefreshTokenService;
 import com.hornero.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -25,6 +30,8 @@ import java.util.Optional;
 @Component
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(OAuth2AuthenticationSuccessHandler.class);
+
     @Autowired
     private UserRepository userRepository;
 
@@ -33,6 +40,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     @Autowired
     private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private PasswordResetService passwordResetService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -128,7 +144,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
           return userRepository.save(user);
         }
 
-        // Create new user
+        // Create new user with temporary password
         User newUser = new User();
         newUser.setEmail(email);
         newUser.setOauthProvider(provider);
@@ -157,9 +173,35 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 });
         newUser.setRole(userRole);
 
-        // No password needed for OAuth users
-        newUser.setPassword("");
+        // Generate temporary password for OAuth users
+        String temporaryPassword = generateTemporaryPassword();
+        newUser.setPassword(passwordEncoder.encode(temporaryPassword));
 
-        return userRepository.save(newUser);
+        // Save user first
+        User savedUser = userRepository.save(newUser);
+
+        // Send welcome email with password setup link asynchronously
+        try {
+            // Create password reset token and get the link
+            String resetLink = passwordResetService.createPasswordResetTokenAndGetLink(email);
+            
+            if (resetLink != null) {
+                // Send welcome email with the temporary password and reset link
+                emailService.sendOAuthWelcomeEmail(email, savedUser.getFirstName(), temporaryPassword, resetLink);
+                logger.info("OAuth welcome email sent to new user: {}", email);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to send welcome email to new OAuth user: {}", email, e);
+            // Don't fail the authentication if email sending fails
+        }
+
+        return savedUser;
+    }
+
+    /**
+     * Generates a random temporary password for OAuth users
+     */
+    private String generateTemporaryPassword() {
+        return java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16);
     }
 }

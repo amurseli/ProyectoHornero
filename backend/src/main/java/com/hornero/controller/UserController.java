@@ -2,23 +2,29 @@ package com.hornero.controller;
 
 import com.hornero.dto.AuthResponse;
 import com.hornero.dto.ErrorResponse;
+import com.hornero.dto.ForgotPasswordRequest;
 import com.hornero.dto.LoginRequest;
 import com.hornero.dto.RegisterRequest;
+import com.hornero.dto.ResetPasswordRequest;
 import com.hornero.model.RefreshToken;
 import com.hornero.model.User;
+import com.hornero.service.PasswordResetService;
 import com.hornero.service.RefreshTokenService;
 import com.hornero.service.UserService;
 import com.hornero.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -32,6 +38,9 @@ public class UserController {
     
     @Autowired
     private RefreshTokenService refreshTokenService;
+    
+    @Autowired
+    private PasswordResetService passwordResetService;
     
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
@@ -304,6 +313,59 @@ public class UserController {
         response.addCookie(refreshCookie);
         
         return ResponseEntity.ok().body("Logged out successfully");
+    }
+    
+    // POST /api/users/forgot-password - Request password reset
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            // Create password reset token and send email
+            // Note: We don't reveal whether the email exists for security reasons
+            passwordResetService.createPasswordResetToken(request.getEmail());
+            
+            // Always return success, even if email doesn't exist
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Si el email existe en nuestro sistema, recibirás un correo con instrucciones para restablecer tu contraseña");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            // Log the error but still return success to avoid revealing information
+            System.err.println("Error in forgot-password endpoint: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Si el email existe en nuestro sistema, recibirás un correo con instrucciones para restablecer tu contraseña");
+            
+            return ResponseEntity.ok(response);
+        }
+    }
+    
+    // POST /api/users/reset-password - Reset password using token
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            // Validate token and get user
+            User user = passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+            
+            // Update password
+            userService.updatePassword(user, request.getNewPassword());
+            
+            // Invalidate all refresh tokens for this user (logout from all devices)
+            refreshTokenService.revokeAllUserTokens(user);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Tu contraseña ha sido actualizada exitosamente");
+            
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        } catch (Exception e) {
+            System.err.println("Error in reset-password endpoint: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al restablecer la contraseña", HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        }
     }
     
     /**
