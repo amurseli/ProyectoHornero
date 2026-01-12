@@ -1,0 +1,165 @@
+package com.hornero.config;
+
+import com.hornero.model.RefreshToken;
+import com.hornero.model.Role;
+import com.hornero.model.User;
+import com.hornero.repository.RoleRepository;
+import com.hornero.repository.UserRepository;
+import com.hornero.service.RefreshTokenService;
+import com.hornero.util.JwtUtil;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+@Component
+public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Value("${jwt.expiration}")
+    private Long jwtExpiration;
+
+    @Value("${jwt.refresh.expiration}")
+    private Long refreshTokenExpiration;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
+
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+                                        Authentication authentication) throws IOException {
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+
+        // Extract user information from OAuth2User
+        String email = oAuth2User.getAttribute("email");
+        String name = oAuth2User.getAttribute("name");
+        String picture = oAuth2User.getAttribute("picture");
+        String sub = oAuth2User.getAttribute("sub"); // Google's user ID
+
+        if (email == null) {
+          response.sendRedirect(frontendUrl + "/login?error=no_email");
+          return;
+        }
+
+        try {
+          // Find or create user
+          User user = findOrCreateUser(email, name, picture, sub, "google");
+
+          // Generate JWT token
+          String roleName = user.getRole() != null ? user.getRole().getName() : "USER";
+          String accessToken = jwtUtil.generateToken(user.getEmail(), user.getId(), roleName);
+
+          // Generate refresh token (7 days) - similar to login endpoint
+          RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+
+          // Set JWT token as HttpOnly cookie (15 min)
+          Cookie jwtCookie = new Cookie("jwt", accessToken);
+          jwtCookie.setHttpOnly(true);
+          jwtCookie.setSecure(false); // Set to true in production with HTTPS
+          jwtCookie.setPath("/");
+          jwtCookie.setMaxAge((int) (jwtExpiration / 1000));
+          response.addCookie(jwtCookie);
+
+          // Set refresh token as HttpOnly cookie (7 days)
+          Cookie refreshCookie = new Cookie("refreshToken", refreshToken.getToken());
+          refreshCookie.setHttpOnly(true);
+          refreshCookie.setSecure(false); // Set to true in production with HTTPS
+          refreshCookie.setPath("/");
+          refreshCookie.setMaxAge((int) (refreshTokenExpiration / 1000));
+          response.addCookie(refreshCookie);
+
+          // Redirect to frontend with success
+          String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/oauth2/redirect")
+                  .queryParam("success", "true")
+                  .build()
+                  .toUriString();
+
+          getRedirectStrategy().sendRedirect(request, response, targetUrl);
+
+      } catch (Exception e) {
+          logger.error("Error during OAuth2 authentication", e);
+          response.sendRedirect(frontendUrl + "/login?error=authentication_failed");
+      }
+    }
+
+    private User findOrCreateUser(String email, String name, String picture, String oauthId, String provider) {
+        // Try to find user by email and provider
+        Optional<User> existingUser = userRepository.findByEmailAndOauthProvider(email, provider);
+
+        if (existingUser.isPresent()) {
+          // Update existing user's info
+          User user = existingUser.get();
+          user.setOauthId(oauthId);
+          user.setProfileImageUrl(picture);
+          user.setEmailVerified(true);
+          return userRepository.save(user);
+        }
+
+        // Try to find user by email only (might be registered with password before)
+        Optional<User> userByEmail = userRepository.findByEmail(email);
+        if (userByEmail.isPresent()) {
+          // Link OAuth to existing account
+          User user = userByEmail.get();
+          user.setOauthProvider(provider);
+          user.setOauthId(oauthId);
+          user.setProfileImageUrl(picture);
+          user.setEmailVerified(true);
+          return userRepository.save(user);
+        }
+
+        // Create new user
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setOauthProvider(provider);
+        newUser.setOauthId(oauthId);
+        newUser.setProfileImageUrl(picture);
+        newUser.setEmailVerified(true);
+        newUser.setEnabled(true);
+
+        // Parse name (simple approach)
+        if (name != null) {
+          String[] nameParts = name.split(" ", 2);
+          newUser.setFirstName(nameParts[0]);
+          if (nameParts.length > 1) {
+            newUser.setLastName(nameParts[1]);
+          }
+          // Generate username from email
+          newUser.setUserName(email.split("@")[0]);
+        }
+
+        // Assign default role (USER)
+        Role userRole = roleRepository.findByName("USER")
+                .orElseGet(() -> {
+                    Role role = new Role();
+                    role.setName("USER");
+                    return roleRepository.save(role);
+                });
+        newUser.setRole(userRole);
+
+        // No password needed for OAuth users
+        newUser.setPassword("");
+
+        return userRepository.save(newUser);
+    }
+}

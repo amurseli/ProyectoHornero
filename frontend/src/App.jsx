@@ -7,6 +7,7 @@ import Navbar from '$components/navbar/Navbar'
 import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
 import CampaignForm from '$pages/Campaigns/CampaignForm';
+import OAuth2Redirect from '$pages/OAuth2Redirect/OAuth2Redirect';
 
 // function Popover({ children, content }) {
 //   const [isOpen, setIsOpen] = useState(false);
@@ -54,6 +55,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
         <Route path="/campaigns" element={<CampaignsList />} />
         <Route path="/my-campaigns" element={<MyCampaigns />} />
         <Route path="/my-campaigns/new" element={<CampaignForm />} />

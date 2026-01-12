@@ -54,6 +54,16 @@ public class User {
 
     private LocalDateTime updatedAt;
     
+    // OAuth2 fields
+    @Column(name = "oauth_provider")
+    private String oauthProvider; // 'google', 'local', etc.
+    
+    @Column(name = "oauth_id")
+    private String oauthId; // Provider's user ID
+    
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -161,6 +171,30 @@ public class User {
     
     public void setRole(Role role) {
         this.role = role;
+    }
+    
+    public String getOauthProvider() {
+        return oauthProvider;
+    }
+    
+    public void setOauthProvider(String oauthProvider) {
+        this.oauthProvider = oauthProvider;
+    }
+    
+    public String getOauthId() {
+        return oauthId;
+    }
+    
+    public void setOauthId(String oauthId) {
+        this.oauthId = oauthId;
+    }
+    
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+    
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     // Helper methods for compatibility with UserService
