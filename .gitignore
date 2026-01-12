@@ -26,8 +26,7 @@ db.sqlite3-journal
 
 # Environment variables
 .env
-.env.*
-!.env.example
+/frontend/.env.frontend
 *.env
 
 # IDE
