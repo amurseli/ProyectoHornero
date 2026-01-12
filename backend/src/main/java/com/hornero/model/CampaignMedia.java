@@ -1,0 +1,53 @@
+package com.hornero.model;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "campaign_media")
+public class CampaignMedia {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_campaign", nullable = false)
+    private Campaign campaign;
+
+    @Column(name = "media_type", nullable = false, length = 10)
+    private String mediaType;
+
+    @Column(nullable = false, length = 1000)
+    private String url;
+
+    @Column(name = "is_primary")
+    private Boolean isPrimary = false;
+
+    @Column(name = "display_order")
+    private Integer displayOrder = 0;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    // Getters
+    public Long getId() { return id; }
+    public Campaign getCampaign() { return campaign; }
+    public String getMediaType() { return mediaType; }
+    public String getUrl() { return url; }
+    public Boolean getIsPrimary() { return isPrimary; }
+    public Integer getDisplayOrder() { return displayOrder; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+
+    // Setters
+    public void setCampaign(Campaign campaign) { this.campaign = campaign; }
+    public void setMediaType(String mediaType) { this.mediaType = mediaType; }
+    public void setUrl(String url) { this.url = url; }
+    public void setIsPrimary(Boolean isPrimary) { this.isPrimary = isPrimary; }
+    public void setDisplayOrder(Integer displayOrder) { this.displayOrder = displayOrder; }
+}
