@@ -25,7 +25,7 @@ db.sqlite3-journal
 # !*/migrations/__init__.py
 
 # Environment variables
-.env.frontend
+.env
 .env.backend
 
 # IDE
