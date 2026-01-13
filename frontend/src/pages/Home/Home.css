@@ -1,7 +1,8 @@
-/* Home page - Prime Video style */
+/* ===========================================
+   HOME PAGE - Proyecto Hornero
+   =========================================== */
 
 .home-container {
-  /* Full-bleed: escape any centered parent (like #root) and span the viewport */
   position: relative;
   left: 50%;
   right: 50%;
@@ -9,206 +10,193 @@
   margin-right: -50vw;
   width: 100vw;
   min-height: 100vh;
-  /* Use the new palette gradient with 4-color cycle */
-  background: linear-gradient(135deg, #F27649 0%, #E08A5D 33%, #CD6B42 66%, #F27649 100%);
-  background-size: 400% 400%;
-  animation: circularGradient 15s ease infinite;
-  color: #ffffff;
-    /* Add top padding so content sits below the fixed navbar.
-      Use box-sizing:border-box and min-height:100vh so padding is included
-      and we don't force extra scroll when content is small. */
-    padding-top: var(--navbar-height);
-    padding-bottom: 3rem;
-    min-height: 100vh;
-    box-sizing: border-box;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  padding-top: var(--navbar-height);
+  box-sizing: border-box;
 }
 
-/* Hero Section */
+/* ============ HERO SECTION ============ */
 .hero-section {
   position: relative;
-  /* Limit hero height so it doesn't force extra scrolling on small viewports */
-  height: min(60vh, calc(100vh - var(--navbar-height) - 4rem));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Remove dark overlay so hero shows the page background (no heavy dark tint) */
-  background: transparent;
-  margin-bottom: 2rem;
+  padding: var(--space-3xl) var(--space-xl);
+  background: var(--gradient-primary);
   overflow: hidden;
 }
 
-/* Decorative background image for hero: uses a ::before layer so content stays readable */
 .hero-section::before {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background-image: url('$images/fondo_home.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  filter: brightness(0.55) saturate(0.95);
-  transform-origin: center;
-}
-
-.hero-gradient {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 120px;
-  /* Remove dark band: make gradient fully transparent so page background shows through */
-  background: linear-gradient(to bottom, transparent, transparent);
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   pointer-events: none;
 }
 
 .hero-content {
   position: relative;
-  z-index: 3;
+  z-index: 1;
+  max-width: var(--max-width);
+  margin: 0 auto;
   text-align: center;
-  padding: 0 2rem;
-  max-width: 800px;
 }
 
 .hero-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin: 0 0 1rem 0;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
-  line-height: 1.2;
+  font-size: var(--font-size-4xl);
+  font-weight: 800;
+  color: var(--color-text-inverse);
+  margin: 0 0 var(--space-sm) 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .hero-subtitle {
-  font-size: 1.5rem;
+  font-size: var(--font-size-xl);
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 var(--space-lg) 0;
   font-weight: 400;
-  color: #e0e0e0;
-  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
-  margin: 0;
 }
 
-/* Categories Container */
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--color-bg-card);
+  color: var(--color-secondary);
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  text-decoration: none;
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* ============ CATEGORIES CONTAINER ============ */
 .categories-container {
-  padding: 0 3rem;
-  max-width: 1920px;
+  padding: var(--space-2xl) var(--space-xl);
+  max-width: var(--max-width);
   margin: 0 auto;
 }
 
-/* Category Row */
+/* ============ CATEGORY ROW ============ */
 .category-row {
-  margin-bottom: 3rem;
+  margin-bottom: var(--space-2xl);
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
 }
 
 .category-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  margin: 0 0 1rem 0;
-  color: #ffffff;
-  padding-left: 0.5rem;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-dark);
+  margin: 0;
 }
 
-/* Campaigns Carousel */
+.category-link {
+  font-size: var(--font-size-sm);
+  color: var(--color-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.category-link:hover {
+  color: var(--color-primary);
+}
+
+/* ============ CAROUSEL ============ */
 .campaigns-carousel {
   position: relative;
-  /* allow popups to overflow vertically so they can appear above other content */
-  overflow: visible;
-  margin: 0 -0.5rem;
 }
 
 .carousel-container {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-lg);
   overflow-x: auto;
-  overflow-y: hidden; /* prevent vertical scroll while allowing popups to be positioned inside card */
   scroll-behavior: smooth;
-  padding: 0.5rem;
-  scrollbar-width: none; /* hide native scrollbar; we'll show arrows */
+  padding: var(--space-sm) 0 var(--space-md) 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .carousel-container::-webkit-scrollbar {
-  display: none; /* hide in webkit */
+  display: none;
 }
 
-/* Carousel arrow buttons */
-.carousel-button {
+.carousel-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 950; /* ensure buttons are above campaign cards but below navbar (navbar z-index:1000) */
+  z-index: 10;
   width: 44px;
   height: 44px;
-  border-radius: 999px;
-  background: rgba(140, 47, 27, 0.8);
-  color: #fff;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-card);
+  color: var(--color-dark);
   border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
+  box-shadow: var(--shadow-lg);
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.12s ease;
+  transition: opacity var(--transition-base), background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
 }
 
-.carousel-button.visible {
+.carousel-btn.visible {
   opacity: 1;
   pointer-events: auto;
 }
 
-.carousel-button.left {
-  left: 0.5rem;
+.carousel-btn:hover {
+  background: var(--color-secondary);
+  color: var(--color-text-inverse);
 }
 
-.carousel-button.right {
-  right: 0.5rem;
-}
+.carousel-btn.left { left: -22px; }
+.carousel-btn.right { right: -22px; }
 
-.campaigns-carousel {
-  position: relative; /* make button absolute positioning relative to this */
-}
-
-/* Campaign Card */
+/* ============ CAMPAIGN CARD ============ */
 .campaign-card {
-  flex: 0 0 auto;
-  width: 400px;
+  flex: 0 0 var(--card-width);
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.campaign-card {
-  position: relative;
-  flex-shrink: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  transition: transform var(--transition-base);
 }
 
 .campaign-card:hover {
-  z-index: 900; /* hovered card floats above siblings but stays under navbar (1000) */
+  transform: translateY(-6px);
 }
 
 .campaign-card-inner {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  background: transparent;
-  border-radius: 8px;
-  overflow: visible;
-  transition: all 0.3s ease;
-  box-shadow: none;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-base);
 }
 
-/* Media section */
+.campaign-card:hover .campaign-card-inner {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Card thumbnail */
 .campaign-thumbnail {
   position: relative;
   width: 100%;
-  padding-top: 56.25%; /* 16:9 aspect ratio */
-  background: #8C2F1B;
-  border-radius: 8px 8px 0 0;
+  padding-top: 56.25%;
+  background: var(--gradient-primary-soft);
   overflow: hidden;
-  z-index: 1;
 }
 
 .campaign-thumbnail img {
@@ -218,171 +206,224 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform var(--transition-slow);
 }
 
-/* Campaign Title - always visible, positioned over expanding background */
-.campaign-title {
-  position: relative;
-  font-size: 1.05rem;
+.campaign-card:hover .campaign-thumbnail img {
+  transform: scale(1.05);
+}
+
+.campaign-thumbnail-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  background: var(--gradient-primary-soft);
+}
+
+.campaign-badge {
+  position: absolute;
+  top: var(--space-sm);
+  left: var(--space-sm);
+  background: var(--color-dark);
+  color: var(--color-text-inverse);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
   font-weight: 600;
-  margin: 0;
-  padding: 1rem 1rem 0.75rem 1rem;
-  color: #ffffff;
+}
+
+/* Card info */
+.campaign-info {
+  padding: var(--space-md);
+}
+
+.campaign-card .campaign-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-xs) 0;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  z-index: 2;
 }
 
-.campaign-card:hover .campaign-title {
-  color: #8C2F1B; /* dark when hovered (on light background) */
-}
-
-/* Expanding white background - mimics Kickstarter */
-.campaign-expanding-bg {
-  position: absolute;
-  /* start the white expansion below the thumbnail and title so media remains visible
-     Use a fixed height for the expansion area so it doesn't stretch the card or the carousel. */
-  top: calc(56.25% + 2.5rem); /* thumbnail height (56.25% of width) + approx title height */
-  left: 0;
-  right: 0;
-  bottom: auto;
-  height: 180px; /* fixed expansion height */
-  background: #D9B0A7;
-  border-radius: 8px;
-  opacity: 0;
-  transform: scaleY(0);
-  transform-origin: top center;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  z-index: 0;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.campaign-card:hover .campaign-expanding-bg {
-  opacity: 1;
-  transform: scaleY(1);
-}
-
-/* Campaign Popup - expansion content */
-.campaign-popup {
-  position: absolute; /* taken out of flow so it doesn't push siblings */
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(8px);
-  width: calc(100% - 2rem);
-  max-width: 420px;
-  background: transparent; /* background provided by expanding bg */
-  padding: 0.75rem 1rem;
-  z-index: 910; /* above the expanding bg (0) and card content, but below navbar (1000) and arrows (950) */
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.22s ease, transform 0.22s ease;
-}
-
-.campaign-card:hover .campaign-popup {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
-}
-
-.campaign-description {
-  font-size: 0.95rem;
-  color: #374151;
-  margin: 0;
+.campaign-card .campaign-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-md) 0;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* Loading and Error States */
-.loading-spinner {
+/* Progress bar */
+.campaign-progress {
+  margin-top: auto;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--gradient-progress);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+.progress-stats {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-sm);
+}
+
+.progress-amount {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.progress-percent {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+.progress-goal {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ============ STATES ============ */
+.home-state {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 60vh;
-  font-size: 1.5rem;
-  color: #ffffff;
-}
-
-.error-message {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  font-size: 1.2rem;
-  color: #ff6b6b;
-  padding: 2rem;
+  gap: var(--space-md);
   text-align: center;
+  padding: var(--space-xl);
 }
 
-/* Responsive adjustments */
-@media (max-width: 1200px) {
+.state-icon {
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.home-state p {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 400px;
+}
+
+/* Spinner */
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-bg-secondary);
+  border-top-color: var(--color-secondary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--gradient-warm);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-secondary);
+  border: 2px solid var(--color-secondary);
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-secondary:hover {
+  background: var(--color-secondary);
+  color: var(--color-text-inverse);
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1024px) {
   .categories-container {
-    padding: 0 2rem;
+    padding: var(--space-xl) var(--space-lg);
   }
   
-  .campaign-card {
-    width: 350px;
-  }
-  
-  .hero-title {
-    font-size: 2.5rem;
-  }
-  
-  .hero-subtitle {
-    font-size: 1.2rem;
+  .carousel-btn {
+    display: none;
   }
 }
 
 @media (max-width: 768px) {
-  .categories-container {
-    padding: 0 1.5rem;
-  }
-  
-  .campaign-card {
-    width: 300px;
-  }
-  
-  .category-title {
-    font-size: 1.5rem;
+  .hero-section {
+    padding: var(--space-2xl) var(--space-md);
   }
   
   .hero-title {
-    font-size: 2rem;
+    font-size: var(--font-size-3xl);
   }
   
   .hero-subtitle {
-    font-size: 1.1rem;
+    font-size: var(--font-size-md);
   }
   
-  .hero-section {
-    height: 50vh;
+  .categories-container {
+    padding: var(--space-lg) var(--space-md);
+  }
+  
+  .campaign-card {
+    flex: 0 0 280px;
   }
 }
 
-@media (max-width: 520px) {
-  .categories-container {
-    padding: 0 1rem;
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: var(--font-size-2xl);
   }
   
   .campaign-card {
-    width: 280px;
-  }
-  
-  .hero-title {
-    font-size: 1.8rem;
-  }
-  
-  .hero-subtitle {
-    font-size: 1rem;
-  }
-  
-  .category-title {
-    font-size: 1.3rem;
-  }
-  
-  .hero-section {
-    height: 40vh;
+    flex: 0 0 260px;
   }
 }

@@ -1,6 +1,6 @@
 import './Home.css';
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '$utils/api/api';
 
 function Home() {
@@ -9,64 +9,56 @@ function Home() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Fetch all campaigns
+  const fetchCampaigns = () => {
+    setLoading(true);
+    setError(null);
     api.get('/api/campaigns')
       .then((data) => {
-        // If API returns no campaigns, fallback to mock data for now
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-          setCampaigns(MOCK_CAMPAIGNS)
-        } else {
-          setCampaigns(data);
-        }
+        setCampaigns(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch((err) => {
         console.error('Error al obtener campañas:', err);
-        // Use mock campaigns when API fails (development fallback)
-        setCampaigns(MOCK_CAMPAIGNS)
-        setError(null)
+        setError('No pudimos cargar las campañas');
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchCampaigns();
   }, []);
 
-  // Group campaigns by category
+  const getImageUrl = (campaign) => {
+    const primaryMedia = campaign.media?.find(m => m.isPrimary);
+    return primaryMedia?.url || campaign.media?.[0]?.url || null;
+  };
+
+  const getProgress = (campaign) => {
+    if (!campaign.targetAmount || campaign.targetAmount === 0) return 0;
+    return Math.min(100, Math.round((campaign.currentAmount || 0) / campaign.targetAmount * 100));
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
+  };
+
   const groupByCategory = () => {
-    const categories = {
-      featured: [],
-      technology: [],
-      education: [],
-      health: [],
-      environment: [],
-      other: []
-    };
-
+    const groups = {};
     campaigns.forEach((campaign) => {
-      // Use idCategory to determine category, fallback to 'other'
-      if (campaign.idCategory === 1) {
-        categories.technology.push(campaign);
-      } else if (campaign.idCategory === 2) {
-        categories.education.push(campaign);
-      } else if (campaign.idCategory === 3) {
-        categories.health.push(campaign);
-      } else if (campaign.idCategory === 4) {
-        categories.environment.push(campaign);
-      } else {
-        categories.other.push(campaign);
-      }
+      const categoryName = campaign.category?.name || 'Otros';
+      if (!groups[categoryName]) groups[categoryName] = [];
+      groups[categoryName].push(campaign);
     });
-
-    // Featured: Take the first 6 campaigns regardless of category
-    categories.featured = campaigns.slice(0, 6);
-
-    return categories;
+    return groups;
   };
 
   const categorizedCampaigns = groupByCategory();
-
-  const handleCampaignClick = (campaignId) => {
-    navigate(`/campaigns/${campaignId}`);
-  };
+  const categoryNames = Object.keys(categorizedCampaigns);
 
   const CategoryRow = ({ title, campaigns }) => {
     const containerRef = useRef(null);
@@ -76,12 +68,10 @@ function Home() {
     useEffect(() => {
       const el = containerRef.current;
       if (!el) return;
-
       const update = () => {
         setCanScrollLeft(el.scrollLeft > 0);
         setCanScrollRight(el.scrollWidth > el.clientWidth + el.scrollLeft + 1);
       };
-
       update();
       el.addEventListener('scroll', update, { passive: true });
       window.addEventListener('resize', update);
@@ -91,80 +81,87 @@ function Home() {
       };
     }, [campaigns]);
 
-    const scroll = (distance) => {
-      const el = containerRef.current;
-      if (!el) return;
-      el.scrollBy({ left: distance, behavior: 'smooth' });
+    const scroll = (dir) => {
+      containerRef.current?.scrollBy({ left: dir * 340, behavior: 'smooth' });
     };
 
-    if (!campaigns || campaigns.length === 0) return null;
+    if (!campaigns?.length) return null;
 
     return (
-      <div className="category-row">
-        <h2 className="category-title">{title}</h2>
+      <section className="category-row">
+        <div className="category-header">
+          <h2 className="category-title">{title}</h2>
+          <Link to={`/campaigns?category=${encodeURIComponent(title)}`} className="category-link">
+            Ver todos →
+          </Link>
+        </div>
         <div className="campaigns-carousel">
           <button
-            className={`carousel-button left ${canScrollLeft ? 'visible' : ''}`}
-            aria-hidden={!canScrollLeft}
-            aria-label={`Scroll ${title} left`}
-            onClick={() => scroll(-420)}
+            className={`carousel-btn left ${canScrollLeft ? 'visible' : ''}`}
+            onClick={() => scroll(-1)}
+            aria-label="Anterior"
           >
             ‹
           </button>
-
           <div className="carousel-container" ref={containerRef}>
             {campaigns.map((campaign) => (
-              <div
+              <article
                 key={campaign.id}
                 className="campaign-card"
-                onClick={() => handleCampaignClick(campaign.id)}
+                onClick={() => navigate(`/campaigns/${campaign.id}`)}
               >
                 <div className="campaign-card-inner">
-                  {/* Media */}
                   <div className="campaign-thumbnail">
-                    <img
-                      src={campaign.imageUrl || 'https://via.placeholder.com/400x225?text=Campaign'}
-                      alt={campaign.title}
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/400x225?text=Campaign';
-                      }}
-                    />
+                    {getImageUrl(campaign) ? (
+                      <img src={getImageUrl(campaign)} alt={campaign.title} />
+                    ) : (
+                      <div className="campaign-thumbnail-placeholder">🏠</div>
+                    )}
+                    {campaign.category?.name && (
+                      <span className="campaign-badge">{campaign.category.name}</span>
+                    )}
                   </div>
-                  
-                  {/* Title - always visible */}
-                  <h3 className="campaign-title">{campaign.title}</h3>
-                  
-                  {/* Expanding white background */}
-                  <div className="campaign-expanding-bg"></div>
-                  
-                  {/* Popup content - appears on hover */}
-                  <div className="campaign-popup">
+                  <div className="campaign-info">
+                    <h3 className="campaign-title">{campaign.title}</h3>
                     <p className="campaign-description">
-                      {campaign.shortDescription || 'Sin descripción disponible para esta campaña.'}
+                      {campaign.shortDescription || 'Apoyá este proyecto y sé parte del cambio'}
                     </p>
+                    {campaign.targetAmount > 0 && (
+                      <div className="campaign-progress">
+                        <div className="progress-bar">
+                          <div className="progress-fill" style={{ width: `${getProgress(campaign)}%` }} />
+                        </div>
+                        <div className="progress-stats">
+                          <span className="progress-amount">{formatCurrency(campaign.currentAmount)}</span>
+                          <span className="progress-percent">{getProgress(campaign)}%</span>
+                        </div>
+                        <span className="progress-goal">Meta: {formatCurrency(campaign.targetAmount)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
-
           <button
-            className={`carousel-button right ${canScrollRight ? 'visible' : ''}`}
-            aria-hidden={!canScrollRight}
-            aria-label={`Scroll ${title} right`}
-            onClick={() => scroll(420)}
+            className={`carousel-btn right ${canScrollRight ? 'visible' : ''}`}
+            onClick={() => scroll(1)}
+            aria-label="Siguiente"
           >
             ›
           </button>
         </div>
-      </div>
+      </section>
     );
   };
 
   if (loading) {
     return (
       <div className="home-container">
-        <div className="loading-spinner">Cargando campañas...</div>
+        <div className="home-state">
+          <div className="spinner" />
+          <p>Cargando campañas...</p>
+        </div>
       </div>
     );
   }
@@ -172,111 +169,46 @@ function Home() {
   if (error) {
     return (
       <div className="home-container">
-        <div className="error-message">{error}</div>
+        <div className="home-state">
+          <span className="state-icon">⚠️</span>
+          <p>{error}</p>
+          <button className="btn-primary" onClick={fetchCampaigns}>Reintentar</button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="home-container">
-      {/* Hero Section */}
-      <div className="hero-section">
+      <section className="hero-section">
         <div className="hero-content">
-          <h1 className="hero-title">Bienvenido a Proyecto Hornero</h1>
+          <h1 className="hero-title">Financiá ideas, construí futuro</h1>
           <p className="hero-subtitle">
-            Descubre proyectos innovadores y apoya causas que te importan
+            Descubrí proyectos que transforman comunidades y apoyalos con tu aporte
           </p>
+          <Link to="/campaigns" className="hero-cta">
+            Explorar campañas →
+          </Link>
         </div>
-        <div className="hero-gradient"></div>
-      </div>
+      </section>
 
-      {/* Categories */}
-      <div className="categories-container">
-        <CategoryRow title="Destacados" campaigns={categorizedCampaigns.featured} />
-        <CategoryRow title="Tecnología" campaigns={categorizedCampaigns.technology} />
-        <CategoryRow title="Educación" campaigns={categorizedCampaigns.education} />
-        <CategoryRow title="Salud" campaigns={categorizedCampaigns.health} />
-        <CategoryRow title="Medio Ambiente" campaigns={categorizedCampaigns.environment} />
-        <CategoryRow title="Otros Proyectos" campaigns={categorizedCampaigns.other} />
-      </div>
+      {campaigns.length === 0 ? (
+        <div className="home-state">
+          <span className="state-icon">🏗️</span>
+          <p>Todavía no hay campañas publicadas. ¡Sé el primero!</p>
+          <button className="btn-primary" onClick={() => navigate('/my-campaigns/new')}>
+            Crear campaña
+          </button>
+        </div>
+      ) : (
+        <div className="categories-container">
+          {categoryNames.map((name) => (
+            <CategoryRow key={name} title={name} campaigns={categorizedCampaigns[name]} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 export default Home;
-
-// Mock campaigns to populate Home while API or categories are not ready
-const MOCK_CAMPAIGNS = [
-  {
-    id: 101,
-    title: 'EcoCharge: Cargadores solares comunitarios',
-    shortDescription: 'Instalación de estaciones de carga solar para barrios.',
-    description: 'Proyecto para desplegar cargadores solares en espacios públicos.',
-    idOwner: 2,
-    idCategory: 4,
-    imageUrl: 'https://images.unsplash.com/photo-1509395176047-4a66953fd231?w=800&h=450&fit=crop'
-  },
-  {
-    id: 102,
-    title: 'KidsCode: Talleres de programación para escuelas',
-    shortDescription: 'Capacitación en programación para niñas y niños.',
-    description: 'Llevamos cursos de programación y robótica a escuelas públicas.',
-    idOwner: 3,
-    idCategory: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&h=450&fit=crop'
-  },
-  {
-    id: 103,
-    title: 'HealthNet: Telemedicina para áreas rurales',
-    shortDescription: 'Conectar médicos con comunidades remotas.',
-    description: 'Plataforma de telemedicina y unidades móviles.',
-    idOwner: 4,
-    idCategory: 3,
-    imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&h=450&fit=crop'
-  },
-  {
-    id: 104,
-    title: 'SmartHome Start',
-    shortDescription: 'Prototipo de hogar inteligente de bajo costo.',
-    description: 'Kit de domótica abierta para familias de bajos recursos.',
-    idOwner: 5,
-    idCategory: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=800&h=450&fit=crop'
-  },
-  {
-    id: 105,
-    title: 'Verde Urbano',
-    shortDescription: 'Huertos y arbolado urbano participativo.',
-    description: 'Transformación de terrenos baldíos en huertos comunitarios.',
-    idOwner: 6,
-    idCategory: 4,
-    imageUrl: 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=800&h=450&fit=crop'
-  },
-  {
-    id: 106,
-    title: 'AprenderMás',
-    shortDescription: 'Becas y recursos educativos en línea.',
-    description: 'Microbecas para cursos técnicos y capacitaciones.',
-    idOwner: 7,
-    idCategory: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&h=450&fit=crop'
-  },
-  {
-    id: 107,
-    title: 'Pulso Salud',
-    shortDescription: 'Detección temprana mediante dispositivos wearables.',
-    description: 'Integración de wearables con centros locales de salud.',
-    idOwner: 8,
-    idCategory: 3,
-    imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&h=450&fit=crop'
-  },
-  {
-    id: 108,
-    title: 'OpenGadget',
-    shortDescription: 'Herramientas abiertas para makers locales.',
-    description: 'Taller itinerante y kits para creadores locales.',
-    idOwner: 9,
-    idCategory: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?w=800&h=450&fit=crop'
-  }
-]

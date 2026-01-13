@@ -1,0 +1,93 @@
+/* ===========================================
+   PROYECTO HORNERO - Design Tokens
+   Paleta: Aurora (Pink → Violet → Cyan)
+   =========================================== */
+
+:root {
+  /* -------- Colores principales -------- */
+  --color-primary: #EC4899;
+  --color-primary-dark: #DB2777;
+  --color-secondary: #8B5CF6;
+  --color-secondary-dark: #7C3AED;
+  --color-accent: #38BDF8;
+  --color-accent-dark: #0EA5E9;
+  
+  /* -------- Colores de fondo -------- */
+  --color-dark: #1E1B4B;
+  --color-dark-soft: #312E81;
+  --color-bg-primary: #FAFAFA;
+  --color-bg-secondary: #F5F3FF;
+  --color-bg-card: #FFFFFF;
+  
+  /* -------- Colores de texto -------- */
+  --color-text-primary: #27272A;
+  --color-text-secondary: #52525B;
+  --color-text-muted: #A1A1AA;
+  --color-text-inverse: #FFFFFF;
+  
+  /* -------- Colores de estado -------- */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  
+  /* -------- Gradientes -------- */
+  --gradient-primary: linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #38BDF8 100%);
+  --gradient-primary-soft: linear-gradient(135deg, #F472B6 0%, #A78BFA 50%, #7DD3FC 100%);
+  --gradient-warm: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
+  --gradient-cool: linear-gradient(135deg, #8B5CF6 0%, #38BDF8 100%);
+  --gradient-dark: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+  --gradient-progress: linear-gradient(90deg, #EC4899, #8B5CF6);
+  
+  /* -------- Sombras -------- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+  --shadow-card: 0 2px 8px rgba(30, 27, 75, 0.08);
+  --shadow-card-hover: 0 12px 24px rgba(30, 27, 75, 0.12);
+  
+  /* -------- Bordes -------- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  
+  /* -------- Espaciado -------- */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  
+  /* -------- Tipografía -------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+  
+  /* -------- Transiciones -------- */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 350ms ease;
+  
+  /* -------- Layout -------- */
+  --navbar-height: 64px;
+  --max-width: 1400px;
+  --card-width: 320px;
+}
+
+/* Dark mode (para futuro) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Podemos definir override acá cuando lo necesitemos */
+  }
+}
