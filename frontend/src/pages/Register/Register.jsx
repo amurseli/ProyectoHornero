@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import DefaultButton from '$components/buttons/DefaultButton'
+import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import { saveAuth } from '$utils/auth/auth'
 import './Register.css'
@@ -35,15 +35,8 @@ export default function Register() {
       }
       
       const response = await api.post('/api/users/register', userData)
-      console.log('Usuario registrado:', response)
-      
-      // Save authentication data (token and user info)
       saveAuth(response, true)
-      
-      // Trigger storage event for navbar to update
       window.dispatchEvent(new Event('storage'))
-      
-      // Redirigir al home después del registro exitoso
       navigate('/')
     } catch (err) {
       console.error('Error al registrar:', err)
@@ -119,7 +112,9 @@ export default function Register() {
             {error && <div className="form-error" role="alert">{error}</div>}
 
             <div className="register-actions">
-              <DefaultButton type="submit" content={loading ? "Creando cuenta..." : "Crear cuenta"} disabled={loading} />
+              <Button type="submit" disabled={loading}>
+                {loading ? "Creando cuenta..." : "Crear cuenta"}
+              </Button>
             </div>
           </form>
         </section>

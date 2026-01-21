@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import DefaultButton from '$components/buttons/DefaultButton'
+import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import { saveAuth } from '$utils/auth/auth'
 import './Login.css'
@@ -20,15 +20,8 @@ function Login() {
     
     try {
       const response = await api.post('/api/users/login', { email, password })
-      console.log('Login exitoso:', response)
-      
-      // Save authentication data (token and user info)
       saveAuth(response, remember)
-      
-      // Trigger storage event for navbar to update
       window.dispatchEvent(new Event('storage'))
-      
-      // Redirigir al home
       navigate('/')
     } catch (err) {
       console.error('Error al iniciar sesión:', err)
@@ -83,7 +76,9 @@ function Login() {
             {error && <div className="form-error" role="alert">{error}</div>}
 
             <div className="login-actions">
-              <DefaultButton type="submit" content={loading ? "Iniciando..." : "Entrar"} disabled={loading} />
+              <Button type="submit" disabled={loading}>
+                {loading ? "Iniciando..." : "Entrar"}
+              </Button>
             </div>
           </form>
         </section>
