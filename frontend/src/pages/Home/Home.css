@@ -3,10 +3,10 @@
 .home {
   min-height: 100vh;
   background: linear-gradient(135deg, 
-    rgba(236, 72, 153, 0.08) 0%,     /* Rosa más visible */
-    rgba(139, 92, 246, 0.12) 33%,    /* Violeta más visible */
-    rgba(56, 189, 248, 0.08) 66%,    /* Cyan más visible */
-    rgba(236, 72, 153, 0.08) 100%    /* Rosa más visible */
+    color-mix(in srgb, var(--color-primary) 8%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary) 12%, transparent) 33%,
+    color-mix(in srgb, var(--color-accent) 8%, transparent) 66%,
+    color-mix(in srgb, var(--color-primary) 8%, transparent) 100%
   );
   background-size: 400% 400%;
   animation: gradientShift 20s ease infinite;

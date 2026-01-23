@@ -1,9 +1,9 @@
-'use client';
-
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { Button } from "../../components/ui"
-import "./Login.css"
+import api from "../../utils/api/api"
+import { saveAuth } from "../../utils/auth/auth"
+import "../auth.css"
 
 function Login() {
   const navigate = useNavigate()
@@ -19,96 +19,81 @@ function Login() {
     setLoading(true)
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await api.post('/api/users/login', { email, password })
-      // saveAuth(response, remember)
-      // window.dispatchEvent(new Event('storage'))
-      
-      // Simulate login for now
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await api.post('/api/users/login', { email, password })
+      saveAuth(response, remember)
+      window.dispatchEvent(new Event('storage'))
       navigate("/")
     } catch (err) {
       console.error("Error al iniciar sesion:", err)
-      setError("Credenciales invalidas. Por favor verifica tu email y contrasena.")
+      setError("Credenciales inválidas. Verificá tu email y contraseña.")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <section className="login-card" aria-labelledby="login-title">
-          <header className="login-header">
-            <h1 id="login-title" className="login-title">Iniciar sesion</h1>
-            <p className="login-subtitle">Ingresa a tu cuenta para continuar</p>
+    <div className="auth-page">
+      <div className="auth-container">
+        <section className="auth-card">
+          <header className="auth-header">
+            <Link to="/" className="auth-logo">PROYECTO HORNERO</Link>
+            <h1 className="auth-title">Bienvenido de nuevo</h1>
+            <p className="auth-subtitle">Ingresá a tu cuenta para continuar</p>
           </header>
 
-          <form className="login-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="email" className="form-label">
-                Correo electronico
-              </label>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <div className="auth-form-group">
+              <label htmlFor="email" className="auth-label">Correo electrónico</label>
               <input
                 id="email"
-                className="form-input"
+                className="auth-input"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="tucorreo@ejemplo.com"
+                placeholder="tu@email.com"
                 autoComplete="email"
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="password" className="form-label">
-                Contrasena
-              </label>
+            <div className="auth-form-group">
+              <label htmlFor="password" className="auth-label">Contraseña</label>
               <input
                 id="password"
-                className="form-input"
+                className="auth-input"
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="********"
+                placeholder="••••••••"
                 autoComplete="current-password"
               />
             </div>
 
-            <div className="login-options">
-              <label className="checkbox-label">
+            <div className="auth-options">
+              <label className="auth-checkbox-label">
                 <input
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="checkbox-input"
+                  className="auth-checkbox"
                 />
-                <span className="checkbox-text">Recuerdame</span>
+                Recordarme
               </label>
-              <Link to="/forgot-password" className="forgot-link">
-                Olvidaste tu contrasena?
-              </Link>
+              <Link to="/forgot-password" className="auth-link">¿Olvidaste tu contraseña?</Link>
             </div>
 
-            {error && (
-              <div className="form-error" role="alert">
-                {error}
-              </div>
-            )}
+            {error && <div className="auth-error" role="alert">{error}</div>}
 
-            <Button type="submit" disabled={loading} className="login-submit-btn">
-              {loading ? "Iniciando..." : "Iniciar sesion"}
+            <Button type="submit" disabled={loading} className="auth-submit">
+              {loading ? "Ingresando..." : "Iniciar sesión"}
             </Button>
           </form>
 
-          <footer className="login-footer">
-            <p className="login-footer-text">
-              No tienes una cuenta?{" "}
-              <Link to="/register" className="register-link">
-                Registrate
-              </Link>
+          <footer className="auth-footer">
+            <p className="auth-footer-text">
+              ¿No tenés cuenta?{" "}
+              <Link to="/register" className="auth-footer-link">Registrate gratis</Link>
             </p>
           </footer>
         </section>

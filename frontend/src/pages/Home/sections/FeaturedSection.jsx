@@ -1,4 +1,5 @@
 import { CampaignCard } from "$components/features"
+import { FiTrendingUp } from "react-icons/fi"
 
 function FeaturedSection({ campaigns, isLoading, currentSlide, onSlideChange }) {
   if (isLoading) {
@@ -6,7 +7,7 @@ function FeaturedSection({ campaigns, isLoading, currentSlide, onSlideChange }) 
       <section className="featured-section">
         <div className="featured-header">
           <h2 className="featured-title">
-            <span className="featured-emoji">🚀</span>
+            <FiTrendingUp className="featured-icon" />
             Proyectos Destacados
           </h2>
           <p className="featured-subtitle">Los más populares de la comunidad</p>
@@ -24,7 +25,7 @@ function FeaturedSection({ campaigns, isLoading, currentSlide, onSlideChange }) 
       <section className="featured-section">
         <div className="featured-header">
           <h2 className="featured-title">
-            <span className="featured-emoji">🚀</span>
+            <FiTrendingUp className="featured-icon" />
             Proyectos Destacados
           </h2>
         </div>
@@ -39,7 +40,7 @@ function FeaturedSection({ campaigns, isLoading, currentSlide, onSlideChange }) 
     <section className="featured-section">
       <div className="featured-header">
         <h2 className="featured-title">
-          <span className="featured-emoji">🚀</span>
+          <FiTrendingUp className="featured-icon" />
           Proyectos Destacados
         </h2>
         <p className="featured-subtitle">Los más populares de la comunidad</p>
@@ -53,7 +54,6 @@ function FeaturedSection({ campaigns, isLoading, currentSlide, onSlideChange }) 
 
       <style>{`
         .featured-section {
-          grid-column: 1 / -1;
           margin-bottom: 3rem;
         }
 
@@ -71,8 +71,10 @@ function FeaturedSection({ campaigns, isLoading, currentSlide, onSlideChange }) 
           margin-bottom: 0.5rem;
         }
 
-        .featured-emoji {
-          font-size: 2rem;
+        .featured-icon {
+          width: 1.75rem;
+          height: 1.75rem;
+          color: var(--color-primary);
         }
 
         .featured-subtitle {

@@ -1,4 +1,5 @@
 import { CampaignCard } from "$components/features"
+import { FiClock } from "react-icons/fi"
 
 function SpotlightSection({ campaigns, isLoading }) {
   if (isLoading) {
@@ -6,7 +7,7 @@ function SpotlightSection({ campaigns, isLoading }) {
       <aside className="spotlight-section">
         <div className="spotlight-header">
           <h2 className="spotlight-title">
-            <span className="spotlight-emoji">✨</span>
+            <FiClock className="spotlight-icon" />
             Recientes
           </h2>
           <p className="spotlight-subtitle">Recién lanzados</p>
@@ -24,7 +25,7 @@ function SpotlightSection({ campaigns, isLoading }) {
       <aside className="spotlight-section">
         <div className="spotlight-header">
           <h2 className="spotlight-title">
-            <span className="spotlight-emoji">✨</span>
+            <FiClock className="spotlight-icon" />
             Recientes
           </h2>
         </div>
@@ -39,7 +40,7 @@ function SpotlightSection({ campaigns, isLoading }) {
     <aside className="spotlight-section">
       <div className="spotlight-header">
         <h2 className="spotlight-title">
-          <span className="spotlight-emoji">✨</span>
+          <FiClock className="spotlight-icon" />
           Recientes
         </h2>
         <p className="spotlight-subtitle">Recién lanzados</p>
@@ -72,8 +73,10 @@ function SpotlightSection({ campaigns, isLoading }) {
           margin-bottom: 0.25rem;
         }
 
-        .spotlight-emoji {
-          font-size: 1.75rem;
+        .spotlight-icon {
+          width: 1.5rem;
+          height: 1.5rem;
+          color: var(--color-secondary);
         }
 
         .spotlight-subtitle {

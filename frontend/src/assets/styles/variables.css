@@ -1,13 +1,23 @@
 :root {
 
-  /* === COLORES BASE === */
-  --color-primary: #EC4899;
-  --color-secondary: #8B5CF6;
-  --color-accent: #38BDF8;
+/* === COLORES BASE === */
+  --color-primary: #E11D48;
+  --color-primary-light: #FB7185;
+  --color-primary-dark: #BE123C;
+  
+  --color-secondary: #CA8A04;
+  --color-secondary-light: #FACC15;
+  --color-secondary-dark: #A16207;
+  
+  --color-accent: #0D9488;
+  --color-accent-light: #2DD4BF;
+  --color-accent-dark: #0F766E;
   
   /* === COLORES DE FONDO === */
   --color-background: #FAFAFA;
   --color-bg-primary: #FAFAFA;
+  --color-bg-secondary: #F5F3FF;
+  --color-bg-accent: #F0F9FF;
   --color-foreground: #111827;
   --color-muted: #F3F4F6;
   --color-muted-foreground: #6B7280;
@@ -18,7 +28,11 @@
   --color-text-secondary: #4B5563;
   --color-text-muted: #6B7280;
   --color-error: #DC2626;
+  --color-error-light: #FEE2E2;
   --color-success: #16A34A;
+  --color-success-light: #DCFCE7;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FEF3C7;
 
   /* === TIPOGRAFÍA === */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -61,8 +75,8 @@
   --transition-slow: 300ms ease;
 
   /* === GRADIENTES === */
-  --gradient-warm: linear-gradient(to right, #EC4899, #8B5CF6);
-  --gradient-cool: linear-gradient(to right, #8B5CF6, #38BDF8);
-  --gradient-full: linear-gradient(to right, #EC4899, #8B5CF6, #38BDF8);
-  --gradient-progress: linear-gradient(to right, #EC4899, #8B5CF6);
+  --gradient-warm: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+  --gradient-cool: linear-gradient(to right, var(--color-secondary), var(--color-accent));
+  --gradient-full: linear-gradient(to right, var(--color-primary), var(--color-secondary), var(--color-accent));
+  --gradient-progress: linear-gradient(to right, var(--color-primary), var(--color-secondary));
 }
