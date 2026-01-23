@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getFeaturedCampaigns, getRecentCampaigns } from "../utils/mockData"
+import { campaignService } from "../utils/campaignService"
 
 export function useCampaigns() {
   const [featuredCampaigns, setFeaturedCampaigns] = useState([])
@@ -9,14 +9,22 @@ export function useCampaigns() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Simular delay de API
-    const timer = setTimeout(() => {
-      setFeaturedCampaigns(getFeaturedCampaigns(4))
-      setRecentCampaigns(getRecentCampaigns(6))
-      setIsLoading(false)
-    }, 500)
+    const loadCampaigns = async () => {
+      try {
+        const [featured, recent] = await Promise.all([
+          campaignService.getFeaturedCampaigns(4),
+          campaignService.getRecentCampaigns(6)
+        ])
+        setFeaturedCampaigns(featured)
+        setRecentCampaigns(recent)
+      } catch (error) {
+        console.error('Error loading campaigns:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-    return () => clearTimeout(timer)
+    loadCampaigns()
   }, [])
 
   return { featuredCampaigns, recentCampaigns, isLoading }

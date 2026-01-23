@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Navbar, Footer } from "../../components/layout"
+import { Footer } from "../../components/layout"
 import { useCampaigns } from "../../hooks/useCampaigns"
 import HeroSection from "./sections/HeroSection"
 import FeaturedSection from "./sections/FeaturedSection"
@@ -23,8 +23,6 @@ function Home() {
 
   return (
     <div className="home">
-      <Navbar />
-
       <main className="home-main">
         <HeroSection activeTab={activeTab} onTabChange={handleTabChange} />
 

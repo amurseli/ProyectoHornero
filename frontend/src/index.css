@@ -1,15 +1,48 @@
 @import "tailwindcss";
+@import "./assets/styles/variables.css";
+@import "./assets/styles/global.css";
 
-:root {
+@theme {
+  --color-primary: #EC4899;
+  --color-secondary: #8B5CF6;
+  --color-accent: #38BDF8;
+  --color-background: #FAFAFA;
+  --color-foreground: #111827;
+  --color-muted: #F3F4F6;
+  --color-muted-foreground: #6B7280;
+  --color-border: #E5E7EB;
+  
   --navbar-height: 64px;
 }
 
 html, body, #root {
   height: 100%;
+  width: 100%;  /* ← ESTO FALTABA */
   margin: 0;
   padding: 0;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 3rem;
+  }
 }
