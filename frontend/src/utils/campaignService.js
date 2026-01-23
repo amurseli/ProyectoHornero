@@ -101,6 +101,21 @@ const MOCK_CAMPAIGNS = [
   },
 ]
 
+function normalizeCampaign(campaign) {
+  return {
+    ...campaign,
+    imageUrl: campaign.media?.find(m => m.isPrimary)?.url 
+              || campaign.media?.[0]?.url 
+              || campaign.imageUrl 
+              || "/crowdfunding-campaign.jpg",
+    goal: campaign.targetAmount || campaign.goal || 0,
+    category: campaign.category?.name || campaign.category || "General",
+    daysLeft: campaign.endDate 
+              ? Math.max(0, Math.ceil((new Date(campaign.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
+              : 30,
+  }
+}
+
 export const campaignService = {
   async getAllCampaigns() {
     if (!API_URL) {
@@ -109,12 +124,12 @@ export const campaignService = {
     }
 
     try {
-      const response = await fetch(`${API_URL}/campaigns`)
+      const response = await fetch(`${API_URL}/api/campaigns`)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
-      return data
+      return data.map(normalizeCampaign)
     } catch (error) {
       console.error("[v0] Error fetching campaigns, falling back to mock data:", error)
       return MOCK_CAMPAIGNS

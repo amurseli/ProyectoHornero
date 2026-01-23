@@ -18,9 +18,9 @@ function HeroSection({ activeTab, onTabChange }) {
         .hero-section {
           width: 100%;
           background: linear-gradient(to right, 
-            rgba(236, 72, 153, 0.1), 
-            rgba(139, 92, 246, 0.1), 
-            rgba(56, 189, 248, 0.1)
+            color-mix(in srgb, var(--color-primary) 10%, transparent),
+            color-mix(in srgb, var(--color-secondary) 10%, transparent),
+            color-mix(in srgb, var(--color-accent) 10%, transparent)
           );
           border-bottom: 1px solid var(--color-border);
           padding: 3rem 0;
@@ -39,13 +39,13 @@ function HeroSection({ activeTab, onTabChange }) {
         }
 
         .hero-title {
-          font-size: 2.5rem;
+          font-size: var(--font-size-3xl);
           font-weight: 700;
           background: var(--gradient-warm);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          margin-bottom: 1rem;
+          margin-bottom: var(--space-md);
           line-height: 1.2;
         }
 
@@ -56,14 +56,14 @@ function HeroSection({ activeTab, onTabChange }) {
         }
 
         .hero-description {
-          font-size: 1.125rem;
+          font-size: var(--font-size-lg);
           color: var(--color-text-secondary);
           line-height: 1.6;
         }
 
         @media (max-width: 768px) {
           .hero-section {
-            padding: 2rem 0;
+            padding: var(--space-xl) 0;
           }
 
           .hero-content-wrapper {
@@ -71,11 +71,11 @@ function HeroSection({ activeTab, onTabChange }) {
           }
 
           .hero-title {
-            font-size: 2rem;
+            font-size: var(--font-size-2xl);
           }
 
           .hero-description {
-            font-size: 1rem;
+            font-size: var(--font-size-base);
           }
         }
       `}</style>

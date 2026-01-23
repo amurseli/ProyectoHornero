@@ -19,11 +19,11 @@ public class CampaignService {
     }
 
     public List<Campaign> getAllCampaigns() {
-        return campaignRepository.findAll();
+        return campaignRepository.findAllWithRelations();  // ← CAMBIO ACÁ
     }
 
     public Optional<Campaign> getCampaignById(Long id) {
-        return campaignRepository.findById(id);
+        return campaignRepository.findByIdWithRelations(id);  // ← CAMBIO ACÁ
     }
 
     public Campaign updateCampaign(Long id, Campaign details) {
