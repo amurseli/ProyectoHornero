@@ -1,76 +1,48 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
+@import "./assets/styles/variables.css";
+@import "./assets/styles/global.css";
 
-  /* Centralized UI sizes */
+@theme {
+  --color-primary: #EC4899;
+  --color-secondary: #8B5CF6;
+  --color-accent: #38BDF8;
+  --color-background: #FAFAFA;
+  --color-foreground: #111827;
+  --color-muted: #F3F4F6;
+  --color-muted-foreground: #6B7280;
+  --color-border: #E5E7EB;
+  
   --navbar-height: 64px;
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #8C2F1B;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure the document root fills the viewport so components using 100vh behave correctly */
 html, body, #root {
   height: 100%;
-}
-
-a {
-  font-weight: 500;
-  color: #F27649;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #D94F30;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  /* Use same dark base as Home so scrolling doesn't reveal a different color */
-  background: linear-gradient(to bottom, #8C2F1B 0%, #BF2C1F 50%, #8C2F1B 100%);
-  color: rgba(255,255,255,0.92);
-  overflow-x: hidden; /* prevent horizontal scroll from full-bleed negatives */
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
-h1 {
-  font-size: 3.2em;
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #D94F30;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #F27649;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@media (min-width: 768px) {
+  .container {
+    padding: 0 2rem;
   }
-  a:hover {
-    color: #D94F30;
-  }
-  button {
-    background-color: #D9B0A7;
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 3rem;
   }
 }

@@ -1,5 +1,6 @@
 package com.hornero.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,6 +10,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "campaign")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Campaign {
 
     @Id
@@ -47,16 +49,20 @@ public class Campaign {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_owner")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "campaigns"})
     private User owner;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_category")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private CampaignCategory category;
 
     @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "campaign"})
     private List<CampaignMedia> media = new ArrayList<>();
 
     @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "campaign"})
     private List<CreatorsCampaign> creators = new ArrayList<>();
 
     @PrePersist
