@@ -5,18 +5,19 @@ import { fileURLToPath, URL } from 'url'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      '$images': path.resolve(__dirname, 'src/lib/assets/images'),
-      '$fonts': path.resolve(__dirname, 'src/lib/assets/fonts'),
-      '$commons': path.resolve(__dirname, 'src/lib/assets/commons'),
-      '$styles': path.resolve(__dirname, 'src/lib/assets/styles'),
-      '$components': path.resolve(__dirname, 'src/lib/components'),
-      '$utils': path.resolve(__dirname, 'src/lib/utils'),
+      '$assets': path.resolve(__dirname, 'src/assets'),
+      '$images': path.resolve(__dirname, 'src/assets/images'),
+      '$fonts': path.resolve(__dirname, 'src/assets/fonts'),
+      '$styles': path.resolve(__dirname, 'src/assets/styles'),
+      '$commons': path.resolve(__dirname, 'src/assets/commons'),
+      '$components': path.resolve(__dirname, 'src/components'),
+      '$utils': path.resolve(__dirname, 'src/utils'),
       '$pages': path.resolve(__dirname, 'src/pages'),
     }
   }
