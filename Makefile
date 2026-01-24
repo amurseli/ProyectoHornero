@@ -1,13 +1,13 @@
 # ============================================================
-# Hornero Project - Docker Makefile
+# Hornero Project - Makefile
 # ============================================================
 
 # Variables
-BACKEND_DIR=backend
-FRONTEND_DIR=frontend
-DEV_MODE?=docker
+COMPOSE := docker-compose
+SERVICES_ALL := backend payments postgres
+SERVICES_DEV := backend payments postgres
 
-.PHONY: help up down restart build logs ps clean run dev
+.PHONY: help up down restart build logs logs-backend logs-payments ps clean dev
 
 # ------------------------------------------------------------
 # 📚 Ayuda
@@ -15,40 +15,46 @@ DEV_MODE?=docker
 help:
 	@echo ""
 	@echo "Comandos disponibles:"
+	@echo "  make up                  Levanta todo (backend + payments + postgres)"
+	@echo "  make down                Detiene y elimina todos los contenedores"
+	@echo "  make restart             Reinicia todos los servicios"
 	@echo "  make build               Reconstruye las imágenes"
-	@echo "  make run                 Levanta el sistema (backend en Docker)"
-	@echo "  make run DEV_MODE=local  Levanta backend en Docker, frontend local (npm run dev)"
-	@echo "  make dev                 Atajo para make run DEV_MODE=local"
-	@echo "  make up                  Levanta backend y frontend en Docker"
-	@echo "  make down                Detiene y elimina ambos entornos"
-	@echo "  make restart             Reinicia ambos contenedores"
-	@echo "  make logs                Muestra logs combinados"
+	@echo "  make logs                Muestra logs de todos los servicios"
+	@echo "  make logs-backend        Logs solo del backend"
+	@echo "  make logs-payments       Logs solo del servicio de pagos"
 	@echo "  make ps                  Lista los contenedores activos"
-	@echo "  make clean               Elimina todos los contenedores e imágenes del proyecto"
+	@echo "  make clean               Elimina contenedores, imágenes y volúmenes"
+	@echo "  make dev                 Levanta backend + payments (frontend en local)"
 	@echo ""
 
 # ------------------------------------------------------------
 # 🚀 Levantar entorno completo
 # ------------------------------------------------------------
 up:
-	@echo "🟢 Levantando backend..."
-	cd $(BACKEND_DIR) && docker-compose up -d
-	@echo "🟢 Levantando frontend..."
-	cd $(FRONTEND_DIR) && docker-compose up -d
-	@echo "✅ Proyecto Hornero levantado con éxito"
+	@echo "🟢 Levantando Proyecto Hornero..."
+	$(COMPOSE) up -d
+	@echo "✅ Proyecto levantado con éxito"
+	@echo ""
+	@echo "📡 Servicios disponibles:"
+	@echo "  Backend:  http://localhost:8080"
+	@echo "  Payments: http://localhost:8081"
+	@echo "  Postgres: localhost:5432"
+	@echo ""
+	@echo "🧪 Verificar servicios:"
+	@echo "  curl http://localhost:8080/"
+	@echo "  curl http://localhost:8081/api/health"
+	@echo ""
 
 # ------------------------------------------------------------
 # 🛑 Detener entorno completo
 # ------------------------------------------------------------
 down:
-	@echo "🛑 Deteniendo frontend..."
-	cd $(FRONTEND_DIR) && docker-compose down
-	@echo "🛑 Deteniendo backend..."
-	cd $(BACKEND_DIR) && docker-compose down
-	@echo "✅ Todo detenido"
+	@echo "🛑 Deteniendo servicios..."
+	$(COMPOSE) down
+	@echo "✅ Servicios detenidos"
 
 # ------------------------------------------------------------
-# 🔁 Reiniciar contenedores
+# 🔄 Reiniciar contenedores
 # ------------------------------------------------------------
 restart: down up
 
@@ -56,54 +62,48 @@ restart: down up
 # 🏗️ Reconstruir imágenes
 # ------------------------------------------------------------
 build:
-	@echo "🏗️ Reconstruyendo backend..."
-	cd $(BACKEND_DIR) && docker-compose build 
-	@echo "🏗️ Reconstruyendo frontend..."
-	cd $(FRONTEND_DIR) && docker-compose build 
+	@echo "🏗️ Reconstruyendo imágenes..."
+	$(COMPOSE) build --no-cache
 	@echo "✅ Reconstrucción completa"
 
 # ------------------------------------------------------------
-# 📜 Ver logs combinados
+# 📜 Ver logs
 # ------------------------------------------------------------
 logs:
-	@echo "📜 Mostrando logs de backend y frontend..."
-	cd $(BACKEND_DIR) && docker-compose logs -f & \
-	cd $(FRONTEND_DIR) && docker-compose logs -f
+	$(COMPOSE) logs -f
+
+logs-backend:
+	$(COMPOSE) logs -f backend
+
+logs-payments:
+	$(COMPOSE) logs -f payments
 
 # ------------------------------------------------------------
 # 🧩 Mostrar estado de los contenedores
 # ------------------------------------------------------------
 ps:
-	cd $(BACKEND_DIR) && docker-compose ps
-	cd $(FRONTEND_DIR) && docker-compose ps
+	$(COMPOSE) ps
 
 # ------------------------------------------------------------
 # 🧹 Limpiar entorno (contenedores + imágenes + volúmenes)
 # ------------------------------------------------------------
 clean:
 	@echo "🧹 Limpiando entorno..."
-	cd $(FRONTEND_DIR) && docker-compose down -v --rmi all --remove-orphans || true
-	cd $(BACKEND_DIR) && docker-compose down -v --rmi all --remove-orphans || true
+	$(COMPOSE) down -v --rmi all --remove-orphans || true
 	@echo "✅ Limpieza completa"
 
 # ------------------------------------------------------------
-# 🚀 Ejecutar sistema (con opción de frontend local)
-# ------------------------------------------------------------
-run:
-	@echo "🟢 Levantando backend..."
-	cd $(BACKEND_DIR) && docker-compose up -d
-ifeq ($(DEV_MODE),local)
-	@echo "🟢 Levantando frontend en modo desarrollo local..."
-	@echo "⚠️  Asegúrate de tener las dependencias instaladas (npm install)"
-	cd $(FRONTEND_DIR) && npm run dev
-else
-	@echo "🟢 Levantando frontend en Docker..."
-	cd $(FRONTEND_DIR) && docker-compose up -d
-	@echo "✅ Proyecto Hornero levantado con éxito"
-endif
-
-# ------------------------------------------------------------
-# 🛠️ Atajo para desarrollo local (frontend con npm run dev)
+# 🛠️ Desarrollo (backend + payments en Docker, frontend local)
 # ------------------------------------------------------------
 dev:
-	@$(MAKE) run DEV_MODE=local
+	@echo "🟢 Modo desarrollo: backend + payments en Docker"
+	$(COMPOSE) up -d $(SERVICES_DEV)
+	@echo ""
+	@echo "✅ Backend y Payments corriendo en Docker"
+	@echo "⚠️  Recordá correr el frontend localmente:"
+	@echo "     cd frontend && npm run dev"
+	@echo ""
+	@echo "📡 Servicios:"
+	@echo "  Backend:  http://localhost:8080"
+	@echo "  Payments: http://localhost:8081"
+	@echo ""
