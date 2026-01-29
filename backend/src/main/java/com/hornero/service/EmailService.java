@@ -131,4 +131,55 @@ public class EmailService {
             resetLink
         );
     }
+    
+    /**
+     * Sends an email verification link to the user.
+     * 
+     * @param email The recipient's email address
+     * @param firstName The user's first name for personalization
+     * @param verificationLink The email verification link containing the token
+     */
+    public void sendEmailVerificationEmail(String email, String firstName, String verificationLink) {
+        try {
+            String subject = "Verifica tu email - Proyecto Hornero";
+            String body = buildEmailVerificationBody(firstName, verificationLink);
+            
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(email);
+            message.setSubject(subject);
+            message.setText(body);
+            
+            mailSender.send(message);
+            
+            logger.info("Email verification sent successfully to: {}", email);
+        } catch (Exception e) {
+            logger.error("Failed to send email verification to: {}", email, e);
+            throw new RuntimeException("Error al enviar el correo de verificación", e);
+        }
+    }
+    
+    private String buildEmailVerificationBody(String firstName, String verificationLink) {
+        String name = (firstName != null && !firstName.isEmpty()) ? firstName : "Usuario";
+        
+        return String.format(
+            """
+            ¡Hola %s!
+            
+            Gracias por registrarte en Proyecto Hornero.
+            
+            Para completar tu registro y verificar tu cuenta, haz clic en el siguiente enlace:
+            %s
+            
+            Este enlace expirará en 24 horas por motivos de seguridad.
+            
+            Si no te registraste en Proyecto Hornero, puedes ignorar este correo de forma segura.
+            
+            Saludos,
+            El equipo de Proyecto Hornero
+            """,
+            name,
+            verificationLink
+        );
+    }
 }

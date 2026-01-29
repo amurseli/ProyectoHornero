@@ -24,6 +24,10 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
     
+    @Autowired
+    private EmailVerificationService emailVerificationService;
+    
+    @Transactional
     public User createUser(User user) {        
         // Validar que no exista el email
         if (userRepository.existsByEmail(user.getEmail())) {
@@ -49,7 +53,16 @@ public class UserService {
         String hashedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(hashedPassword);
         
-        return userRepository.save(user);
+        // Set email as not verified
+        user.setEmailVerified(false);
+        
+        // Save user
+        User savedUser = userRepository.save(user);
+        
+        // Create and send email verification token
+        emailVerificationService.createEmailVerificationToken(savedUser);
+        
+        return savedUser;
     }
     
     public List<User> getAllUsers() {
@@ -95,15 +108,20 @@ public class UserService {
     
     public User login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+                .orElseThrow(() -> new RuntimeException("Credenciales inválidas o email no verificado"));
         
         // Check if hashed passwords match
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Credenciales inválidas");
+            throw new RuntimeException("Credenciales inválidas o email no verificado");
         }
         
         if (!user.getEnabled()) {
             throw new RuntimeException("Usuario deshabilitado");
+        }
+        
+        // Check if email is verified
+        if (user.getEmailVerified() == null || !user.getEmailVerified()) {
+            throw new RuntimeException("Por favor verifica tu email antes de iniciar sesión");
         }
         
         return user;

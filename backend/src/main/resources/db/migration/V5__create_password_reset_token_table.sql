@@ -11,6 +11,3 @@ CREATE TABLE password_reset_tokens (
 CREATE INDEX idx_password_reset_token ON password_reset_tokens(token);
 CREATE INDEX idx_password_reset_token_user_id ON password_reset_tokens(user_id);
 CREATE INDEX idx_password_reset_token_expires_at ON password_reset_tokens(expires_at);
-
--- Note: Ensuring only one active token per user is enforced at application level
--- via PasswordResetService.invalidateAllByUser() before creating new tokens

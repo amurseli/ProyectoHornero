@@ -8,6 +8,7 @@ import com.hornero.dto.RegisterRequest;
 import com.hornero.dto.ResetPasswordRequest;
 import com.hornero.model.RefreshToken;
 import com.hornero.model.User;
+import com.hornero.service.EmailVerificationService;
 import com.hornero.service.PasswordResetService;
 import com.hornero.service.RefreshTokenService;
 import com.hornero.service.UserService;
@@ -41,6 +42,9 @@ public class UserController {
     
     @Autowired
     private PasswordResetService passwordResetService;
+    
+    @Autowired
+    private EmailVerificationService emailVerificationService;
     
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
@@ -99,9 +103,9 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
     
-    // POST /api/users/register - Register new user with JWT
+    // POST /api/users/register - Register new user and send verification email
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody com.hornero.dto.RegisterRequest request, HttpServletResponse response) {
+    public ResponseEntity<?> register(@RequestBody com.hornero.dto.RegisterRequest request) {
         try {
             // Create User from RegisterRequest
             User user = new User();
@@ -114,52 +118,12 @@ public class UserController {
             
             User newUser = userService.createUser(user);
             
-            // Generate JWT access token (15 min)
-            String roleName = newUser.getRole() != null ? newUser.getRole().getName() : "USER";
-            String accessToken = jwtUtil.generateToken(newUser.getEmail(), newUser.getId(), roleName);
+            // Return success message indicating email was sent
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Registro exitoso. Por favor verifica tu email para activar tu cuenta.");
+            response.put("email", newUser.getEmail());
             
-            // Generate refresh token (7 days)
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(newUser);
-            
-            // Determine refresh token cookie maxAge based on remember flag
-            Boolean remember = request.getRemember();
-            int refreshTokenMaxAge;
-            
-            if (remember != null && remember) {
-                // Remember me: persist refresh token for 7 days
-                refreshTokenMaxAge = (int) (refreshTokenExpiration / 1000);
-            } else {
-                // Don't remember: session cookie
-                refreshTokenMaxAge = -1;
-            }
-            
-            // Set JWT access token as HttpOnly cookie (always 15 min)
-            Cookie jwtCookie = new Cookie("jwt", accessToken);
-            jwtCookie.setHttpOnly(true);
-            jwtCookie.setSecure(false); // Set to true in production with HTTPS
-            jwtCookie.setPath("/");
-            jwtCookie.setMaxAge((int) (jwtExpiration / 1000)); // Always 15 min
-            response.addCookie(jwtCookie);
-            
-            // Set refresh token as HttpOnly cookie
-            Cookie refreshCookie = new Cookie("refreshToken", refreshToken.getToken());
-            refreshCookie.setHttpOnly(true);
-            refreshCookie.setSecure(false); // Set to true in production with HTTPS
-            refreshCookie.setPath("/");
-            refreshCookie.setMaxAge(refreshTokenMaxAge);
-            response.addCookie(refreshCookie);
-            
-            // Create response without token (user info only)
-            AuthResponse authResponse = new AuthResponse(
-                null, // No token in response body
-                newUser.getId(),
-                newUser.getEmail(),
-                newUser.getUsername(),
-                newUser.getFirstName(),
-                roleName
-            );
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             e.printStackTrace();
             return ResponseEntity.badRequest()
@@ -365,6 +329,30 @@ public class UserController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Error al restablecer la contraseña", HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        }
+    }
+    
+    // GET /api/users/verify-email - Verify email using token
+    @GetMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestParam String token) {
+        try {
+            // Validate token and mark email as verified
+            User user = emailVerificationService.verifyEmail(token);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Email verificado exitosamente");
+            response.put("email", user.getEmail());
+            response.put("verified", true);
+            
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        } catch (Exception e) {
+            System.err.println("Error in verify-email endpoint: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al verificar el email", HttpStatus.INTERNAL_SERVER_ERROR.value()));
         }
     }
     

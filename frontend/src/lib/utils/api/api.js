@@ -86,6 +86,8 @@ async function request(path, options = {}) {
           
           if (!window.location.pathname.includes('/login') && 
               !window.location.pathname.includes('/register') &&
+              !window.location.pathname.includes('/verify-email') &&
+              !window.location.pathname.includes('/reset-password') &&
               window.location.pathname !== '/') {
             window.location.href = '/login'
           }

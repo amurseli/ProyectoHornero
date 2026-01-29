@@ -2,12 +2,10 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DefaultButton from '$components/buttons/DefaultButton'
 import api from '$utils/api/api'
-import { useUser } from '$lib/store/useUser'
 import './Register.css'
 
 export default function Register() {
   const navigate = useNavigate()
-  const { login } = useUser()
   const [username, setUsername] = useState('')
   const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
@@ -32,18 +30,14 @@ export default function Register() {
         firstName: firstName,
         email: email,
         password: password,
-        enabled: true,
-        remember: true // Always remember on registration
+        enabled: true
       }
       
       const response = await api.post('/api/users/register', userData)
       console.log('Usuario registrado:', response)
       
-      // Save user data to global store
-      login(response)
-      
-      // Redirigir al home después del registro exitoso
-      navigate('/')
+      // Redirect to email sent page with email
+      navigate('/email-sent', { state: { email: response.email } })
     } catch (err) {
       console.error('Error al registrar:', err)
       setError(err.message || 'Error al crear la cuenta. Por favor intenta de nuevo.')

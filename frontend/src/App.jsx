@@ -3,8 +3,10 @@ import './App.css'
 import Home from '$pages/Home/Home.jsx';
 import Login from '$pages/Login/Login.jsx';
 import Register from '$pages/Register/Register.jsx';
+import EmailSent from '$pages/EmailSent/EmailSent.jsx';
 import ForgotPassword from '$pages/ForgotPassword/ForgotPassword.jsx';
 import ResetPassword from '$pages/ResetPassword/ResetPassword.jsx';
+import VerifyEmail from '$pages/VerifyEmail/VerifyEmail.jsx';
 import Navbar from '$components/navbar/Navbar'
 import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
@@ -57,8 +59,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/email-sent" element={<EmailSent />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
         <Route path="/campaigns" element={<CampaignsList />} />
         <Route path="/my-campaigns" element={<MyCampaigns />} />

@@ -2,10 +2,11 @@ package com.hornero.model;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
-@Table(name = "refresh_tokens")
-public class RefreshToken {
+@Table(name = "email_verification_tokens")
+public class EmailVerificationToken {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -15,27 +16,34 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     
-    @Column(nullable = false, unique = true, length = 500)
+    @Column(nullable = false, unique = true)
     private String token;
     
-    @Column(nullable = false)
-    private Instant expiryDate;
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
     
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-    
-    private boolean revoked = false;
 
-    public RefreshToken() {
+    public EmailVerificationToken() {
         this.createdAt = Instant.now();
+        this.token = UUID.randomUUID().toString();
+        // Default expiration: 24 hours
+        this.expiresAt = Instant.now().plusSeconds(86400);
     }
 
-    public RefreshToken(User user, String token, Instant expiryDate) {
+    public EmailVerificationToken(User user) {
+        this();
         this.user = user;
-        this.token = token;
-        this.expiryDate = expiryDate;
-        this.createdAt = Instant.now();
-        this.revoked = false;
+    }
+
+    // Helper methods
+    public boolean isExpired() {
+        return Instant.now().isAfter(this.expiresAt);
+    }
+
+    public boolean isValid() {
+        return !isExpired();
     }
 
     // Getters and Setters
@@ -63,12 +71,12 @@ public class RefreshToken {
         this.token = token;
     }
 
-    public Instant getExpiryDate() {
-        return expiryDate;
+    public Instant getExpiresAt() {
+        return expiresAt;
     }
 
-    public void setExpiryDate(Instant expiryDate) {
-        this.expiryDate = expiryDate;
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
     }
 
     public Instant getCreatedAt() {
@@ -77,17 +85,5 @@ public class RefreshToken {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public boolean isRevoked() {
-        return revoked;
-    }
-
-    public void setRevoked(boolean revoked) {
-        this.revoked = revoked;
-    }
-
-    public boolean isExpired() {
-        return Instant.now().isAfter(this.expiryDate);
     }
 }

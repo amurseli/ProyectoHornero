@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import DefaultButton from '$components/buttons/DefaultButton'
 import api from '$utils/api/api'
 import { useUser } from '$lib/store/useUser'
@@ -9,11 +9,24 @@ import './Login.css'
 function Login() {
   const navigate = useNavigate()
   const { login } = useUser()
+  const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Check for OAuth error in URL
+  useEffect(() => {
+    const oauthError = searchParams.get('error')
+    if (oauthError === 'oauth_failed') {
+      setError('Inicio de sesión con Google cancelado.')
+    } else if (oauthError === 'no_email') {
+      setError('No se pudo obtener tu email de Google. Por favor intenta de nuevo.')
+    } else if (oauthError === 'authentication_failed') {
+      setError('Error al autenticar con Google. Por favor intenta de nuevo.')
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
