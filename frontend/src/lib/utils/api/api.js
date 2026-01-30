@@ -1,75 +1,105 @@
 // API utility for making HTTP requests
-// Automatically handles JWT cookies, token refresh, and common error scenarios
+// Single interceptor for all requests - handles JWT refresh automatically
+// Similar to SvelteKit's hooks.server.ts
 
 const BASE_URL = import.meta.env.VITE_API_URL
 
+// Refresh state management
 let isRefreshing = false
-let failedQueue = []
+let refreshQueue = []
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error)
-    } else {
-      prom.resolve(token)
-    }
+/**
+ * Process all queued requests after refresh completes
+ */
+function processRefreshQueue(error = null) {
+  refreshQueue.forEach(({ resolve, reject }) => {
+    error ? reject(error) : resolve()
   })
-  
-  failedQueue = []
+  refreshQueue = []
 }
 
-// Generic request function - handles all HTTP methods
+/**
+ * Attempt to refresh JWT using refresh token cookie
+ * @returns {boolean} True if refresh succeeded
+ */
+async function refreshAccessToken() {
+  const response = await fetch(`${BASE_URL}/api/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include'
+  })
+  return response.ok
+}
+
+/**
+ * Handle session expiry - clear user and redirect if on protected route
+ */
+function handleSessionExpired() {
+  // Clear user from memory
+  window.dispatchEvent(new CustomEvent('auth:logout'))
+  
+  // Redirect to login only if on protected route
+  const publicRoutes = ['/', '/campaigns', '/verify-email', '/reset-password', '/forgot-password', '/email-sent']
+  const currentPath = window.location.pathname
+  const isPublicRoute = publicRoutes.includes(currentPath) || 
+                        currentPath.includes('/login') || 
+                        currentPath.includes('/register') ||
+                        currentPath.includes('/oauth2/redirect')
+  
+  if (!isPublicRoute) {
+    window.location.href = '/login'
+  }
+}
+
+/**
+ * Main request interceptor - handles JWT refresh automatically
+ */
 async function request(path, options = {}) {
   const url = `${BASE_URL}${path}`
   
-  // Build headers
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {})
   }
 
+  // Make initial request
   let response = await fetch(url, {
     headers,
-    credentials: 'include', // Include cookies in requests
+    credentials: 'include', // Always send cookies
     ...options,
   })
 
-  // Handle 401/403 Unauthorized - try to refresh token
-  if ((response.status === 401 || response.status === 403) && !path.includes('/auth/refresh') && !path.includes('/login') && !path.includes('/register')) {
-    const isPublicEndpoint = 
-      (options.method === 'GET' && path.includes('/api/campaigns'))
+  // Check if JWT is missing or expired (401/403)
+  const isAuthError = response.status === 401 || response.status === 403
+  const shouldNotRetry = path.includes('/auth/refresh') || 
+                         path.includes('/login') || 
+                         path.includes('/register')
+  
+  if (isAuthError && !shouldNotRetry) {
+    // JWT missing or expired - try to refresh
     
-    if (!isPublicEndpoint) {
-      // Token expired, try to refresh
-      if (isRefreshing) {
-        // Wait for the ongoing refresh
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
-        }).then(() => {
-          // Retry original request after refresh
-          return fetch(url, {
-            headers,
-            credentials: 'include',
-            ...options,
-          }).then(res => handleResponse(res, path, options))
-        }).catch(err => {
-          throw err
-        })
-      }
-
+    if (isRefreshing) {
+      // Wait for ongoing refresh to complete
+      await new Promise((resolve, reject) => {
+        refreshQueue.push({ resolve, reject })
+      })
+      
+      // Retry request with new JWT
+      response = await fetch(url, {
+        headers,
+        credentials: 'include',
+        ...options,
+      })
+    } else {
+      // Start refresh process
       isRefreshing = true
 
       try {
-        // Call refresh endpoint
-        const refreshResponse = await fetch(`${BASE_URL}/api/auth/refresh`, {
-          method: 'POST',
-          credentials: 'include'
-        })
+        const refreshSucceeded = await refreshAccessToken()
 
-        if (refreshResponse.ok) {
-          // Refresh successful, retry original request
+        if (refreshSucceeded) {
+          // Got new JWT - retry original request
           isRefreshing = false
-          processQueue(null)
+          processRefreshQueue()
           
           response = await fetch(url, {
             headers,
@@ -77,44 +107,34 @@ async function request(path, options = {}) {
             ...options,
           })
         } else {
-          // Refresh failed, logout user
+          // No valid refresh token - session expired
           isRefreshing = false
-          processQueue(new Error('Session expired'), null)
-          
-          // Clear user data and redirect to login
-          window.dispatchEvent(new CustomEvent('auth:logout'))
-          
-          if (!window.location.pathname.includes('/login') && 
-              !window.location.pathname.includes('/register') &&
-              !window.location.pathname.includes('/verify-email') &&
-              !window.location.pathname.includes('/reset-password') &&
-              window.location.pathname !== '/') {
-            window.location.href = '/login'
-          }
-          
-          throw new Error('Session expired. Please login again.')
+          const error = new Error('Session expired')
+          processRefreshQueue(error)
+          handleSessionExpired()
+          throw error
         }
       } catch (error) {
         isRefreshing = false
-        processQueue(error, null)
+        processRefreshQueue(error)
         throw error
       }
     }
   }
 
-  return handleResponse(response, path, options)
+  return handleResponse(response)
 }
 
-async function handleResponse(response, path, options) {
-  // Handle error responses
+/**
+ * Parse response or throw error
+ */
+async function handleResponse(response) {
   if (!response.ok) {
-    // Try to parse error message from response
     let errorMessage = `Error ${response.status}`
     try {
       const errorData = await response.json()
       errorMessage = errorData.message || errorMessage
     } catch {
-      // If response is not JSON, use text
       try {
         const text = await response.text()
         errorMessage = text || errorMessage
@@ -122,16 +142,14 @@ async function handleResponse(response, path, options) {
         // Use default error message
       }
     }
-    
     throw new Error(errorMessage)
   }
 
-  // Handle empty responses (DELETE, 204 No Content)
+  // Handle empty responses
   if (response.status === 204 || response.headers.get('content-length') === '0') {
     return null
   }
 
-  // Parse and return JSON response
   return response.json()
 }
 

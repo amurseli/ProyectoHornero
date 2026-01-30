@@ -42,9 +42,13 @@ up:
 # ------------------------------------------------------------
 down:
 	@echo "🛑 Deteniendo frontend..."
-	cd $(FRONTEND_DIR) && docker-compose down
+	-cd $(FRONTEND_DIR) && docker-compose down --remove-orphans
+	-@docker stop hornero-frontend 2>nul
+	-@docker rm hornero-frontend 2>nul
 	@echo "🛑 Deteniendo backend..."
-	cd $(BACKEND_DIR) && docker-compose down
+	-cd $(BACKEND_DIR) && docker-compose down --remove-orphans
+	@echo "🛑 Liberando puertos 5173-5175..."
+	-@powershell -Command "$$ports = 5173,5174,5175; foreach($$port in $$ports) { Get-NetTCPConnection -LocalPort $$port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | Select-Object -Unique | ForEach-Object { Stop-Process -Id $$_ -Force -ErrorAction SilentlyContinue } }" 2>nul
 	@echo "✅ Todo detenido"
 
 # ------------------------------------------------------------
@@ -93,7 +97,8 @@ run:
 	@echo "🟢 Levantando backend..."
 	cd $(BACKEND_DIR) && docker-compose up -d
 ifeq ($(DEV_MODE),local)
-	@echo "🟢 Levantando frontend en modo desarrollo local..."
+
+	@echo "�🟢 Levantando frontend en modo desarrollo local..."
 	@echo "⚠️  Asegúrate de tener las dependencias instaladas (npm install)"
 	cd $(FRONTEND_DIR) && npm run dev
 else
