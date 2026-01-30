@@ -1,34 +1,27 @@
-// Authentication utility for managing JWT tokens and user data
+// Authentication utility functions
+// Note: Token management is now handled by HttpOnly cookies (backend)
+// Token refresh is handled automatically by api.js
+// This file is maintained for backward compatibility but may be deprecated
 
 /**
- * Save authentication data after successful login/register
- * Note: JWT token is now stored in HttpOnly cookie by backend
- * @param {Object} authData - The authentication response from the server
- * @param {boolean} remember - Whether to persist in localStorage (true) or sessionStorage (false)
+ * Check if user is authenticated
+ * @deprecated Use useUser() hook from UserProvider instead
+ * @returns {boolean} True if user data exists in storage
  */
-export function saveAuth(authData, remember = true) {
-  const storage = remember ? localStorage : sessionStorage
-  
-  // Save user data (token is now in HttpOnly cookie)
-  const userData = {
-    userId: authData.userId,
-    email: authData.email,
-    userName: authData.userName,
-    firstName: authData.firstName,
-    role: authData.role
-  }
-  
-  storage.setItem('user', JSON.stringify(userData))
+export function isAuthenticated() {
+  const userStr = localStorage.getItem('user') || sessionStorage.getItem('user')
+  return !!userStr
 }
 
 /**
  * Get the current user data from storage
+ * @deprecated Use useUser() hook from UserProvider instead
  * @returns {Object|null} The user object or null if not found
  */
 export function getUser() {
   const userStr = localStorage.getItem('user') || sessionStorage.getItem('user')
   if (!userStr) return null
-  
+
   try {
     return JSON.parse(userStr)
   } catch (error) {
@@ -38,28 +31,44 @@ export function getUser() {
 }
 
 /**
- * Check if user is authenticated
- * Note: With HttpOnly cookies, we check for user data instead of token
- * @returns {boolean} True if user data exists
+ * Save authentication data after successful login/register
+ * @deprecated User data is now managed by UserProvider context
+ * @param {Object} authData - The authentication response from the server
+ * @param {boolean} remember - Whether to persist in localStorage (true) or sessionStorage (false)
  */
-export function isAuthenticated() {
-  return !!getUser()
+export function saveAuth(authData, remember = true) {
+  console.warn('saveAuth() is deprecated. Use UserProvider.login() instead.')
+  const storage = remember ? localStorage : sessionStorage
+
+  const userData = {
+    userId: authData.userId,
+    email: authData.email,
+    userName: authData.userName,
+    firstName: authData.firstName,
+    role: authData.role
+  }
+
+  storage.setItem('user', JSON.stringify(userData))
 }
 
 /**
  * Clear all authentication data
- * Note: HttpOnly cookie will be cleared by backend on logout
+ * @deprecated User data is now managed by UserProvider context
  */
 export function clearAuth() {
+  console.warn('clearAuth() is deprecated. Use UserProvider.logout() instead.')
   localStorage.removeItem('user')
   sessionStorage.removeItem('user')
 }
 
 /**
- * Logout user - calls backend to clear cookie, then clears local data
+ * Logout user
+ * @deprecated Use UserProvider.logout() instead
  * @param {boolean} redirect - Whether to redirect to login page
  */
 export async function logout(redirect = true) {
+  console.warn('logout() is deprecated. Use UserProvider.logout() instead.')
+
   try {
     // Call backend logout endpoint to clear HttpOnly cookie
     await fetch(`${import.meta.env.VITE_API_URL}/api/users/logout`, {
@@ -69,10 +78,10 @@ export async function logout(redirect = true) {
   } catch (error) {
     console.error('Error during logout:', error)
   }
-  
+
   // Clear local user data
   clearAuth()
-  
+
   if (redirect) {
     window.location.href = '/login'
   }

@@ -1,28 +1,20 @@
 'use client';
 
 import { Search, User, Menu, LogOut } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../ui"
-import { getUser, logout } from "../../../utils/auth/auth"
+import { useUser } from "../../../store/useUser"
 import "./Navbar.css"
 
 function Navbar() {
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [user, setUser] = useState(null)
+  const { user, logout } = useUser()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const checkAuth = () => setUser(getUser())
-    checkAuth()
-    window.addEventListener('storage', checkAuth)
-    return () => window.removeEventListener('storage', checkAuth)
-  }, [])
-
   const handleLogout = async () => {
-    await logout(false)
-    setUser(null)
+    await logout()
     navigate('/')
   }
 
