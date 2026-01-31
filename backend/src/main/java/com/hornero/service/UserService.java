@@ -7,6 +7,7 @@ import com.hornero.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,7 +23,11 @@ public class UserService {
     
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailVerificationService emailVerificationService;
     
+    @Transactional
     public User createUser(User user) {        
         // Validar que no exista el email
         if (userRepository.existsByEmail(user.getEmail())) {
@@ -47,8 +52,17 @@ public class UserService {
         // Hash password before saving
         String hashedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(hashedPassword);
+
+        // Set email as not verified
+        user.setEmailVerified(false);
+
+        // Save user
+        User savedUser = userRepository.save(user);
+
+        // Create and send email verification token
+        emailVerificationService.createEmailVerificationToken(savedUser);
         
-        return userRepository.save(user);
+        return savedUser;
     }
     
     public List<User> getAllUsers() {
@@ -94,17 +108,32 @@ public class UserService {
     
     public User login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+                .orElseThrow(() -> new RuntimeException("Credenciales inválidas o email no verificado"));
         
         // Check if hashed passwords match
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Credenciales inválidas");
+            throw new RuntimeException("Credenciales inválidas o email no verificado");
         }
         
         if (!user.getEnabled()) {
             throw new RuntimeException("Usuario deshabilitado");
         }
+
+        // Check if email is verified
+        if (user.getEmailVerified() == null || !user.getEmailVerified()) {
+            throw new RuntimeException("Por favor verifica tu email antes de iniciar sesión");
+        }
         
         return user;
+    }
+
+    /**
+     * Updates user password. Used for password reset functionality.
+     */
+    @Transactional
+    public void updatePassword(User user, String newPassword) {
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(hashedPassword);
+        userRepository.save(user);
     }
 }
