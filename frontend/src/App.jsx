@@ -19,6 +19,7 @@ import MyCampaigns from '$pages/Campaigns/MyCampaigns';
 import CreateCampaign from '$pages/Campaigns/CreateCampaign';
 
 // Components
+import Footer from '$components/layout/footer/Footer'
 import Navbar from '$components/layout/navbar/Navbar.jsx';
 import ProtectedRoute from '$components/ProtectedRoute';
 

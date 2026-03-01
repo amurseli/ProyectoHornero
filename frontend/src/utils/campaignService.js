@@ -140,9 +140,9 @@ export const campaignService = {
 
   async getFeaturedCampaigns(limit = 4) {
     const campaigns = await this.getAllCampaigns()
-    return campaigns.filter((c) => ["CROWDFUNDING", "PLEDGE MANAGER"].includes(c.status)).slice(0, limit)
+    return campaigns.filter((c) => c.status === "CROWDFUNDING").slice(0, limit)
   },
-
+  
   async getRecentCampaigns(limit = 6) {
     const campaigns = await this.getAllCampaigns()
     return campaigns.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit)
