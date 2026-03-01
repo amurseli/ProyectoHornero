@@ -15,15 +15,19 @@ public class CampaignService {
     private CampaignRepository campaignRepository;
 
     public Campaign createCampaign(Campaign campaign) {
+        // Setear la referencia inversa para que JPA pueda persistir la relación
+        if (campaign.getMedia() != null) {
+            campaign.getMedia().forEach(m -> m.setCampaign(campaign));
+        }
         return campaignRepository.save(campaign);
     }
 
     public List<Campaign> getAllCampaigns() {
-        return campaignRepository.findAllWithRelations();  // ← CAMBIO ACÁ
+        return campaignRepository.findAllWithRelations();
     }
 
     public Optional<Campaign> getCampaignById(Long id) {
-        return campaignRepository.findByIdWithRelations(id);  // ← CAMBIO ACÁ
+        return campaignRepository.findByIdWithRelations(id);
     }
 
     public Campaign updateCampaign(Long id, Campaign details) {

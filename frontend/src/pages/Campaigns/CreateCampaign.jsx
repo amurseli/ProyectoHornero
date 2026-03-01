@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
@@ -22,6 +22,8 @@ const INITIAL_FORM = {
   duration: '30',
   goal: '',
   description: '',
+  coverFile: null,
+  coverPreview: '',
   videoUrl: '',
   images: [],
 }
@@ -98,7 +100,15 @@ function StepDetalles({ form, onChange }) {
 }
 
 function StepMedia({ form, onChange }) {
-  const fileRef = useRef()
+  const fileRef  = useRef()
+  const coverRef = useRef()
+
+  const handleCover = (files) => {
+    const file = files[0]
+    if (!file) return
+    onChange('coverFile', file)
+    onChange('coverPreview', URL.createObjectURL(file))
+  }
 
   const handleFiles = (files) => {
     const urls = Array.from(files).map(f => URL.createObjectURL(f))
@@ -112,6 +122,28 @@ function StepMedia({ form, onChange }) {
       <h2 className="wizard-section-title">Media de la campaña</h2>
       <p className="wizard-section-subtitle">Agregá imágenes y un video para mostrar tu proyecto.</p>
 
+      {/* Portada */}
+      <div className="wizard-form-group">
+        <label className="wizard-label">Imagen de portada <span>(se muestra en las cards)</span></label>
+        <div
+          className="wizard-upload-zone"
+          onClick={() => coverRef.current.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); handleCover(e.dataTransfer.files) }}
+        >
+          {form.coverPreview
+            ? <img src={form.coverPreview} alt="Portada"
+                style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
+            : <>
+                <p className="wizard-upload-text"><strong>Hacé clic o arrastrá</strong> la imagen de portada</p>
+              </>
+          }
+        </div>
+        <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }}
+          onChange={e => handleCover(e.target.files)} />
+      </div>
+
+      {/* Galería */}
       <div className="wizard-form-group">
         <label className="wizard-label">Imágenes <span>(máx. 6)</span></label>
         <div
@@ -120,7 +152,6 @@ function StepMedia({ form, onChange }) {
           onDragOver={e => e.preventDefault()}
           onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
         >
-          <div className="wizard-upload-icon">🖼️</div>
           <p className="wizard-upload-text"><strong>Hacé clic o arrastrá</strong> para subir imágenes</p>
           <p className="wizard-upload-text" style={{ marginTop: '0.25rem', fontSize: '0.8rem' }}>PNG, JPG, WEBP · hasta 10MB c/u</p>
         </div>
@@ -138,6 +169,7 @@ function StepMedia({ form, onChange }) {
         )}
       </div>
 
+      {/* Video */}
       <div className="wizard-form-group">
         <label className="wizard-label">URL de video <span>(opcional · YouTube o Vimeo)</span></label>
         <input className="wizard-input" type="url" placeholder="https://youtube.com/watch?v=..."
@@ -146,7 +178,6 @@ function StepMedia({ form, onChange }) {
     </>
   )
 }
-
 function StepRevision({ form }) {
   return (
     <>
@@ -163,6 +194,14 @@ function StepRevision({ form }) {
           <div className="wizard-review-row"><span className="wizard-review-key">Descripción corta</span><span className="wizard-review-val" style={{ maxWidth: '60%' }}>{form.shortDescription}</span></div>
         )}
       </div>
+
+      {form.coverPreview && (
+        <div className="wizard-review-section">
+          <div className="wizard-review-section-title">Portada</div>
+          <img src={form.coverPreview} alt="Portada"
+            style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }} />
+        </div>
+      )}
 
       {form.description && (
         <div className="wizard-review-section">
@@ -204,11 +243,30 @@ function CreateCampaign() {
     setLoading(true)
     setError(null)
     try {
+      const media = []
+
+      if (form.coverFile) {
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result.split(',')[1])
+          reader.onerror = reject
+          reader.readAsDataURL(form.coverFile)
+        })
+        media.push({
+          base64Data,
+          mediaType: 'IMAGE',
+          isPrimary: true,
+          displayOrder: 0,
+        })
+      }
+
       await api.post('/api/campaigns', {
         title: form.title,
         shortDescription: form.shortDescription,
         description: form.description,
+        targetAmount: form.goal ? Number(form.goal) : null,
         owner: { id: user.userId },
+        media,
       })
       navigate('/my-campaigns')
     } catch (err) {
@@ -230,14 +288,14 @@ function CreateCampaign() {
 
         <nav className="wizard-stepper">
           {STEPS.map((s, i) => (
-            <>
-              <StepCircle key={s.number} step={s} current={step} />
+            <Fragment key={s.number}>
+              <StepCircle step={s} current={step} />
               {i < STEPS.length - 1 && (
-                <div className="wizard-connector" key={`c${i}`}>
+                <div className="wizard-connector">
                   <div className="wizard-connector-fill" style={{ width: step > i + 1 ? '100%' : '0%' }} />
                 </div>
               )}
-            </>
+            </Fragment>
           ))}
         </nav>
 
