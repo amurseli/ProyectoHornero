@@ -5,6 +5,9 @@ import api from '$utils/api/api'
 import './CreateCampaign.css'
 import { useUser } from '../../store/useUser'
 
+import blobLeft from '$assets/textures/blob1.png'
+import blobRight from '$assets/textures/blob2.png'
+
 
 const CATEGORIES = ['Arte', 'Tecnología', 'Música', 'Cine', 'Diseño', 'Comunidad', 'Deportes', 'Educación']
 
@@ -279,6 +282,8 @@ function CreateCampaign() {
 
   return (
     <div className="create-campaign-page">
+      <img src={blobLeft}  className="deco-blob deco-blob-left"  alt="" />
+      <img src={blobRight} className="deco-blob deco-blob-right" alt="" />
       <div className="create-campaign-inner">
 
         <header className="create-campaign-header">
