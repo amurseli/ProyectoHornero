@@ -17,6 +17,8 @@ import OAuth2Redirect from '$pages/OAuth2Redirect/OAuth2Redirect.jsx';
 import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
 import CampaignForm from '$pages/Campaigns/CampaignForm';
+import UserConfig from '$pages/UserConfig/UserConfig';
+import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 
 // Components
 import Navbar from '$components/layout/navbar/Navbar.jsx';
@@ -64,6 +66,7 @@ function App() {
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns" element={<CampaignsList />} />
+          <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
           
           {/* Protected routes */}
           <Route path="/my-campaigns" element={
@@ -79,6 +82,11 @@ function App() {
           <Route path="/my-campaigns/edit/:id" element={
             <ProtectedRoute>
               <CampaignForm />
+            </ProtectedRoute>
+          } />
+          <Route path="/configuracion" element={
+            <ProtectedRoute>
+              <UserConfig />
             </ProtectedRoute>
           } />
           

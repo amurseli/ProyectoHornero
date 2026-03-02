@@ -182,4 +182,51 @@ public class EmailService {
             verificationLink
         );
     }
+
+    /**
+     * Sends a verification email for an email change request.
+     */
+    public void sendEmailChangeVerification(String newEmail, String firstName, String confirmLink) {
+        try {
+            String subject = "Confirmá tu nuevo email - Proyecto Hornero";
+            String body = buildEmailChangeBody(firstName, confirmLink);
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(newEmail);
+            message.setSubject(subject);
+            message.setText(body);
+
+            mailSender.send(message);
+
+            logger.info("Email change verification sent to: {}", newEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send email change verification to: {}", newEmail, e);
+            throw new RuntimeException("Error al enviar el correo de verificación", e);
+        }
+    }
+
+    private String buildEmailChangeBody(String firstName, String confirmLink) {
+        String name = (firstName != null && !firstName.isEmpty()) ? firstName : "Usuario";
+
+        return String.format(
+            """
+            Hola %s,
+
+            Recibimos una solicitud para cambiar el email de tu cuenta en Proyecto Hornero.
+
+            Para confirmar el cambio, hacé clic en el siguiente enlace:
+            %s
+
+            Este enlace expirará en 1 hora por motivos de seguridad.
+
+            Si no solicitaste este cambio, podés ignorar este correo.
+
+            Saludos,
+            El equipo de Proyecto Hornero
+            """,
+            name,
+            confirmLink
+        );
+    }
 }

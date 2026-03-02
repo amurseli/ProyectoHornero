@@ -1,5 +1,6 @@
 package com.hornero.service;
 
+import com.hornero.dto.UpdateProfileRequest;
 import com.hornero.model.Role;
 import com.hornero.model.User;
 import com.hornero.repository.RoleRepository;
@@ -76,6 +77,10 @@ public class UserService {
     public Optional<User> getUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+
+    public User saveUser(User user) {
+        return userRepository.save(user);
+    }
     
     public Optional<User> getUserByUsername(String username) {
         return userRepository.findByUserName(username);
@@ -134,6 +139,59 @@ public class UserService {
     public void updatePassword(User user, String newPassword) {
         String hashedPassword = passwordEncoder.encode(newPassword);
         user.setPassword(hashedPassword);
+        userRepository.save(user);
+    }
+
+    /**
+     * Update user profile fields (userName, firstName, lastName, gender, phone).
+     */
+    @Transactional
+    public User updateProfile(Long userId, UpdateProfileRequest req) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Check username uniqueness if changed
+        if (req.getUserName() != null && !req.getUserName().isBlank()
+                && !req.getUserName().equals(user.getUserName())) {
+            if (userRepository.existsByUserName(req.getUserName())) {
+                throw new RuntimeException("El nombre de usuario ya está en uso");
+            }
+            user.setUserName(req.getUserName());
+        }
+
+        if (req.getFirstName() != null) {
+            user.setFirstName(req.getFirstName());
+        }
+        if (req.getLastName() != null) {
+            user.setLastName(req.getLastName());
+        }
+        if (req.getGender() != null) {
+            user.setGender(req.getGender());
+        }
+        if (req.getPhone() != null) {
+            user.setPhone(req.getPhone());
+        }
+
+        return userRepository.save(user);
+    }
+
+    /**
+     * Change password for the authenticated user after verifying current password.
+     */
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new RuntimeException("La nueva contraseña debe tener al menos 6 caracteres");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
 }

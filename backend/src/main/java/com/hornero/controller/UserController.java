@@ -1,14 +1,22 @@
 package com.hornero.controller;
 
 import com.hornero.dto.AuthResponse;
+import com.hornero.dto.ChangePasswordRequest;
+import com.hornero.dto.ConnectionResponse;
+import com.hornero.dto.EmailChangeRequest;
 import com.hornero.dto.ErrorResponse;
 import com.hornero.dto.ForgotPasswordRequest;
 import com.hornero.dto.LoginRequest;
+import com.hornero.dto.ProfileResponse;
 import com.hornero.dto.RegisterRequest;
 import com.hornero.dto.ResetPasswordRequest;
+import com.hornero.dto.UpdateProfileRequest;
 import com.hornero.model.RefreshToken;
 import com.hornero.model.User;
+import com.hornero.model.UserConnection;
+import com.hornero.repository.UserConnectionRepository;
 import com.hornero.service.EmailVerificationService;
+import com.hornero.service.EmailChangeService;
 import com.hornero.service.PasswordResetService;
 import com.hornero.service.RefreshTokenService;
 import com.hornero.service.UserService;
@@ -28,6 +36,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -47,6 +57,12 @@ public class UserController {
 
     @Autowired
     private EmailVerificationService emailVerificationService;
+
+    @Autowired
+    private EmailChangeService emailChangeService;
+
+    @Autowired
+    private UserConnectionRepository userConnectionRepository;
     
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
@@ -379,5 +395,225 @@ public class UserController {
             }
         }
         return null;
+    }
+
+    // ═══════ Profile Endpoints ═══════
+
+    @GetMapping("/me/profile")
+    public ResponseEntity<?> getMyProfile(HttpServletRequest request) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            User user = userService.getUserById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            String roleName = user.getRole() != null ? user.getRole().getName() : "USER";
+
+            // Determine OAuth provider from connections table
+            List<UserConnection> connections = userConnectionRepository.findByUserId(userId);
+            String oauthProvider = connections.isEmpty() ? null : connections.get(0).getProvider();
+
+            ProfileResponse profile = new ProfileResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getPendingEmail(),
+                user.getUserName(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getGender(),
+                user.getPhone(),
+                roleName,
+                oauthProvider
+            );
+
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+    }
+
+    @PutMapping("/me/profile")
+    public ResponseEntity<?> updateMyProfile(HttpServletRequest request,
+                                              @RequestBody UpdateProfileRequest profileRequest) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            User updatedUser = userService.updateProfile(userId, profileRequest);
+            String roleName = updatedUser.getRole() != null ? updatedUser.getRole().getName() : "USER";
+
+            List<UserConnection> connections = userConnectionRepository.findByUserId(userId);
+            String oauthProvider = connections.isEmpty() ? null : connections.get(0).getProvider();
+
+            ProfileResponse profile = new ProfileResponse(
+                updatedUser.getId(),
+                updatedUser.getEmail(),
+                updatedUser.getPendingEmail(),
+                updatedUser.getUserName(),
+                updatedUser.getFirstName(),
+                updatedUser.getLastName(),
+                updatedUser.getGender(),
+                updatedUser.getPhone(),
+                roleName,
+                oauthProvider
+            );
+
+            return ResponseEntity.ok(profile);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<?> changeMyPassword(HttpServletRequest request,
+                                               @RequestBody ChangePasswordRequest passwordRequest) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            userService.changePassword(userId, passwordRequest.getCurrentPassword(), passwordRequest.getNewPassword());
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Contraseña actualizada exitosamente");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    // ═══════ Email Change Endpoints ═══════
+
+    @PostMapping("/me/email-change")
+    public ResponseEntity<?> requestEmailChange(HttpServletRequest request,
+                                                 @RequestBody EmailChangeRequest emailRequest) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            User user = userService.getUserById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            emailChangeService.requestEmailChange(user, emailRequest.getNewEmail());
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Se envió un email de verificación a " + emailRequest.getNewEmail());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    @PostMapping("/me/email-change/confirm")
+    public ResponseEntity<?> confirmEmailChange(@RequestParam String token) {
+        try {
+            User user = emailChangeService.confirmEmailChange(token);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Email actualizado correctamente");
+            response.put("email", user.getEmail());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    @DeleteMapping("/me/email-change")
+    public ResponseEntity<?> cancelEmailChange(HttpServletRequest request) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            emailChangeService.cancelEmailChange(userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Cambio de email cancelado");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    // ═══════ Connections Endpoints ═══════
+
+    @GetMapping("/me/connections")
+    public ResponseEntity<?> getConnections(HttpServletRequest request) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            List<UserConnection> connections = userConnectionRepository.findByUserId(userId);
+
+            // Build response list — always include Google even if not linked
+            boolean hasGoogle = connections.stream().anyMatch(c -> "google".equals(c.getProvider()));
+
+            List<ConnectionResponse> result = connections.stream()
+                    .map(c -> new ConnectionResponse(
+                            c.getProvider(),
+                            c.getProviderEmail(),
+                            true
+                    ))
+                    .collect(Collectors.toList());
+
+            if (!hasGoogle) {
+                result.add(new ConnectionResponse("google", null, false));
+            }
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al obtener conexiones", HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        }
+    }
+
+    @DeleteMapping("/me/connections/{provider}")
+    public ResponseEntity<?> unlinkProvider(HttpServletRequest request,
+                                             @PathVariable String provider) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            Optional<UserConnection> connection = userConnectionRepository.findByUserIdAndProvider(userId, provider.toLowerCase());
+            if (connection.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(new ErrorResponse("El proveedor no está vinculado", HttpStatus.BAD_REQUEST.value()));
+            }
+
+            userConnectionRepository.delete(connection.get());
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Proveedor desvinculado correctamente");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
     }
 }
