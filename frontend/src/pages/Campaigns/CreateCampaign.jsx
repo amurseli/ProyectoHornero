@@ -1,4 +1,4 @@
-import { useState, useRef, Fragment } from 'react'
+import { useState, useRef, useEffect, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
@@ -8,20 +8,27 @@ import { useUser } from '../../store/useUser'
 import blobLeft from '$assets/textures/blob1.png'
 import blobRight from '$assets/textures/blob2.png'
 
-
 const CATEGORIES = ['Arte', 'Tecnología', 'Música', 'Cine', 'Diseño', 'Comunidad', 'Deportes', 'Educación']
 
+const COUNTRIES = [
+  'Argentina', 'Bolivia', 'Brasil', 'Chile', 'Colombia',
+  'Ecuador', 'México', 'Paraguay', 'Perú', 'Uruguay', 'Venezuela',
+  'España', 'Estados Unidos', 'Otro',
+]
 
 const STEPS = [
-  { number: 1, label: 'Detalles',  sublabel: 'Info principal' },
-  { number: 2, label: 'Media',     sublabel: 'Imágenes y video' },
-  { number: 3, label: 'Revisión',  sublabel: 'Confirmar datos' },
+  { number: 1, label: 'Categoría', sublabel: 'Tu área' },
+  { number: 2, label: 'País',      sublabel: 'Ubicación' },
+  { number: 3, label: 'Detalles',  sublabel: 'Info principal' },
+  { number: 4, label: 'Media',     sublabel: 'Imágenes y video' },
+  { number: 5, label: 'Revisión',  sublabel: 'Confirmar datos' },
 ]
 
 const INITIAL_FORM = {
   title: '',
   shortDescription: '',
   category: '',
+  country: '',
   duration: '30',
   goal: '',
   description: '',
@@ -39,11 +46,54 @@ function StepCircle({ step, current }) {
       <div className={`wizard-step-circle ${active ? 'active' : done ? 'done' : ''}`}>
         {done ? '✓' : step.number}
       </div>
-      <div className="wizard-step-label">
-        <span className={`wizard-step-name ${active ? 'active' : ''}`}>{step.label}</span>
-        <span className="wizard-step-sub">{step.sublabel}</span>
-      </div>
     </div>
+  )
+}
+
+function StepCategoria({ form, onSelect }) {
+  return (
+    <>
+      <h2 className="wizard-section-title">¿De qué trata tu proyecto?</h2>
+      <p className="wizard-section-subtitle">
+        La categoría ayuda a que tu campaña llegue a las personas indicadas. Podés cambiarla más adelante.
+      </p>
+      <div className="wizard-category-grid">
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat}
+            className={`wizard-category-card ${form.category === cat ? 'selected' : ''}`}
+            onClick={() => onSelect(cat)}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function StepPais({ form, onChange }) {
+  return (
+    <>
+      <div className="wizard-country-intro">
+        <h2 className="wizard-section-title">¿Desde dónde vas a recaudar?</h2>
+        <p className="wizard-country-body">
+          Si vas a recaudar fondos como individuo, seleccioná tu país de residencia oficial.
+          Si lo hacés en nombre de una empresa u organización, seleccioná el país donde esté
+          registrada la identificación fiscal de la entidad.
+        </p>
+      </div>
+      <div className="wizard-country-select-wrap">
+        <select
+          className="wizard-select"
+          value={form.country}
+          onChange={e => onChange('country', e.target.value)}
+        >
+          <option value="">Seleccioná tu país</option>
+          {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+        </select>
+      </div>
+    </>
   )
 }
 
@@ -69,25 +119,17 @@ function StepDetalles({ form, onChange }) {
 
       <div className="wizard-form-row">
         <div className="wizard-form-group">
-          <label className="wizard-label">Categoría</label>
-          <select className="wizard-select" value={form.category} onChange={e => onChange('category', e.target.value)}>
-            <option value="">Seleccionar...</option>
-            {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-          </select>
-        </div>
-        <div className="wizard-form-group">
           <label className="wizard-label">Duración <span>(días)</span></label>
           <input className="wizard-input" type="number" min="1" max="90"
             value={form.duration} onChange={e => onChange('duration', e.target.value)} />
         </div>
-      </div>
-
-      <div className="wizard-form-group">
-        <label className="wizard-label">Objetivo a recaudar</label>
-        <div className="wizard-input-prefix">
-          <span className="wizard-prefix-symbol">$</span>
-          <input type="number" placeholder="100000"
-            value={form.goal} onChange={e => onChange('goal', e.target.value)} />
+        <div className="wizard-form-group">
+          <label className="wizard-label">Objetivo a recaudar</label>
+          <div className="wizard-input-prefix">
+            <span className="wizard-prefix-symbol">$</span>
+            <input type="number" placeholder="100000"
+              value={form.goal} onChange={e => onChange('goal', e.target.value)} />
+          </div>
         </div>
       </div>
 
@@ -125,7 +167,6 @@ function StepMedia({ form, onChange }) {
       <h2 className="wizard-section-title">Media de la campaña</h2>
       <p className="wizard-section-subtitle">Agregá imágenes y un video para mostrar tu proyecto.</p>
 
-      {/* Portada */}
       <div className="wizard-form-group">
         <label className="wizard-label">Imagen de portada <span>(se muestra en las cards)</span></label>
         <div
@@ -137,16 +178,13 @@ function StepMedia({ form, onChange }) {
           {form.coverPreview
             ? <img src={form.coverPreview} alt="Portada"
                 style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
-            : <>
-                <p className="wizard-upload-text"><strong>Hacé clic o arrastrá</strong> la imagen de portada</p>
-              </>
+            : <p className="wizard-upload-text"><strong>Hacé clic o arrastrá</strong> la imagen de portada</p>
           }
         </div>
         <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }}
           onChange={e => handleCover(e.target.files)} />
       </div>
 
-      {/* Galería */}
       <div className="wizard-form-group">
         <label className="wizard-label">Imágenes <span>(máx. 6)</span></label>
         <div
@@ -172,7 +210,6 @@ function StepMedia({ form, onChange }) {
         )}
       </div>
 
-      {/* Video */}
       <div className="wizard-form-group">
         <label className="wizard-label">URL de video <span>(opcional · YouTube o Vimeo)</span></label>
         <input className="wizard-input" type="url" placeholder="https://youtube.com/watch?v=..."
@@ -181,6 +218,7 @@ function StepMedia({ form, onChange }) {
     </>
   )
 }
+
 function StepRevision({ form }) {
   return (
     <>
@@ -189,8 +227,9 @@ function StepRevision({ form }) {
 
       <div className="wizard-review-section">
         <div className="wizard-review-section-title">Detalles</div>
-        <div className="wizard-review-row"><span className="wizard-review-key">Título</span><span className="wizard-review-val">{form.title || '—'}</span></div>
         <div className="wizard-review-row"><span className="wizard-review-key">Categoría</span><span className="wizard-review-val">{form.category || '—'}</span></div>
+        <div className="wizard-review-row"><span className="wizard-review-key">País</span><span className="wizard-review-val">{form.country || '—'}</span></div>
+        <div className="wizard-review-row"><span className="wizard-review-key">Título</span><span className="wizard-review-val">{form.title || '—'}</span></div>
         <div className="wizard-review-row"><span className="wizard-review-key">Duración</span><span className="wizard-review-val">{form.duration} días</span></div>
         <div className="wizard-review-row"><span className="wizard-review-key">Objetivo</span><span className="wizard-review-val">{form.goal ? `$ ${Number(form.goal).toLocaleString('es-AR')}` : '—'}</span></div>
         {form.shortDescription && (
@@ -233,14 +272,28 @@ function StepRevision({ form }) {
 
 function CreateCampaign() {
   const navigate = useNavigate()
-  const [step, setStep]     = useState(1)
-  const [form, setForm]     = useState(INITIAL_FORM)
-  const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState(null)
+  const [step, setStep]         = useState(1)
+  const [animating, setAnimating] = useState(false)
+  const [form, setForm]         = useState(INITIAL_FORM)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState(null)
 
   const { user } = useUser()
 
   const handleChange = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
+
+  const goToStep = (newStep) => {
+    setAnimating(true)
+    setTimeout(() => {
+      setStep(newStep)
+      setAnimating(false)
+    }, 200)
+  }
+
+  const handleCategorySelect = (cat) => {
+    handleChange('category', cat)
+    goToStep(2)
+  }
 
   const handleSubmit = async () => {
     setLoading(true)
@@ -267,6 +320,7 @@ function CreateCampaign() {
         title: form.title,
         shortDescription: form.shortDescription,
         description: form.description,
+        country: form.country,
         targetAmount: form.goal ? Number(form.goal) : null,
         owner: { id: user.userId },
         media,
@@ -286,11 +340,6 @@ function CreateCampaign() {
       <img src={blobRight} className="deco-blob deco-blob-right" alt="" />
       <div className="create-campaign-inner">
 
-        <header className="create-campaign-header">
-          <h1 className="create-campaign-title">Crear nueva campaña</h1>
-          <p className="create-campaign-subtitle">Completá los pasos para publicar tu proyecto en Hornero</p>
-        </header>
-
         <nav className="wizard-stepper">
           {STEPS.map((s, i) => (
             <Fragment key={s.number}>
@@ -305,19 +354,23 @@ function CreateCampaign() {
         </nav>
 
         <div className="wizard-card">
-          {step === 1 && <StepDetalles form={form} onChange={handleChange} />}
-          {step === 2 && <StepMedia    form={form} onChange={handleChange} />}
-          {step === 3 && <StepRevision form={form} />}
+          <div className={`wizard-step-content ${animating ? 'fading' : ''}`}>
+            {step === 1 && <StepCategoria form={form} onSelect={handleCategorySelect} />}
+            {step === 2 && <StepPais      form={form} onChange={handleChange} />}
+            {step === 3 && <StepDetalles  form={form} onChange={handleChange} />}
+            {step === 4 && <StepMedia     form={form} onChange={handleChange} />}
+            {step === 5 && <StepRevision  form={form} />}
+          </div>
 
           {error && <p className="auth-error" style={{ marginTop: '1rem' }}>{error}</p>}
 
           <div className="wizard-footer">
             {step > 1
-              ? <Button variant="secondary" onClick={() => setStep(s => s - 1)}>← Atrás</Button>
+              ? <Button variant="secondary" onClick={() => goToStep(step - 1)}>← Atrás</Button>
               : <span />
             }
-            {step < 3
-              ? <Button variant="primary" onClick={() => setStep(s => s + 1)}>Siguiente →</Button>
+            {step < 5
+              ? <Button variant="primary" onClick={() => goToStep(step + 1)}>Siguiente →</Button>
               : <Button variant="primary" size="lg" onClick={handleSubmit} disabled={loading}>
                   {loading ? 'Publicando...' : 'Publicar campaña'}
                 </Button>

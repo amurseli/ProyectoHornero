@@ -42,7 +42,6 @@ function Home() {
       </main>
 
       <CTASection />
-      <Footer />
     </div>
   )
 }

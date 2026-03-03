@@ -1,15 +1,10 @@
 .create-campaign-page {
-  position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
-  width: 100vw;
-  min-height: 100vh;
-  padding: calc(var(--navbar-height) + 2rem) 1rem 4rem;
+  width: 100%;
+  min-height: calc(100vh - var(--navbar-height));
+  padding: 2rem 1rem 4rem;
   box-sizing: border-box;
   background: var(--color-bg-primary);
-  overflow-x: hidden;
+  position: relative;
 }
 
 .create-campaign-page::before {
@@ -108,31 +103,12 @@
   color: white;
 }
 
-.wizard-step-label {
-  display: flex;
-  flex-direction: column;
-}
-
-.wizard-step-name {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  transition: color var(--transition-fast);
-}
-
-.wizard-step-name.active { color: var(--color-text-primary); }
-
-.wizard-step-sub {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
 .wizard-connector {
   flex: 1;
-  max-width: 80px;
+  max-width: 50px;
   height: 2px;
   background: var(--color-border);
-  margin: 0 0.75rem;
+  margin: 0 0.5rem;
   border-radius: 1px;
   overflow: hidden;
 }
@@ -154,13 +130,19 @@
   box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   padding: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.7);
-  animation: wizardFadeIn 0.3s ease;
 }
 
-@keyframes wizardFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Step fade transition ── */
+
+.wizard-step-content {
+  transition: opacity 0.2s ease;
 }
+
+.wizard-step-content.fading {
+  opacity: 0;
+}
+
+/* ── Section titles ── */
 
 .wizard-section-title {
   font-size: var(--font-size-xl);
@@ -173,6 +155,64 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin-bottom: 1.75rem;
+}
+
+/* ── Category step ── */
+
+.wizard-category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.wizard-category-card {
+  padding: 1.25rem 0.75rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.wizard-category-card:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 5%, white);
+  color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.wizard-category-card.selected {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+/* ── Country step ── */
+
+.wizard-country-intro {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.wizard-country-body {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  max-width: 480px;
+  margin: 0.75rem auto 0;
+}
+
+.wizard-country-select-wrap {
+  max-width: 380px;
+  margin: 0 auto;
 }
 
 /* ── Form fields ── */
@@ -295,8 +335,6 @@
   background: color-mix(in srgb, var(--color-primary) 4%, transparent);
 }
 
-.wizard-upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-
 .wizard-upload-text {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
@@ -383,16 +421,7 @@
   border-top: 1px solid var(--color-border);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════════════════════ */
-
-@media (max-width: 600px) {
-  .wizard-form-row { grid-template-columns: 1fr; }
-  .wizard-connector { max-width: 40px; }
-  .wizard-step-label { display: none; }
-  .wizard-card { padding: 1.5rem; }
-}
+/* ── Decorative blobs ── */
 
 .deco-blob {
   position: absolute;
@@ -417,4 +446,15 @@
   rotate: 120deg;
   height: auto;
   transform: scaleX(-1);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+  .wizard-form-row { grid-template-columns: 1fr; }
+  .wizard-connector { max-width: 24px; margin: 0 0.25rem; }
+  .wizard-card { padding: 1.5rem; }
+  .wizard-category-grid { grid-template-columns: repeat(2, 1fr); }
 }
