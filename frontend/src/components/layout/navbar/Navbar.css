@@ -120,11 +120,13 @@
 
 .navbar-login-text {
   display: none;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 @media (min-width: 640px) {
   .navbar-login-text {
-    display: inline;
+    display: inline-flex;
   }
 }
 
@@ -269,4 +271,27 @@
   height: 1px;
   background: var(--color-border);
   margin: 0.25rem 0;
+}
+
+/* ═══════════ Role Badge ═══════════ */
+.navbar-role-badge {
+  display: inline-block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.2em 0.5em;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+.navbar-role-badge--creator {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+}
+
+.navbar-role-badge--admin {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
 }

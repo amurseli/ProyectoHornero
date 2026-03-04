@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Mail, X, AlertTriangle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Eye, EyeOff, Mail, X, AlertTriangle, Rocket } from 'lucide-react'
 import { useUser } from '../../store/useUser'
 import { Button } from '../../components/ui'
 import api from '../../utils/api/api'
@@ -24,6 +25,7 @@ const GoogleIcon = () => (
 )
 
 function UserConfig() {
+  const navigate = useNavigate()
   const { user, refreshUser } = useUser()
 
   // Profile form state
@@ -465,6 +467,24 @@ function UserConfig() {
                   Desvincular
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════ Become Creator Section ═══════ */}
+        {user?.role === 'USER' && (
+          <div className="config-section">
+            <h2 className="config-section-title">Creador</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                  Convertite en creador para publicar y gestionar tus propias campañas de crowdfunding.
+                </p>
+              </div>
+              <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>
+                <Rocket size={14} style={{ marginRight: '0.375rem' }} />
+                Hacete Creador
+              </Button>
             </div>
           </div>
         )}
