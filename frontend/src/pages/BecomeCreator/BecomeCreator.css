@@ -1,0 +1,58 @@
+/* ═══════════════════════════════════════════════════════════
+   BECOME CREATOR PAGE
+═══════════════════════════════════════════════════════════ */
+
+.become-creator-page {
+  min-height: calc(100vh - var(--navbar-height));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) var(--space-md);
+  background: var(--color-background);
+}
+
+.become-creator-card {
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl) var(--space-xl);
+}
+
+.become-creator-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--color-primary-alpha, rgba(99, 102, 241, 0.1));
+  color: var(--color-primary);
+  margin-bottom: var(--space-lg);
+}
+
+.become-creator-card h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-sm);
+}
+
+.become-creator-card p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  margin: 0 0 var(--space-xl);
+}
+
+.become-creator-error {
+  background: var(--color-error-bg, #fef2f2);
+  color: var(--color-error, #dc2626);
+  border: 1px solid var(--color-error-border, #fecaca);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-md);
+}

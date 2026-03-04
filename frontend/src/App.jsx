@@ -18,6 +18,7 @@ import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
 import CreateCampaign from '$pages/Campaigns/CreateCampaign';
 import ForCreators from '$pages/ForCreators/ForCreators.jsx';
+import BecomeCreator from '$pages/BecomeCreator/BecomeCreator.jsx';
 import UserConfig from '$pages/UserConfig/UserConfig';
 import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 
@@ -25,6 +26,7 @@ import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 import Footer from '$components/layout/footer/Footer'
 import Navbar from '$components/layout/navbar/Navbar.jsx';
 import ProtectedRoute from '$components/ProtectedRoute';
+import CreatorRoute from '$components/CreatorRoute';
 
 function AuthVerifier() {
   const location = useLocation()
@@ -63,8 +65,9 @@ function App() {
           <Route path="/for-creators" element={<ForCreators />} />
 
           {/* Protected */}
-          <Route path="/my-campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
-          <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+          <Route path="/my-campaigns" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
+          <Route path="/my-campaigns/new" element={<CreatorRoute><CreateCampaign /></CreatorRoute>} />
+          <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
           
           <Route path="*" element={<Navigate to="/" replace />} />

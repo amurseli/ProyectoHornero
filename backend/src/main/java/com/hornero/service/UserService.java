@@ -194,4 +194,24 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+
+    /**
+     * Promote a USER to CREATOR role.
+     */
+    @Transactional
+    public User becomeCreator(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        String currentRole = user.getRole() != null ? user.getRole().getName() : null;
+        if (!"USER".equals(currentRole)) {
+            throw new RuntimeException("Solo los usuarios con rol USER pueden convertirse en creadores");
+        }
+
+        Role creatorRole = roleRepository.findByName("CREATOR")
+                .orElseThrow(() -> new RuntimeException("Role CREATOR not found"));
+        user.setRole(creatorRole);
+
+        return userRepository.save(user);
+    }
 }

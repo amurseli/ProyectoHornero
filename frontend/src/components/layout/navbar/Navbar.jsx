@@ -62,7 +62,14 @@ function Navbar() {
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
               >
                 <User size={18} aria-hidden="true" />
-                <span className="navbar-login-text">{user.firstName || user.userName}</span>
+                <span className="navbar-login-text">
+                  {user.firstName || user.userName}
+                  {(user.role === 'CREATOR' || user.role === 'ADMIN') && (
+                    <span className={`navbar-role-badge navbar-role-badge--${user.role.toLowerCase()}`}>
+                      {user.role === 'ADMIN' ? 'Admin' : 'Creador'}
+                    </span>
+                  )}
+                </span>
                 <ChevronDown size={14} className={`navbar-chevron ${userDropdownOpen ? 'navbar-chevron--open' : ''}`} aria-hidden="true" />
               </Button>
               {userDropdownOpen && (

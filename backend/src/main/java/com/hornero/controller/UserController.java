@@ -496,6 +496,47 @@ public class UserController {
 
     // ═══════ Email Change Endpoints ═══════
 
+    // POST /api/users/me/become-creator - Promote USER to CREATOR role
+    @PostMapping("/me/become-creator")
+    public ResponseEntity<?> becomeCreator(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            User updatedUser = userService.becomeCreator(userId);
+
+            // Regenerate JWT with the new role so the frontend sees it immediately
+            String roleName = updatedUser.getRole().getName();
+            String accessToken = jwtUtil.generateToken(updatedUser.getEmail(), updatedUser.getId(), roleName);
+
+            ResponseCookie jwtCookie = ResponseCookie.from("jwt", accessToken)
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(jwtExpiration / 1000)
+                    .sameSite("Lax")
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+
+            AuthResponse authResponse = new AuthResponse(
+                null,
+                updatedUser.getId(),
+                updatedUser.getEmail(),
+                updatedUser.getUsername(),
+                updatedUser.getFirstName(),
+                roleName
+            );
+
+            return ResponseEntity.ok(authResponse);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
     @PostMapping("/me/email-change")
     public ResponseEntity<?> requestEmailChange(HttpServletRequest request,
                                                  @RequestBody EmailChangeRequest emailRequest) {
