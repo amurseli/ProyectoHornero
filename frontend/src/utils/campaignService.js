@@ -104,10 +104,12 @@ const MOCK_CAMPAIGNS = [
 function normalizeCampaign(campaign) {
   return {
     ...campaign,
-    imageUrl: campaign.media?.find(m => m.isPrimary)?.url 
-              || campaign.media?.[0]?.url 
-              || campaign.imageUrl 
-              || "/crowdfunding-campaign.jpg",
+    imageUrl: (() => {
+      const primary = campaign.media?.find(m => m.isPrimary) || campaign.media?.[0]
+      if (primary?.base64Data) return `data:image/jpeg;base64,${primary.base64Data}`
+      if (primary?.url) return primary.url
+      return campaign.imageUrl || "/crowdfunding-campaign.jpg"
+    })(),
     goal: campaign.targetAmount || campaign.goal || 0,
     category: campaign.category?.name || campaign.category || "General",
     daysLeft: campaign.endDate 
@@ -138,9 +140,9 @@ export const campaignService = {
 
   async getFeaturedCampaigns(limit = 4) {
     const campaigns = await this.getAllCampaigns()
-    return campaigns.filter((c) => ["CROWDFUNDING", "PLEDGE MANAGER"].includes(c.status)).slice(0, limit)
+    return campaigns.filter((c) => c.status === "CROWDFUNDING").slice(0, limit)
   },
-
+  
   async getRecentCampaigns(limit = 6) {
     const campaigns = await this.getAllCampaigns()
     return campaigns.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit)

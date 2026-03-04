@@ -1,8 +1,10 @@
 import { FiCalendar, FiTrendingUp } from "react-icons/fi"
 
 function CampaignCard({ campaign, variant = "featured" }) {
-  const progressPercentage = Math.min(((campaign.currentAmount || campaign.raised) / campaign.goal) * 100, 100)
-  const daysLeft = campaign.daysLeft || Math.floor(Math.random() * 30) + 1
+  const goal = campaign.goal || campaign.targetAmount || 0
+  const raised = campaign.currentAmount ?? campaign.raised ?? 0
+  const progressPercentage = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0
+  const daysLeft = campaign.daysLeft ?? 0
 
   // Variante compacta para sidebar
   if (variant === "compact" || variant === "spotlight") {
@@ -137,7 +139,7 @@ function CampaignCard({ campaign, variant = "featured" }) {
         <h3 className="campaign-title">{campaign.title}</h3>
 
         {campaign.description && (
-          <p className="campaign-description">{campaign.description}</p>
+          <p className="campaign-description">{campaign.shortDescription}</p>
         )}
 
         <div className="campaign-progress">
@@ -156,9 +158,9 @@ function CampaignCard({ campaign, variant = "featured" }) {
             <div className="stat-item stat-right">
               <p className="stat-value stat-days">
                 <FiCalendar className="icon-inline" />
-                {daysLeft} días
+                {daysLeft > 0 ? `${daysLeft} días` : "Finalizada"}
               </p>
-              <p className="stat-label">restantes</p>
+              <p className="stat-label">{daysLeft > 0 ? "restantes" : ""}</p>
             </div>
           </div>
 

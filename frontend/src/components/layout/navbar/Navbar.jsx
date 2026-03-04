@@ -49,7 +49,7 @@ function Navbar() {
         </div>
 
         <div className="navbar-actions">
-          <Link to="/create" className="navbar-creators-link">
+          <Link to="/for-creators" className="navbar-creators-link">
             <Button variant="ghost" className="navbar-creators-btn">Para creadores</Button>
           </Link>
 
@@ -121,7 +121,7 @@ function Navbar() {
 
       {mobileMenuOpen && (
         <div className="navbar-mobile-menu">
-          <Link to="/create" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+          <Link to="/for-creators" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
             Para creadores
           </Link>
           {user ? (
