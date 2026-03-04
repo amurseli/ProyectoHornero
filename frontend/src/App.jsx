@@ -16,31 +16,24 @@ import EmailSent from '$pages/EmailSent/EmailSent.jsx';
 import OAuth2Redirect from '$pages/OAuth2Redirect/OAuth2Redirect.jsx';
 import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
-import CampaignForm from '$pages/Campaigns/CampaignForm';
+import CreateCampaign from '$pages/Campaigns/CreateCampaign';
+import ForCreators from '$pages/ForCreators/ForCreators.jsx';
 
 // Components
+import Footer from '$components/layout/footer/Footer'
 import Navbar from '$components/layout/navbar/Navbar.jsx';
 import ProtectedRoute from '$components/ProtectedRoute';
 
-/**
- * AuthVerifier - Verifies JWT on every navigation
- * Triggers api.js interceptor which handles refresh automatically
- * Similar to SvelteKit's hooks.server.ts
- */
 function AuthVerifier() {
   const location = useLocation()
   const { user } = useUser()
 
   useEffect(() => {
-    // Only verify if user is logged in and not on auth pages
     const isAuthPage = location.pathname.includes('/login') || 
                        location.pathname.includes('/register')
     
     if (user && !isAuthPage) {
-      // Trigger JWT check - api.js will refresh if needed
-      api.get('/api/users/me').catch(() => {
-        // Errors handled by api.js (logout + redirect)
-      })
+      api.get('/api/users/me').catch(() => {})
     }
   }, [location.pathname, user])
 
@@ -54,7 +47,7 @@ function App() {
         <AuthVerifier />
         <Navbar />
         <Routes>
-          {/* Public routes */}
+          {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -64,26 +57,15 @@ function App() {
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns" element={<CampaignsList />} />
-          
-          {/* Protected routes */}
-          <Route path="/my-campaigns" element={
-            <ProtectedRoute>
-              <MyCampaigns />
-            </ProtectedRoute>
-          } />
-          <Route path="/my-campaigns/new" element={
-            <ProtectedRoute>
-              <CampaignForm />
-            </ProtectedRoute>
-          } />
-          <Route path="/my-campaigns/edit/:id" element={
-            <ProtectedRoute>
-              <CampaignForm />
-            </ProtectedRoute>
-          } />
-          
+          <Route path="/for-creators" element={<ForCreators />} />
+
+          {/* Protected */}
+          <Route path="/my-campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
+          <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <Footer />
       </Router>
     </UserProvider>
   )

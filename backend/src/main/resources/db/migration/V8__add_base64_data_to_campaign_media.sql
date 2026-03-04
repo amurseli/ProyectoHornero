@@ -1,0 +1,1 @@
+ALTER TABLE campaign_media ADD COLUMN base64_data TEXT;

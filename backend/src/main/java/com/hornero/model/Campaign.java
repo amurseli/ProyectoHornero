@@ -47,6 +47,9 @@ public class Campaign {
     @Column(name = "target_amount", precision = 15, scale = 2)
     private BigDecimal targetAmount;
 
+    @Column(name = "country")
+    private String country;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_owner")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "campaigns"})
@@ -92,6 +95,8 @@ public class Campaign {
     public CampaignCategory getCategory() { return category; }
     public List<CampaignMedia> getMedia() { return media; }
     public List<CreatorsCampaign> getCreators() { return creators; }
+    public String getCountry() { return country; }
+
 
     // Setters
     public void setTitle(String title) { this.title = title; }
@@ -104,4 +109,5 @@ public class Campaign {
     public void setTargetAmount(BigDecimal targetAmount) { this.targetAmount = targetAmount; }
     public void setOwner(User owner) { this.owner = owner; }
     public void setCategory(CampaignCategory category) { this.category = category; }
+    public void setCountry(String country) { this.country = country; }
 }
