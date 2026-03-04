@@ -160,7 +160,6 @@ function ForCreators() {
           position: absolute;
           border-radius: 50%;
           pointer-events: none;
-          opacity: 0.05;
         }
 
         .fc-hero-decor-1 {
@@ -348,7 +347,6 @@ function ForCreators() {
           font-size: 6rem;
           font-weight: 900;
           color: var(--color-primary);
-          opacity: 0.04;
           line-height: 1;
           position: absolute;
           top: -0.5rem;
@@ -424,7 +422,6 @@ function ForCreators() {
           top: -250px;
           right: -100px;
           background: white;
-          opacity: 0.03;
           pointer-events: none;
         }
 
