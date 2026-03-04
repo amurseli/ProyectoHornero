@@ -1,0 +1,371 @@
+/* ═══════════════════════════════════════════════════════════
+   USER CONFIG PAGE
+═══════════════════════════════════════════════════════════ */
+
+.config-page {
+  min-height: calc(100vh - var(--navbar-height));
+  display: flex;
+  justify-content: center;
+  padding: var(--space-xl) var(--space-md);
+  background: var(--color-background);
+}
+
+.config-container {
+  width: 100%;
+  max-width: 640px;
+}
+
+.config-header {
+  margin-bottom: var(--space-xl);
+}
+
+.config-header h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.config-header p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+/* ═══════ Section Card ═══════ */
+.config-section {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.config-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-lg);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ═══════ Form Grid ═══════ */
+.config-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+@media (min-width: 480px) {
+  .config-form-grid--two {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ═══════ Form Field ═══════ */
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.config-field label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.config-field input,
+.config-field select {
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background: var(--color-background);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+  font-family: var(--font-sans);
+}
+
+.config-field input:focus,
+.config-field select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
+}
+
+.config-field input:disabled {
+  background: var(--color-muted);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.config-field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+}
+
+/* ═══════ Password Inputs ═══════ */
+.config-password-wrapper {
+  position: relative;
+}
+
+.config-password-wrapper input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.config-password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+}
+
+.config-password-toggle:hover {
+  color: var(--color-text-secondary);
+}
+
+/* ═══════ Actions ═══════ */
+.config-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+/* ═══════ Messages ═══════ */
+.config-message {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  margin-bottom: var(--space-md);
+}
+
+.config-message--success {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.config-message--error {
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+/* ═══════ Loading ═══════ */
+.config-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ═══════ Email Row ═══════ */
+.config-email-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+.config-email-row .config-field {
+  flex: 1;
+}
+
+/* ═══════ Pending Email Banner ═══════ */
+.config-pending-email {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-warning-light);
+  border: 1px solid var(--color-warning);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-md);
+}
+
+.config-pending-email span {
+  color: var(--color-text-primary);
+}
+
+.config-pending-email strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* ═══════ Connection Card ═══════ */
+.config-connection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+}
+
+.config-connection-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.config-connection-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.config-connection-icon--google {
+  background: #f1f3f4;
+}
+
+.config-connection-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.config-connection-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.config-connection-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.config-connection-status {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.config-connection-status--linked {
+  color: var(--color-success);
+}
+
+.config-connection-email {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ═══════ Warning Inline ═══════ */
+.config-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-md);
+  background: var(--color-warning-light);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-sm);
+  line-height: 1.4;
+}
+
+.config-warning svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-warning);
+}
+
+/* ═══════ Confirmation Dialog ═══════ */
+.config-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  animation: configOverlayIn 0.15s ease-out;
+}
+
+@keyframes configOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.config-dialog {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  max-width: 400px;
+  width: calc(100% - 2rem);
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: configDialogIn 0.2s ease-out;
+}
+
+@keyframes configDialogIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.config-dialog-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-warning-light, #fef3c7);
+  color: var(--color-warning, #f59e0b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-md);
+}
+
+.config-dialog-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
+.config-dialog-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-lg);
+}
+
+.config-dialog-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.config-dialog-actions .btn--danger {
+  background: var(--color-error, #ef4444);
+  color: var(--color-white);
+  border: none;
+}
+
+.config-dialog-actions .btn--danger:hover {
+  background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
+}

@@ -44,6 +44,24 @@ export function UserProvider({ children }) {
   }, [])
 
   /**
+   * Refresh user data from the server (e.g. after profile update)
+   */
+  const refreshUser = async () => {
+    try {
+      const userData = await api.get('/api/users/me')
+      setUser({
+        userId: userData.userId,
+        email: userData.email,
+        userName: userData.userName,
+        firstName: userData.firstName,
+        role: userData.role
+      })
+    } catch (error) {
+      console.error('Failed to refresh user:', error)
+    }
+  }
+
+  /**
    * Set user data after login/register
    */
   const login = (userData) => {
@@ -74,7 +92,7 @@ export function UserProvider({ children }) {
   const isAuthenticated = () => !!user
 
   return (
-    <UserContext.Provider value={{ user, login, logout, isAuthenticated, loading }}>
+    <UserContext.Provider value={{ user, login, logout, refreshUser, isAuthenticated, loading }}>
       {children}
     </UserContext.Provider>
   )

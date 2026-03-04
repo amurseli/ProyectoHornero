@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { handleOAuth2Redirect } from "../../utils/auth/oauth"
 import { useUser } from "../../store/useUser"
+import { AnimatedCheck } from "../../components/ui"
 import "../auth.css"
 
 function OAuth2Redirect() {
@@ -19,10 +20,10 @@ function OAuth2Redirect() {
           login(result.user)
           setStatus("success")
 
-          // Redirect to home page after a brief moment
+          // Redirect to home page after showing the checkmark
           setTimeout(() => {
             navigate("/")
-          }, 1000)
+          }, 2500)
         } else if (result && result.error) {
           setStatus("error")
           console.error("OAuth2 error:", result.error)
@@ -62,7 +63,7 @@ function OAuth2Redirect() {
 
           {status === "success" && (
             <div className="auth-success">
-              <div className="auth-success-icon">✓</div>
+              <AnimatedCheck />
               <h3 className="auth-success-title">¡Inicio de sesión exitoso!</h3>
               <p className="auth-success-text">Redirigiendo...</p>
             </div>

@@ -3,13 +3,14 @@ package com.hornero.config;
 import com.hornero.model.RefreshToken;
 import com.hornero.model.Role;
 import com.hornero.model.User;
+import com.hornero.model.UserConnection;
 import com.hornero.repository.RoleRepository;
+import com.hornero.repository.UserConnectionRepository;
 import com.hornero.repository.UserRepository;
 import com.hornero.service.EmailService;
 import com.hornero.service.PasswordResetService;
 import com.hornero.service.RefreshTokenService;
 import com.hornero.util.JwtUtil;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -26,7 +27,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Component
@@ -36,6 +36,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserConnectionRepository userConnectionRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -126,51 +129,64 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     }
 
     private User findOrCreateUser(String email, String name, String picture, String oauthId, String provider) {
-        // Try to find user by email and provider
-        Optional<User> existingUser = userRepository.findByEmailAndOauthProvider(email, provider);
+        // 1) Look up by (provider, provider_id) in user_connections — this is the reliable key
+        Optional<UserConnection> existingConnection = userConnectionRepository.findByProviderAndProviderId(provider, oauthId);
 
-        if (existingUser.isPresent()) {
-          // Update existing user's info
-          User user = existingUser.get();
-          user.setOauthId(oauthId);
-          user.setProfileImageUrl(picture);
-          user.setEmailVerified(true);
-          return userRepository.save(user);
+        if (existingConnection.isPresent()) {
+            // User already has this provider linked — update connection info and return user
+            UserConnection conn = existingConnection.get();
+            conn.setProviderEmail(email);
+            conn.setDisplayName(name);
+            conn.setProfileImageUrl(picture);
+            userConnectionRepository.save(conn);
+
+            // Eagerly load user by ID to avoid LazyInitializationException
+            User user = userRepository.findById(conn.getUser().getId())
+                    .orElseThrow(() -> new RuntimeException("User not found for connection"));
+            user.setEmailVerified(true);
+            return userRepository.save(user);
         }
 
-        // Try to find user by email only (might be registered with password before)
+        // 2) No existing connection — try to find user by email (link to existing account)
         Optional<User> userByEmail = userRepository.findByEmail(email);
         if (userByEmail.isPresent()) {
-          // Link OAuth to existing account
-          User user = userByEmail.get();
-          user.setOauthProvider(provider);
-          user.setOauthId(oauthId);
-          user.setProfileImageUrl(picture);
-          user.setEmailVerified(true);
-          return userRepository.save(user);
+            User user = userByEmail.get();
+            user.setEmailVerified(true);
+            userRepository.save(user);
+
+            // Create the connection
+            UserConnection conn = new UserConnection(user, provider, oauthId, email, name, picture);
+            userConnectionRepository.save(conn);
+
+            return user;
         }
 
-        // Create new user with temporary password
+        // 3) Completely new user — create user + connection
         User newUser = new User();
         newUser.setEmail(email);
-        newUser.setOauthProvider(provider);
-        newUser.setOauthId(oauthId);
-        newUser.setProfileImageUrl(picture);
         newUser.setEmailVerified(true);
         newUser.setEnabled(true);
 
-        // Parse name (simple approach)
+        // Parse name
         if (name != null) {
-          String[] nameParts = name.split(" ", 2);
-          newUser.setFirstName(nameParts[0]);
-          if (nameParts.length > 1) {
-            newUser.setLastName(nameParts[1]);
-          }
-          // Generate username from email
-          newUser.setUserName(email.split("@")[0]);
+            String[] nameParts = name.split(" ", 2);
+            newUser.setFirstName(nameParts[0]);
+            if (nameParts.length > 1) {
+                newUser.setLastName(nameParts[1]);
+            }
         }
 
-        // Assign default role (USER)
+        // Generate unique username from email prefix
+        String baseUserName = email.split("@")[0];
+        String userName = baseUserName;
+        int suffix = 1;
+        while (userRepository.existsByUserName(userName)) {
+            userName = baseUserName + suffix;
+            suffix++;
+        }
+        newUser.setUserName(userName);
+
+        // Assign default role
         Role userRole = roleRepository.findByName("USER")
                 .orElseGet(() -> {
                     Role role = new Role();
@@ -179,26 +195,25 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 });
         newUser.setRole(userRole);
 
-        // Generate temporary password for OAuth users
+        // Generate temporary password
         String temporaryPassword = generateTemporaryPassword();
         newUser.setPassword(passwordEncoder.encode(temporaryPassword));
 
-        // Save user first
         User savedUser = userRepository.save(newUser);
 
-        // Send welcome email with password setup link asynchronously
-        try {
-            // Create password reset token and get the link
-            String resetLink = passwordResetService.createPasswordResetTokenAndGetLink(email);
+        // Create the connection
+        UserConnection conn = new UserConnection(savedUser, provider, oauthId, email, name, picture);
+        userConnectionRepository.save(conn);
 
+        // Send welcome email with password setup link
+        try {
+            String resetLink = passwordResetService.createPasswordResetTokenAndGetLink(email);
             if (resetLink != null) {
-                // Send welcome email with the temporary password and reset link
                 emailService.sendOAuthWelcomeEmail(email, savedUser.getFirstName(), temporaryPassword, resetLink);
                 logger.info("OAuth welcome email sent to new user: {}", email);
             }
         } catch (Exception e) {
             logger.error("Failed to send welcome email to new OAuth user: {}", email, e);
-            // Don't fail the authentication if email sending fails
         }
 
         return savedUser;

@@ -18,6 +18,8 @@ import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
 import CreateCampaign from '$pages/Campaigns/CreateCampaign';
 import ForCreators from '$pages/ForCreators/ForCreators.jsx';
+import UserConfig from '$pages/UserConfig/UserConfig';
+import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -54,6 +56,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns" element={<CampaignsList />} />
@@ -62,7 +65,8 @@ function App() {
           {/* Protected */}
           <Route path="/my-campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
           <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
-
+          <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Footer />
