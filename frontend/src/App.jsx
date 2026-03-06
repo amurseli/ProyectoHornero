@@ -16,31 +16,28 @@ import EmailSent from '$pages/EmailSent/EmailSent.jsx';
 import OAuth2Redirect from '$pages/OAuth2Redirect/OAuth2Redirect.jsx';
 import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
-import CampaignForm from '$pages/Campaigns/CampaignForm';
+import CreateCampaign from '$pages/Campaigns/CreateCampaign';
+import ForCreators from '$pages/ForCreators/ForCreators.jsx';
+import BecomeCreator from '$pages/BecomeCreator/BecomeCreator.jsx';
+import UserConfig from '$pages/UserConfig/UserConfig';
+import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 
 // Components
+import Footer from '$components/layout/footer/Footer'
 import Navbar from '$components/layout/navbar/Navbar.jsx';
 import ProtectedRoute from '$components/ProtectedRoute';
+import CreatorRoute from '$components/CreatorRoute';
 
-/**
- * AuthVerifier - Verifies JWT on every navigation
- * Triggers api.js interceptor which handles refresh automatically
- * Similar to SvelteKit's hooks.server.ts
- */
 function AuthVerifier() {
   const location = useLocation()
   const { user } = useUser()
 
   useEffect(() => {
-    // Only verify if user is logged in and not on auth pages
     const isAuthPage = location.pathname.includes('/login') || 
                        location.pathname.includes('/register')
     
     if (user && !isAuthPage) {
-      // Trigger JWT check - api.js will refresh if needed
-      api.get('/api/users/me').catch(() => {
-        // Errors handled by api.js (logout + redirect)
-      })
+      api.get('/api/users/me').catch(() => {})
     }
   }, [location.pathname, user])
 
@@ -54,36 +51,28 @@ function App() {
         <AuthVerifier />
         <Navbar />
         <Routes>
-          {/* Public routes */}
+          {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns" element={<CampaignsList />} />
-          
-          {/* Protected routes */}
-          <Route path="/my-campaigns" element={
-            <ProtectedRoute>
-              <MyCampaigns />
-            </ProtectedRoute>
-          } />
-          <Route path="/my-campaigns/new" element={
-            <ProtectedRoute>
-              <CampaignForm />
-            </ProtectedRoute>
-          } />
-          <Route path="/my-campaigns/edit/:id" element={
-            <ProtectedRoute>
-              <CampaignForm />
-            </ProtectedRoute>
-          } />
+          <Route path="/for-creators" element={<ForCreators />} />
+
+          {/* Protected */}
+          <Route path="/my-campaigns" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
+          <Route path="/my-campaigns/new" element={<CreatorRoute><CreateCampaign /></CreatorRoute>} />
+          <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
+          <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <Footer />
       </Router>
     </UserProvider>
   )

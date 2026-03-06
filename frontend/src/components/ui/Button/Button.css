@@ -46,6 +46,16 @@
   background: var(--color-muted);
 }
 
+.btn-danger {
+  background: var(--color-error, #ef4444);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
+  transform: translateY(-1px);
+}
+
 /* Sizes */
 .btn-sm {
   padding: 0.5rem 1rem;

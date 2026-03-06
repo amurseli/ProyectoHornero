@@ -54,15 +54,8 @@ public class User {
 
     private LocalDateTime updatedAt;
 
-    // OAuth2 fields
-    @Column(name = "oauth_provider")
-    private String oauthProvider; // 'google', 'local', etc.
-
-    @Column(name = "oauth_id")
-    private String oauthId; // Provider's user ID
-
-    @Column(name = "profile_image_url")
-    private String profileImageUrl;
+    @Column(name = "pending_email")
+    private String pendingEmail;
     
     @PrePersist
     protected void onCreate() {
@@ -132,6 +125,22 @@ public class User {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
     
     public String getBio() {
         return bio;
@@ -173,28 +182,12 @@ public class User {
         this.role = role;
     }
 
-    public String getOauthProvider() {
-        return oauthProvider;
+    public String getPendingEmail() {
+        return pendingEmail;
     }
 
-    public void setOauthProvider(String oauthProvider) {
-        this.oauthProvider = oauthProvider;
-    }
-
-    public String getOauthId() {
-        return oauthId;
-    }
-
-    public void setOauthId(String oauthId) {
-        this.oauthId = oauthId;
-    }
-
-    public String getProfileImageUrl() {
-        return profileImageUrl;
-    }
-
-    public void setProfileImageUrl(String profileImageUrl) {
-        this.profileImageUrl = profileImageUrl;
+    public void setPendingEmail(String pendingEmail) {
+        this.pendingEmail = pendingEmail;
     }
 
     // Helper methods for compatibility with UserService

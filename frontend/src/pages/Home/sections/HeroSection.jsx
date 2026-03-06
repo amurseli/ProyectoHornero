@@ -5,7 +5,7 @@ function HeroSection({ activeTab, onTabChange }) {
     <section className="hero-section">
       <div className="hero-content-wrapper">
         <div className="hero-content">
-          <h1 className="hero-title">Haz realidad un proyecto creativo</h1>
+          <h1 className="hero-title">Aquí comienzan las ideas</h1>
           <p className="hero-description">
             Explora miles de proyectos innovadores y apoya a creadores de todo el mundo
           </p>

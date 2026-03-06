@@ -38,7 +38,7 @@ function handleSessionExpired() {
   window.dispatchEvent(new CustomEvent('auth:logout'))
 
   // Redirect to login only if on protected route
-  const publicRoutes = ['/', '/campaigns', '/verify-email', '/reset-password', '/forgot-password', '/email-sent']
+  const publicRoutes = ['/', '/campaigns', '/verify-email', '/confirm-email-change', '/reset-password', '/forgot-password', '/email-sent']
   const currentPath = window.location.pathname
   const isPublicRoute = publicRoutes.includes(currentPath) ||
                         currentPath.includes('/login') ||

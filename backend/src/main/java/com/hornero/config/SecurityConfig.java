@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/register", "/api/users/login", "/api/users/logout", "/api/health/**").permitAll()
                 .requestMatchers("/api/users/forgot-password", "/api/users/reset-password").permitAll() // Allow password reset endpoints without authentication
                 .requestMatchers("/api/users/verify-email").permitAll() // Allow email verification without authentication
+                .requestMatchers("/api/users/me/email-change/confirm").permitAll() // Allow email change confirmation via link
                 .requestMatchers("/api/auth/refresh").permitAll() // Allow refresh token endpoint without authentication
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll() // Allow OAuth2 endpoints
                 .requestMatchers(HttpMethod.GET, "/api/campaigns", "/api/campaigns/**").permitAll() // Allow public access to view campaigns

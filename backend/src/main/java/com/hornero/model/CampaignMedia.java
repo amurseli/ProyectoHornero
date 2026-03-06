@@ -18,8 +18,11 @@ public class CampaignMedia {
     @Column(name = "media_type", nullable = false, length = 10)
     private String mediaType;
 
-    @Column(nullable = false, length = 1000)
+    @Column(length = 1000)
     private String url;
+
+    @Column(name = "base64_data", columnDefinition = "TEXT")
+    private String base64Data;
 
     @Column(name = "is_primary")
     private Boolean isPrimary = false;
@@ -40,6 +43,7 @@ public class CampaignMedia {
     public Campaign getCampaign() { return campaign; }
     public String getMediaType() { return mediaType; }
     public String getUrl() { return url; }
+    public String getBase64Data() { return base64Data; }
     public Boolean getIsPrimary() { return isPrimary; }
     public Integer getDisplayOrder() { return displayOrder; }
     public LocalDateTime getCreatedAt() { return createdAt; }
@@ -48,6 +52,7 @@ public class CampaignMedia {
     public void setCampaign(Campaign campaign) { this.campaign = campaign; }
     public void setMediaType(String mediaType) { this.mediaType = mediaType; }
     public void setUrl(String url) { this.url = url; }
+    public void setBase64Data(String base64Data) { this.base64Data = base64Data; }
     public void setIsPrimary(Boolean isPrimary) { this.isPrimary = isPrimary; }
     public void setDisplayOrder(Integer displayOrder) { this.displayOrder = displayOrder; }
 }

@@ -6,6 +6,7 @@ import { useCampaigns } from "../../hooks/useCampaigns"
 import HeroSection from "./sections/HeroSection"
 import FeaturedSection from "./sections/FeaturedSection"
 import SpotlightSection from "./sections/SpotlightSection"
+import CTASection from "./sections/CTASection"
 import "./Home.css"
 
 function Home() {
@@ -40,7 +41,7 @@ function Home() {
         </div>
       </main>
 
-      <Footer />
+      <CTASection />
     </div>
   )
 }
