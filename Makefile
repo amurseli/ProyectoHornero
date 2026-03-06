@@ -4,6 +4,7 @@
 
 # Variables
 COMPOSE := docker-compose
+FRONTEND_DIR := frontend
 SERVICES_ALL := backend payments postgres
 SERVICES_DEV := backend payments postgres
 
@@ -33,22 +34,23 @@ help:
 up:
 	@echo "🟢 Levantando Proyecto Hornero..."
 	$(COMPOSE) up -d
+	@echo "🟢 Levantando frontend..."
+	cd $(FRONTEND_DIR) && $(COMPOSE) up -d
 	@echo "✅ Proyecto levantado con éxito"
 	@echo ""
 	@echo "📡 Servicios disponibles:"
+	@echo "  Frontend: http://localhost:5173"
 	@echo "  Backend:  http://localhost:8080"
 	@echo "  Payments: http://localhost:8081"
 	@echo "  Postgres: localhost:5432"
-	@echo ""
-	@echo "🧪 Verificar servicios:"
-	@echo "  curl http://localhost:8080/"
-	@echo "  curl http://localhost:8081/api/health"
 	@echo ""
 
 # ------------------------------------------------------------
 # 🛑 Detener entorno completo
 # ------------------------------------------------------------
 down:
+	@echo "🛑 Deteniendo frontend..."
+	cd $(FRONTEND_DIR) && $(COMPOSE) down
 	@echo "🛑 Deteniendo servicios..."
 	$(COMPOSE) down
 	@echo "✅ Servicios detenidos"
@@ -64,6 +66,8 @@ restart: down up
 build:
 	@echo "🏗️ Reconstruyendo imágenes..."
 	$(COMPOSE) build --no-cache
+	@echo "🏗️ Reconstruyendo frontend..."
+	cd $(FRONTEND_DIR) && $(COMPOSE) build --no-cache
 	@echo "✅ Reconstrucción completa"
 
 # ------------------------------------------------------------
@@ -83,12 +87,14 @@ logs-payments:
 # ------------------------------------------------------------
 ps:
 	$(COMPOSE) ps
+	cd $(FRONTEND_DIR) && $(COMPOSE) ps
 
 # ------------------------------------------------------------
 # 🧹 Limpiar entorno (contenedores + imágenes + volúmenes)
 # ------------------------------------------------------------
 clean:
 	@echo "🧹 Limpiando entorno..."
+	cd $(FRONTEND_DIR) && $(COMPOSE) down -v --rmi all --remove-orphans || true
 	$(COMPOSE) down -v --rmi all --remove-orphans || true
 	@echo "✅ Limpieza completa"
 

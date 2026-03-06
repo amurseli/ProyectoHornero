@@ -29,6 +29,8 @@ services:
     container_name: ${BACKEND_CONTAINER_NAME:-hornero-backend}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    env_file:
+      - ./backend/.env.backend
     environment:
       # Database
       DATABASE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-hornero}
