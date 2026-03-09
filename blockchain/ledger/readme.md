@@ -5,6 +5,10 @@ mvn -f ledger/pom.xml compile exec:java \
   -Dexec.args="ledger/events/register-transaction-event.json"
 
 
+## PARA OBTENER EL .JAR
+mvn -f ledger/pom.xml clean package
+
+y agarrar el ledger/targer/ledger-1.0-SNAPSHOT-all.jar
 
 
 ## 1) Compilar contrato Solidity
@@ -20,6 +24,11 @@ solc \
   -o src/main/resources/contracts \
   --overwrite
 ```
+
+Importante: si cambiás la firma del contrato (por ejemplo `bytes32` -> `string`), tenés que:
+- recompilar ABI/BIN,
+- redeployar el contrato,
+- usar la nueva `CONTRACT_ADDRESS`.
 
 ## 2) Configuración de claves y datos
 
@@ -127,6 +136,9 @@ Respuesta exitosa:
 ```
 
 Errores de validación devuelven `400`; errores internos `500`.
+
+Para que en explorer se vean legibles `emisor/receptor`, el evento debe usar `string` no-indexado
+(como está ahora). Eso requiere nueva dirección de contrato tras redeploy.
 
 ### Test local del handler (sin AWS)
 

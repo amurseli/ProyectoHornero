@@ -5,7 +5,6 @@ import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.crypto.Credentials;
@@ -16,13 +15,10 @@ import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.response.PollingTransactionReceiptProcessor;
-import org.web3j.utils.Numeric;
 
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 
 public class RegisterTransaction {
@@ -30,8 +26,8 @@ public class RegisterTransaction {
     private static final Event TX_REGISTERED_EVENT = new Event(
         "TransactionRegistered",
         List.of(
-            new TypeReference<Bytes32>(true) { },
-            new TypeReference<Bytes32>(true) { },
+            new TypeReference<Utf8String>() { },
+            new TypeReference<Utf8String>() { },
             new TypeReference<Uint256>() { },
             new TypeReference<Utf8String>() { },
             new TypeReference<Uint256>() { }
@@ -68,8 +64,8 @@ public class RegisterTransaction {
             Function registerTxFunction = new Function(
                 "registerTransaction",
                 List.of(
-                    toBytes32(emisor),
-                    toBytes32(receptor),
+                    new Utf8String(emisor),
+                    new Utf8String(receptor),
                     new Uint256(amount),
                     new Utf8String(reference)
                 ),
@@ -144,20 +140,6 @@ public class RegisterTransaction {
         } finally {
             web3j.shutdown();
         }
-    }
-
-    private static Bytes32 toBytes32(String value) {
-        byte[] data;
-        if (value.startsWith("0x")) {
-            data = Numeric.hexStringToByteArray(value);
-        } else {
-            data = value.getBytes(StandardCharsets.UTF_8);
-        }
-
-        if (data.length > 32) {
-            throw new IllegalArgumentException("Value exceeds 32 bytes: " + value);
-        }
-        return new Bytes32(Arrays.copyOf(data, 32));
     }
 
     private static String weiToMatic(BigInteger wei) {
