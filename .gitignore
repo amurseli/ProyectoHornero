@@ -28,6 +28,7 @@ db.sqlite3-journal
 .env
 backend/.env.backend
 frontend/.env.frontend
+payments/.env.payments
 !backend/.env.backend.example
 !frontend/.env.frontend.example
 

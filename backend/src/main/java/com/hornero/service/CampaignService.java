@@ -4,7 +4,9 @@ import com.hornero.model.Campaign;
 import com.hornero.repository.CampaignRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,5 +54,14 @@ public class CampaignService {
             throw new RuntimeException("Campaña no encontrada");
         }
         campaignRepository.deleteById(id);
+    }
+
+    // Llamado internamente por el payments service cuando una contribucion es aprobada
+    @Transactional
+    public void addToCampaignAmount(Long campaignId, BigDecimal amount) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campaña no encontrada: " + campaignId));
+        campaign.setCurrentAmount(campaign.getCurrentAmount().add(amount));
+        campaignRepository.save(campaign);
     }
 }

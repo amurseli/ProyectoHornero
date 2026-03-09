@@ -36,6 +36,8 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-hornero}
       DATABASE_USER: ${DB_USER:-hornero}
       DATABASE_PASSWORD: ${DB_PASSWORD:-hornero123}
+      # Internal service auth
+      SERVICE_KEY_PAYMENTS: ${SERVICE_KEY_PAYMENTS:-internal-secret-dev}
       # Services URLs
       PAYMENTS_SERVICE_URL: ${PAYMENTS_SERVICE_URL:-http://payments:8081}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
@@ -62,6 +64,10 @@ services:
       # MercadoPago
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
+      # Internal service auth
+      SERVICE_KEY_PAYMENTS: ${SERVICE_KEY_PAYMENTS:-internal-secret-dev}
+      # JWT (mismo secret que el backend para parsear tokens)
+      JWT_SECRET: ${JWT_SECRET:-hornero-secret-key-change-this-in-production-minimum-256-bits-for-security}
       # Services URLs
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       BACKEND_URL: ${BACKEND_URL:-http://backend:8080}

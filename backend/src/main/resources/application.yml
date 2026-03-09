@@ -74,6 +74,7 @@ spring.security:
 
 # Frontend URL for OAuth redirects
 app:
+  service-key: ${SERVICE_KEY_PAYMENTS:internal-secret-dev}
   frontend:
     url: ${FRONTEND_URL:http://localhost:5173}
   oauth2:
