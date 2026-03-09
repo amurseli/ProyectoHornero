@@ -10,6 +10,7 @@ import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.tx.RawTransactionManager;
@@ -18,6 +19,8 @@ import org.web3j.tx.response.PollingTransactionReceiptProcessor;
 import org.web3j.utils.Numeric;
 
 import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +37,8 @@ public class RegisterTransaction {
             new TypeReference<Uint256>() { }
         )
     );
+    private static final BigDecimal WEI_PER_MATIC = new BigDecimal("1000000000000000000");
+    private static final BigDecimal WEI_PER_GWEI = new BigDecimal("1000000000");
 
     public static void main(String[] args) throws Exception {
         String contractAddress = args.length > 0 ? args[0] : EnvConfig.getRequired("CONTRACT_ADDRESS");
@@ -59,7 +64,6 @@ public class RegisterTransaction {
             TransactionManager txManager =
                 new RawTransactionManager(web3j, credentials, BlockchainClient.chainId());
             var gasPrice = TxConfig.gasPriceWei(web3j);
-            var gasLimit = TxConfig.gasLimit();
 
             Function registerTxFunction = new Function(
                 "registerTransaction",
@@ -73,6 +77,38 @@ public class RegisterTransaction {
             );
 
             String data = FunctionEncoder.encode(registerTxFunction);
+            var gasLimit = TxConfig.gasLimit(web3j, credentials.getAddress(), contractAddress, data);
+            var maxTxCostWei = gasPrice.multiply(gasLimit);
+            var balanceWei = web3j.ethGetBalance(
+                credentials.getAddress(),
+                DefaultBlockParameterName.LATEST
+            ).send().getBalance();
+
+            System.out.printf(
+                "Gas config -> gasPriceWei=%s (~%s gwei), gasLimit=%s, maxTxCostWei=%s (~%s MATIC)%n",
+                gasPrice,
+                weiToGwei(gasPrice),
+                gasLimit,
+                maxTxCostWei,
+                weiToMatic(maxTxCostWei)
+            );
+            System.out.printf(
+                "Wallet balance -> address=%s, balanceWei=%s (~%s MATIC)%n",
+                credentials.getAddress(),
+                balanceWei,
+                weiToMatic(balanceWei)
+            );
+
+            if (balanceWei.compareTo(maxTxCostWei) < 0) {
+                BigInteger missing = maxTxCostWei.subtract(balanceWei);
+                throw new IllegalStateException(
+                    "Insufficient funds for gas. " +
+                        "requiredWei=" + maxTxCostWei + " (~" + weiToMatic(maxTxCostWei) + " MATIC), " +
+                        "balanceWei=" + balanceWei + " (~" + weiToMatic(balanceWei) + " MATIC), " +
+                        "missingWei=" + missing + " (~" + weiToMatic(missing) + " MATIC). " +
+                        "Adjust POLYGON_GAS_PRICE_GWEI / POLYGON_MAX_GAS_PRICE_GWEI / POLYGON_GAS_LIMIT or fund wallet."
+                );
+            }
 
             EthSendTransaction tx = txManager.sendTransaction(
                 gasPrice,
@@ -122,5 +158,13 @@ public class RegisterTransaction {
             throw new IllegalArgumentException("Value exceeds 32 bytes: " + value);
         }
         return new Bytes32(Arrays.copyOf(data, 32));
+    }
+
+    private static String weiToMatic(BigInteger wei) {
+        return new BigDecimal(wei).divide(WEI_PER_MATIC, 6, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+    }
+
+    private static String weiToGwei(BigInteger wei) {
+        return new BigDecimal(wei).divide(WEI_PER_GWEI, 3, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
     }
 }

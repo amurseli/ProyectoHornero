@@ -1,3 +1,12 @@
+## CORRER LOCAL EN LAMBDA
+
+mvn -f ledger/pom.xml compile exec:java \
+  -Dexec.mainClass="com.hornero.blockchain.LocalLambdaInvoke" \
+  -Dexec.args="ledger/events/register-transaction-event.json"
+
+
+
+
 ## 1) Compilar contrato Solidity
 
 1. Instalar `solc` (`brew install solidity` o equivalente).
@@ -20,6 +29,7 @@ Crear `ledger/.env` copiando `ledger/.env.example` y completar:
 - `POLYGON_CHAIN_ID`: opcional (Amoy `80002`, Mainnet `137`). Si no se define, se infiere por URL.
 - `POLYGON_MIN_GAS_PRICE_GWEI`: mínimo de gas price a usar (default `25`).
 - `POLYGON_GAS_PRICE_GWEI`: opcional para forzar un valor fijo.
+- `POLYGON_MAX_GAS_PRICE_GWEI`: opcional para limitar un techo y evitar spikes del nodo.
 - `POLYGON_GAS_LIMIT`: opcional (default `500000`).
 - `PRIVATE_KEY`: clave privada de la wallet que firma.
 - `CONTRACT_ADDRESS`: dirección del contrato desplegado (solo para registrar sin redeploy).
@@ -54,6 +64,87 @@ mvn -f ledger/pom.xml exec:java \
 ```bash
 mvn -f ledger/pom.xml exec:java -Dexec.mainClass="com.hornero.blockchain.EndToEndFlow"
 ```
+
+## 4) Ejecutar en AWS Lambda (API Gateway)
+
+### Build del artefacto para Lambda
+
+```bash
+mvn -f ledger/pom.xml clean package
+```
+
+Subir `ledger/target/ledger-1.0-SNAPSHOT-all.jar` como código de la función Lambda.
+
+### Handler
+
+Configurar el handler como:
+
+```text
+com.hornero.blockchain.RegisterTransactionLambdaHandler
+```
+
+### Variables de entorno en Lambda
+
+Definir al menos:
+
+- `POLYGON_RPC_URL`
+- `PRIVATE_KEY`
+- `CONTRACT_ADDRESS` (si no lo enviás en el body)
+
+Opcionales:
+
+- `POLYGON_CHAIN_ID`
+- `POLYGON_MIN_GAS_PRICE_GWEI`
+- `POLYGON_GAS_PRICE_GWEI`
+- `POLYGON_MAX_GAS_PRICE_GWEI`
+- `POLYGON_GAS_LIMIT`
+- `TX_REFERENCE`
+- `LAMBDA_DEBUG_ERRORS` (`true` para incluir `cause` en errores `500`)
+
+### Body esperado del POST
+
+```json
+{
+  "contractAddress": "0x...",
+  "emisor": "emisor-001",
+  "receptor": "receptor-001",
+  "amount": "1000",
+  "reference": "factura-0001"
+}
+```
+
+`contractAddress` es opcional si está en variable de entorno (`CONTRACT_ADDRESS`).
+`reference` es opcional (usa `TX_REFERENCE` o `"sin-referencia"`).
+
+Respuesta exitosa:
+
+```json
+{
+  "ok": true,
+  "txHash": "0x...",
+  "contractAddress": "0x..."
+}
+```
+
+Errores de validación devuelven `400`; errores internos `500`.
+
+### Test local del handler (sin AWS)
+
+Editar `ledger/events/register-transaction-event.json` con tus valores y ejecutar:
+
+```bash
+mvn -f ledger/pom.xml compile exec:java \
+  -Dexec.mainClass="com.hornero.blockchain.LocalLambdaInvoke" \
+  -Dexec.args="ledger/events/register-transaction-event.json"
+```
+
+Esto invoca localmente `RegisterTransactionLambdaHandler` con un evento estilo Lambda y muestra el response JSON.
+Además, imprime diagnóstico de costo antes de enviar la transacción:
+
+- `gasPriceWei` (y aproximación en gwei)
+- `gasLimit`
+- `maxTxCostWei` (costo máximo estimado en MATIC)
+- `balanceWei` de la wallet
 
 
 

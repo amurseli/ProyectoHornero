@@ -1,0 +1,10 @@
+{
+  "body": {
+    "contractAddress": "0x119198cb658fd9ea04f40c6323ff717b51a79df3",
+    "emisor": "emisor-001",
+    "receptor": "receptor-001",
+    "amount": "1000",
+    "reference": "factura-0001"
+  },
+  "isBase64Encoded": false
+}
