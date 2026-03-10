@@ -61,6 +61,12 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
+        <!-- Apache HttpClient5 - necesario para que RestTemplate soporte PATCH -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
+
         <!-- JJWT - para parsear el JWT del usuario -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

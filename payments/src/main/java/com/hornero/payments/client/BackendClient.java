@@ -1,9 +1,11 @@
 package com.hornero.payments.client;
 
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -28,7 +30,10 @@ public class BackendClient {
     private String serviceKey;
 
     public BackendClient() {
-        this.restTemplate = new RestTemplate();
+        // HttpComponentsClientHttpRequestFactory soporta PATCH, el cliente por defecto de Java no
+        HttpComponentsClientHttpRequestFactory factory =
+                new HttpComponentsClientHttpRequestFactory(HttpClients.createDefault());
+        this.restTemplate = new RestTemplate(factory);
     }
 
     // Valida que la campana existe, esta en status CROWDFUNDING y no vencio su fecha.
