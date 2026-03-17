@@ -27,16 +27,19 @@ public class ContributionStatusResponse {
     public static class TransactionInfo {
         private Long id;
         private String method;
-        private Long idTransactionMp;
+        private String idTransactionExternal;
+        private String paymentProvider;
 
-        public TransactionInfo(Long id, String method, Long idTransactionMp) {
+        public TransactionInfo(Long id, String method, String idTransactionExternal, String paymentProvider) {
             this.id = id;
             this.method = method;
-            this.idTransactionMp = idTransactionMp;
+            this.idTransactionExternal = idTransactionExternal;
+            this.paymentProvider = paymentProvider;
         }
 
         public Long getId() { return id; }
         public String getMethod() { return method; }
-        public Long getIdTransactionMp() { return idTransactionMp; }
+        public String getIdTransactionExternal() { return idTransactionExternal; }
+        public String getPaymentProvider() { return paymentProvider; }
     }
 }

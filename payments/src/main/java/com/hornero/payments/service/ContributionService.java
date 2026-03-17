@@ -99,7 +99,8 @@ public class ContributionService {
 
             Payment mpPayment = new PaymentClient().create(mpRequest);
 
-            transaction.setIdTransactionMp(mpPayment.getId());
+            transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
+            transaction.setPaymentProvider("MERCADO_PAGO");
             transactionRepository.save(transaction);
 
             // TODO: loguear estado recibido de MP en transaction_logs
@@ -144,7 +145,7 @@ public class ContributionService {
             Payment mpPayment = new PaymentClient().get(paymentId);
             String newStatus = mapMpStatus(mpPayment.getStatus().toString());
 
-            transactionRepository.findByIdTransactionMp(paymentId).ifPresent(transaction -> {
+            transactionRepository.findByIdTransactionExternal(String.valueOf(paymentId)).ifPresent(transaction -> {
                 Contribution contribution = transaction.getContribution();
                 String previousStatus = contribution.getStatus();
 
@@ -194,7 +195,8 @@ public class ContributionService {
             txInfo = new ContributionStatusResponse.TransactionInfo(
                     transaction.getId(),
                     transaction.getTransactionMethod(),
-                    transaction.getIdTransactionMp()
+                    transaction.getIdTransactionExternal(),
+                    transaction.getPaymentProvider()
             );
         }
         return new ContributionStatusResponse(
