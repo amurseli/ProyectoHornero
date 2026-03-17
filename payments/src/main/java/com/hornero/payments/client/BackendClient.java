@@ -78,6 +78,87 @@ public class BackendClient {
         }
     }
 
+    // Valida que la campaña está en status SUCCESSFUL antes de ejecutar el payout.
+    // Lanza IllegalStateException si no está en ese estado.
+    public void validateCampaignSuccessful(Long campaignId) {
+        String url = backendUrl + "/api/campaigns/" + campaignId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Service-Key", serviceKey);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<?, ?> campaign = response.getBody();
+
+            if (campaign == null) {
+                throw new IllegalStateException("Campaña no encontrada: " + campaignId);
+            }
+
+            String status = (String) campaign.get("status");
+            if (!"SUCCESSFUL".equals(status)) {
+                throw new IllegalStateException("La campaña no está en estado SUCCESSFUL para procesar el payout. Estado actual: " + status);
+            }
+
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new IllegalStateException("Campaña no encontrada: " + campaignId);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al validar estado de campaña {}: {}", campaignId, e.getMessage());
+            throw new RuntimeException("Error al comunicarse con el backend para validar la campaña", e);
+        }
+    }
+
+    // Obtiene el CBU o email de MP del creador para ejecutar el payout.
+    // Lanza IllegalStateException si el creador no tiene info de payout configurada.
+    public String getCreatorPayoutCbu(Long creatorUserId) {
+        String url = backendUrl + "/api/users/" + creatorUserId + "/payout-info";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Service-Key", serviceKey);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<?, ?> payoutInfo = response.getBody();
+
+            if (payoutInfo == null || payoutInfo.get("cbu") == null) {
+                throw new IllegalStateException("El creador no tiene CBU configurado para recibir pagos");
+            }
+
+            return (String) payoutInfo.get("cbu");
+
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new IllegalStateException("El creador no tiene información de payout configurada");
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al obtener payout-info del creador {}: {}", creatorUserId, e.getMessage());
+            throw new RuntimeException("Error al comunicarse con el backend para obtener info del creador", e);
+        }
+    }
+
+    // Notifica al backend que el payout fue completado y la campaña debe pasar a PAID_OUT.
+    public void updateCampaignStatusToPaidOut(Long campaignId) {
+        String url = backendUrl + "/api/campaigns/" + campaignId + "/status";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Service-Key", serviceKey);
+
+        Map<String, String> body = Map.of("status", "PAID_OUT");
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            restTemplate.exchange(url, HttpMethod.PATCH, entity, Void.class);
+            logger.info("Campaña {} actualizada a PAID_OUT", campaignId);
+        } catch (Exception e) {
+            logger.error("Error al actualizar status de campaña {} a PAID_OUT: {}", campaignId, e.getMessage());
+            throw new RuntimeException("Error al notificar PAID_OUT al backend", e);
+        }
+    }
+
     // Suma el monto al current_amount de la campana en el backend.
     public void updateCampaignAmount(Long campaignId, BigDecimal amount) {
         String url = backendUrl + "/api/campaigns/" + campaignId + "/current-amount";

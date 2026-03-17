@@ -106,7 +106,7 @@ public class ContributionService {
             // TODO: loguear estado recibido de MP en transaction_logs
 
             // Mapear status de MercadoPago a nuestro status
-            String newStatus = mapMpStatus(mpPayment.getStatus().toString());
+            String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
             contribution.setStatus(newStatus);
             contributionRepository.save(contribution);
 
@@ -143,7 +143,7 @@ public class ContributionService {
 
         try {
             Payment mpPayment = new PaymentClient().get(paymentId);
-            String newStatus = mapMpStatus(mpPayment.getStatus().toString());
+            String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
 
             transactionRepository.findByIdTransactionExternal(String.valueOf(paymentId)).ifPresent(transaction -> {
                 Contribution contribution = transaction.getContribution();
@@ -180,7 +180,7 @@ public class ContributionService {
         return buildStatusResponse(contribution, transaction);
     }
 
-    private String mapMpStatus(String mpStatus) {
+    private String mapProviderStatus(String mpStatus) {
         return switch (mpStatus.toLowerCase()) {
             case "approved"   -> "APPROVED";
             case "rejected"   -> "REJECTED";
