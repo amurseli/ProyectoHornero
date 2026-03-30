@@ -410,6 +410,22 @@
   line-height: 1.6;
 }
 
+/* ── Verification step ── */
+
+.wizard-verification-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 0;
+  color: var(--color-success, #16a34a);
+}
+
+.wizard-verification-done p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
 /* ── Footer navigation ── */
 
 .wizard-footer {

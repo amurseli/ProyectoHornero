@@ -66,7 +66,7 @@ function App() {
 
           {/* Protected */}
           <Route path="/my-campaigns" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
-          <Route path="/my-campaigns/new" element={<CreatorRoute><CreateCampaign /></CreatorRoute>} />
+          <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
           

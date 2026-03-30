@@ -25,7 +25,7 @@ export function CreatorRoute({ children }) {
   }
 
   if (user.role === 'USER') {
-    return <Navigate to="/become-creator" replace />
+    return <Navigate to="/for-creators" replace />
   }
 
   return children
