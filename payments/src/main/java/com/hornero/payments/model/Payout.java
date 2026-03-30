@@ -31,8 +31,7 @@ public class Payout {
     private BigDecimal netAmount;
 
     @Column(name = "payment_provider", nullable = false, length = 30)
-    private String paymentProvider;
-    // MERCADO_PAGO | BANK_TRANSFER | etc.
+    private String paymentProvider; // de momento es solo MERCADO_PAGO pero podría haber otros en el futuro
 
     @Column(nullable = false, length = 20)
     private String status = "PENDING";

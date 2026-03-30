@@ -6,7 +6,6 @@ import com.hornero.payments.model.Refund;
 import com.hornero.payments.repository.ContributionRepository;
 import com.hornero.payments.repository.RefundRepository;
 import com.mercadopago.client.payment.PaymentRefundClient;
-import com.mercadopago.client.payment.PaymentRefundCreateRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.PaymentRefund;
@@ -69,10 +68,7 @@ public class RefundService {
             } else {
                 try {
                     PaymentRefundClient refundClient = new PaymentRefundClient();
-                    PaymentRefund providerRefund = refundClient.create(Long.parseLong(transactionId),
-                            PaymentRefundCreateRequest.builder()
-                                    .amount(contribution.getAmount())
-                                    .build());
+                    PaymentRefund providerRefund = refundClient.refund(Long.valueOf(transactionId));
 
                     refund.setIdRefundExternal(String.valueOf(providerRefund.getId()));
                     refund.setStatus("COMPLETED");
