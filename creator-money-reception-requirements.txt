@@ -1,0 +1,247 @@
+================================================================================
+  REQUIREMENTS FOR ENABLING A USER TO RECEIVE MONEY FROM CAMPAIGNS
+  Platform: ProyectoHornero (Argentina only, student-run project)
+================================================================================
+
+Based on: "Bootstrapping Competencia.pdf", "Investigacion temas impositivos.pdf",
+and "Investigacion temas legales.pdf".
+
+Since this is a student-run project (not a registered enterprise), it cannot act
+as a formal financial intermediary, PSP, or PFC registered with the CNV. The
+platform should operate as a simple intermediary/connector that facilitates
+donations (not equity/lending), similar to Cafecito's model.
+
+================================================================================
+1. DATA TO ASK THE CREATOR (when enabling money reception)
+================================================================================
+
+--- Step 1: Basic Personal Information ---
+  - Full legal name (Nombre y Apellido completo, as on DNI)
+  - DNI number (Documento Nacional de Identidad)
+  - CUIL number (Clave Única de Identificación Laboral) [11 digits, derived from DNI]
+  - Date of birth
+  - Email address (already have from registration)
+  - Phone number (for contact/verification)
+  - Address (province, city, street, zip code)
+    → Province is needed to understand Ingresos Brutos jurisdiction
+
+--- Step 2: Identity Verification (KYC - Know Your Customer) ---
+  Required by UIF anti-money laundering obligations (even at minimal level):
+  - Photo of DNI (front)
+  - Photo of DNI (back)
+  - Selfie holding the DNI (liveness check / proof the person is real)
+
+  NOTE: Cafecito uses a third-party service (Galio Proof) for this. As students,
+  you have simpler options:
+    a) Manual review: Admin team reviews the uploaded photos visually.
+    b) Use a free/low-cost identity verification API if budget allows.
+  The key is to verify that the person is who they claim to be.
+
+--- Step 3: Tax Situation (Situación Fiscal) ---
+  - Tax condition (Condición ante AFIP):
+      • Monotributista (category)
+      • Responsable Inscripto
+      • Consumidor Final / No inscripto
+      • Exento
+  - CUIT number (if Monotributista or Responsable Inscripto)
+    [Same as CUIL for individuals, but confirms tax registration]
+
+  WHY: The platform needs to know this because:
+    - If the creator is Monotributista/Resp. Inscripto, they can issue invoices.
+    - Donaciones puras (pure donations) have different tax treatment than
+      rewards-based contributions.
+    - The tax PDF states that if there's a contraprestación (reward), it's treated
+      as a sale, not a donation, and triggers IVA obligations for the creator.
+
+  NOTE FOR STUDENTS: You are NOT responsible for collecting taxes from creators.
+  Each creator handles their own tax obligations. But you should inform them
+  about their responsibilities and collect enough data to comply with potential
+  AFIP information requests.
+
+--- Step 4: Banking Information (for fund withdrawal) ---
+  - CBU (Clave Bancaria Uniforme, 22 digits) — traditional bank account
+    OR
+  - CVU (Clave Virtual Uniforme, 22 digits) — virtual wallet (Mercado Pago, etc.)
+  - Alias (optional, for human-readable reference)
+  - Bank name or wallet provider name
+  - Account holder name (must match the verified identity)
+
+  NOTE: Following Cafecito's model, implement a "parking" period (e.g., 3-7 days)
+  between receiving funds and allowing withdrawal, to handle disputes/fraud.
+
+--- Step 5: Declaration / Terms Acceptance ---
+  The creator must accept:
+  - Terms and Conditions of the platform
+  - That the information provided is truthful (Declaración Jurada)
+  - That they are responsible for their own tax obligations
+  - That the platform may retain a commission (specify %)
+  - Privacy policy (Ley 25.326 compliance)
+  - That the platform may share information with authorities if legally required
+  - That campaign funds may be subject to a holding period before withdrawal
+
+
+================================================================================
+2. HOW TO STORE THIS INFORMATION
+================================================================================
+
+Given that you are students, not an enterprise, here are practical recommendations
+that still respect the legal requirements (Ley 25.326 - Data Protection):
+
+--- 2.1 Data Classification ---
+
+  HIGHLY SENSITIVE (strongest protection):
+    - DNI images (front/back)
+    - Selfie with DNI
+    - CBU/CVU
+    - CUIT/CUIL number
+
+  SENSITIVE (standard protection):
+    - Full legal name
+    - Address
+    - Phone number
+    - Tax condition
+
+  BASIC (normal protection):
+    - Email (already stored for auth)
+    - Alias bancario
+    - Accept/reject status of verification
+
+--- 2.2 Database Storage (Backend - PostgreSQL/similar) ---
+
+  Recommended tables/entities:
+
+  TABLE: creator_verification
+    - id (PK)
+    - user_id (FK to users table)
+    - full_legal_name (VARCHAR, encrypted at rest)
+    - dni_number (VARCHAR, encrypted at rest)
+    - cuil_number (VARCHAR, encrypted at rest)
+    - cuit_number (VARCHAR, nullable, encrypted at rest)
+    - date_of_birth (DATE)
+    - phone_number (VARCHAR)
+    - address_street (VARCHAR)
+    - address_city (VARCHAR)
+    - address_province (VARCHAR)
+    - address_zip_code (VARCHAR)
+    - tax_condition (ENUM: MONOTRIBUTISTA, RESPONSABLE_INSCRIPTO, CONSUMIDOR_FINAL, EXENTO)
+    - verification_status (ENUM: PENDING, APPROVED, REJECTED)
+    - rejection_reason (TEXT, nullable)
+    - verified_at (TIMESTAMP, nullable)
+    - verified_by (VARCHAR, nullable — which admin reviewed it)
+    - created_at (TIMESTAMP)
+    - updated_at (TIMESTAMP)
+
+  TABLE: creator_bank_info
+    - id (PK)
+    - user_id (FK to users table)
+    - account_type (ENUM: CBU, CVU)
+    - account_number (VARCHAR, 22 chars, encrypted at rest)
+    - account_alias (VARCHAR, nullable)
+    - bank_or_wallet_name (VARCHAR)
+    - account_holder_name (VARCHAR)
+    - created_at (TIMESTAMP)
+    - updated_at (TIMESTAMP)
+
+  TABLE: creator_identity_documents
+    - id (PK)
+    - user_id (FK to users table)
+    - document_type (ENUM: DNI_FRONT, DNI_BACK, SELFIE_WITH_DNI)
+    - file_path (VARCHAR — reference to stored file, NOT the file itself in DB)
+    - uploaded_at (TIMESTAMP)
+
+--- 2.3 File Storage (DNI images / selfie) ---
+
+  DO NOT store images directly in the database.
+
+  Options (from simplest to most robust):
+    a) Local encrypted filesystem:
+       - Store in a dedicated folder outside the web-accessible directory
+       - Path example: /secure-storage/identity-docs/{user_id}/
+       - Set strict file permissions (chmod 600, owned by backend process only)
+       - Name files with UUIDs, not original filenames
+
+    b) Cloud storage with encryption (if using cloud):
+       - S3 bucket (or similar) with:
+         • Server-side encryption (SSE-S3 or SSE-KMS)
+         • Bucket policy: private, no public access
+         • Access only via signed URLs with short expiration (for admin review)
+
+  IMPORTANT: Delete identity document images after verification is complete
+  (or after a reasonable retention period, e.g., 6-12 months). Ley 25.326
+  requires data minimization — don't keep what you don't need.
+
+--- 2.4 Encryption Recommendations ---
+
+  - At rest: Encrypt sensitive fields in the database.
+    Practical approach for students:
+      • Use application-level encryption (e.g., AES-256) for DNI, CUIL, CBU fields
+      • Store the encryption key in an environment variable, NOT in the codebase
+      • Or use database-level Transparent Data Encryption (TDE) if available
+
+  - In transit: HTTPS everywhere (already standard with modern deployments)
+
+  - Encryption key management:
+      • Store keys in environment variables or a .env file (not committed to git)
+      • For production: use a secrets manager if possible
+
+--- 2.5 Access Control ---
+
+  - Only admin users should be able to view identity documents and bank info
+  - The creator themselves can view their own data (masked: show only last 4 digits
+    of CBU/DNI in the UI)
+  - Log every access to sensitive data (who viewed what and when)
+  - Implement role-based access: ADMIN, CREATOR, DONOR
+
+--- 2.6 Ley 25.326 Compliance Checklist ---
+
+  As a student project, you won't register with the data protection authority,
+  but you should still follow best practices:
+
+  [x] Inform users what data you collect and why (Privacy Policy)
+  [x] Get explicit consent before collecting identity data
+  [x] Allow users to request access to their data (derecho de acceso)
+  [x] Allow users to request rectification of incorrect data
+  [x] Allow users to request deletion of their data (derecho de supresión)
+  [x] Implement reasonable security measures (encryption, access control)
+  [x] Don't share data with third parties without consent
+  [x] Delete data when it's no longer needed
+
+
+================================================================================
+3. RECOMMENDED USER FLOW (SUMMARY)
+================================================================================
+
+  1. User registers on the platform (basic email/password or OAuth)
+  2. User clicks "Become a Creator" or "Enable Money Reception"
+  3. Step 1: Fill personal data form (name, DNI, CUIL, address, phone, DOB)
+  4. Step 2: Upload identity documents (DNI front, DNI back, selfie with DNI)
+  5. Step 3: Declare tax situation (tax condition, CUIT if applicable)
+  6. Step 4: Enter banking info (CBU or CVU, bank name, holder name)
+  7. Step 5: Accept terms, declaration, and privacy policy
+  8. Status → PENDING VERIFICATION
+  9. Admin reviews identity documents + data consistency
+  10. Status → APPROVED or REJECTED (with reason)
+  11. If approved → Creator can now create campaigns and withdraw funds
+  12. Withdrawals have a 3-7 day parking/holding period
+
+================================================================================
+4. WHAT YOU CAN SKIP AS A STUDENT PROJECT (pragmatic notes)
+================================================================================
+
+  - UIF formal registration as a sujeto obligado (you're not a real financial entity)
+  - CNV registration (you're doing donations/rewards, not equity crowdfunding)
+  - Formal PSAV registration (you're not handling crypto)
+  - Automated facial recognition / biometric liveness detection
+    (manual admin review of photos is sufficient for a university project)
+  - Acting as agente de retención for AFIP (not applicable for students)
+  - Ingresos Brutos provincial registration
+
+  HOWEVER, you should still:
+  - Implement basic KYC (document upload + manual review)
+  - Segregate platform funds from creator funds conceptually
+  - Have clear terms & conditions
+  - Encrypt sensitive data
+  - Follow data protection best practices (Ley 25.326)
+  - Inform creators about their tax responsibilities
+
+================================================================================

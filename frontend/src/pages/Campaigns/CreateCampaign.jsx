@@ -4,6 +4,8 @@ import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import './CreateCampaign.css'
 import { useUser } from '../../store/useUser'
+import { BecomeCreatorModule } from '$pages/BecomeCreator/BecomeCreator'
+import { CheckCircle } from 'lucide-react'
 
 import blobLeft from '$assets/textures/blob1.png'
 import blobRight from '$assets/textures/blob2.png'
@@ -17,11 +19,12 @@ const COUNTRIES = [
 ]
 
 const STEPS = [
-  { number: 1, label: 'Categoría', sublabel: 'Tu área' },
-  { number: 2, label: 'País',      sublabel: 'Ubicación' },
-  { number: 3, label: 'Detalles',  sublabel: 'Info principal' },
-  { number: 4, label: 'Media',     sublabel: 'Imágenes y video' },
-  { number: 5, label: 'Revisión',  sublabel: 'Confirmar datos' },
+  { number: 1, label: 'Categoría',     sublabel: 'Tu área' },
+  { number: 2, label: 'País',          sublabel: 'Ubicación' },
+  { number: 3, label: 'Detalles',      sublabel: 'Info principal' },
+  { number: 4, label: 'Media',         sublabel: 'Imágenes y video' },
+  { number: 5, label: 'Revisión',      sublabel: 'Confirmar datos' },
+  { number: 6, label: 'Verificación',  sublabel: 'Ser creador' },
 ]
 
 const INITIAL_FORM = {
@@ -270,6 +273,31 @@ function StepRevision({ form }) {
   )
 }
 
+function StepVerificacion({ user, onBecomeCreator }) {
+  const isCreator = user?.role !== 'USER'
+
+  if (isCreator) {
+    return (
+      <>
+        <h2 className="wizard-section-title">Verificación de creador</h2>
+        <p className="wizard-section-subtitle">Tu cuenta ya está habilitada para publicar campañas.</p>
+        <div className="wizard-verification-done">
+          <CheckCircle size={48} />
+          <p>Ya sos creador verificado. Podés publicar tu campaña.</p>
+        </div>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <h2 className="wizard-section-title">Verificación de creador</h2>
+      <p className="wizard-section-subtitle">Para publicar campañas, necesitás ser creador en Hornero.</p>
+      <BecomeCreatorModule onSuccess={onBecomeCreator} />
+    </>
+  )
+}
+
 function CreateCampaign() {
   const navigate = useNavigate()
   const [step, setStep]         = useState(1)
@@ -279,6 +307,7 @@ function CreateCampaign() {
   const [error, setError]       = useState(null)
 
   const { user } = useUser()
+  const isCreator = user?.role !== 'USER'
 
   const handleChange = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
 
@@ -355,11 +384,12 @@ function CreateCampaign() {
 
         <div className="wizard-card">
           <div className={`wizard-step-content ${animating ? 'fading' : ''}`}>
-            {step === 1 && <StepCategoria form={form} onSelect={handleCategorySelect} />}
-            {step === 2 && <StepPais      form={form} onChange={handleChange} />}
-            {step === 3 && <StepDetalles  form={form} onChange={handleChange} />}
-            {step === 4 && <StepMedia     form={form} onChange={handleChange} />}
-            {step === 5 && <StepRevision  form={form} />}
+            {step === 1 && <StepCategoria    form={form} onSelect={handleCategorySelect} />}
+            {step === 2 && <StepPais          form={form} onChange={handleChange} />}
+            {step === 3 && <StepDetalles      form={form} onChange={handleChange} />}
+            {step === 4 && <StepMedia         form={form} onChange={handleChange} />}
+            {step === 5 && <StepRevision      form={form} />}
+            {step === 6 && <StepVerificacion  user={user} onBecomeCreator={() => {}} />}
           </div>
 
           {error && <p className="auth-error" style={{ marginTop: '1rem' }}>{error}</p>}
@@ -369,11 +399,15 @@ function CreateCampaign() {
               ? <Button variant="secondary" onClick={() => goToStep(step - 1)}>← Atrás</Button>
               : <span />
             }
-            {step < 5
+            {step < 6
               ? <Button variant="primary" onClick={() => goToStep(step + 1)}>Siguiente →</Button>
-              : <Button variant="primary" size="lg" onClick={handleSubmit} disabled={loading}>
-                  {loading ? 'Publicando...' : 'Publicar campaña'}
-                </Button>
+              : (
+                  isCreator
+                    ? <Button variant="primary" size="lg" onClick={handleSubmit} disabled={loading}>
+                        {loading ? 'Publicando...' : 'Publicar campaña'}
+                      </Button>
+                    : <span />
+                )
             }
           </div>
         </div>
