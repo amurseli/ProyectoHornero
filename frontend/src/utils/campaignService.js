@@ -14,6 +14,7 @@ function normalizeCampaign(campaign) {
     daysLeft: campaign.endDate 
               ? Math.max(0, Math.ceil((new Date(campaign.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
               : 30,
+    videoUrl: campaign.media?.find(m => m.mediaType === 'VIDEO')?.url || null,
   }
 }
 
