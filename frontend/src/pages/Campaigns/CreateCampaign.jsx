@@ -345,12 +345,17 @@ function CreateCampaign() {
         })
       }
 
+      const endDate = new Date()
+      endDate.setDate(endDate.getDate() + Number(form.duration))
+      const endDateStr = endDate.toISOString().split('T')[0]
+
       await api.post('/api/campaigns', {
         title: form.title,
         shortDescription: form.shortDescription,
         description: form.description,
         country: form.country,
         targetAmount: form.goal ? Number(form.goal) : null,
+        endDate: endDateStr,
         owner: { id: user.userId },
         media,
       })

@@ -2,9 +2,12 @@ package com.hornero.service;
 
 import com.hornero.model.Campaign;
 import com.hornero.repository.CampaignRepository;
+import com.hornero.service.validator.CampaignPublishValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +16,9 @@ public class CampaignService {
 
     @Autowired
     private CampaignRepository campaignRepository;
+
+    @Autowired
+    private List<CampaignPublishValidator> publishValidators;
 
     public Campaign createCampaign(Campaign campaign) {
         // Setear la referencia inversa para que JPA pueda persistir la relación
@@ -52,5 +58,35 @@ public class CampaignService {
             throw new RuntimeException("Campaña no encontrada");
         }
         campaignRepository.deleteById(id);
+    }
+
+    @Transactional
+    public Campaign publishCampaign(Long campaignId, Long requestingUserId, String requestingUserRole) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
+
+        boolean isAdmin = "ADMIN".equals(requestingUserRole);
+        boolean isOwner = campaign.getOwner() != null && campaign.getOwner().getId().equals(requestingUserId);
+        if (!isAdmin && !isOwner) {
+            throw new SecurityException("No tenés permiso para publicar esta campaña");
+        }
+
+        if (!"DRAFT".equals(campaign.getStatus())) {
+            throw new IllegalStateException("Solo se pueden publicar campañas en estado DRAFT (estado actual: " + campaign.getStatus() + ")");
+        }
+
+        publishValidators.forEach(v -> v.validate(campaign));
+
+        campaign.setStatus("CROWDFUNDING");
+        return campaignRepository.save(campaign);
+    }
+
+    // Llamado internamente por el payments service cuando una contribucion es aprobada
+    @Transactional
+    public void addToCampaignAmount(Long campaignId, BigDecimal amount) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campaña no encontrada: " + campaignId));
+        campaign.setCurrentAmount(campaign.getCurrentAmount().add(amount));
+        campaignRepository.save(campaign);
     }
 }
