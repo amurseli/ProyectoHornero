@@ -10,7 +10,14 @@ import { CheckCircle } from 'lucide-react'
 import blobLeft from '$assets/textures/blob1.png'
 import blobRight from '$assets/textures/blob2.png'
 
-const CATEGORIES = ['Arte', 'Tecnología', 'Música', 'Cine', 'Diseño', 'Comunidad', 'Deportes', 'Educación']
+const CATEGORIES = [
+  { name: 'Tecnología', id: 1 },
+  { name: 'Educación', id: 2 },
+  { name: 'Salud', id: 3 },
+  { name: 'Medio Ambiente', id: 4 },
+  { name: 'Arte y Cultura', id: 5 },
+  { name: 'Comunidad', id: 6 },
+]
 
 const COUNTRIES = [
   'Argentina', 'Bolivia', 'Brasil', 'Chile', 'Colombia',
@@ -38,7 +45,7 @@ const INITIAL_FORM = {
   coverFile: null,
   coverPreview: '',
   videoUrl: '',
-  images: [],
+  imageFiles: [],
 }
 
 function StepCircle({ step, current }) {
@@ -63,11 +70,11 @@ function StepCategoria({ form, onSelect }) {
       <div className="wizard-category-grid">
         {CATEGORIES.map(cat => (
           <button
-            key={cat}
-            className={`wizard-category-card ${form.category === cat ? 'selected' : ''}`}
-            onClick={() => onSelect(cat)}
+            key={cat.id}
+            className={`wizard-category-card ${form.category === cat.name ? 'selected' : ''}`}
+            onClick={() => onSelect(cat.name)}
           >
-            {cat}
+            {cat.name}
           </button>
         ))}
       </div>
@@ -159,11 +166,13 @@ function StepMedia({ form, onChange }) {
   }
 
   const handleFiles = (files) => {
-    const urls = Array.from(files).map(f => URL.createObjectURL(f))
-    onChange('images', [...form.images, ...urls].slice(0, 6))
+    const newFiles = Array.from(files)
+    onChange('imageFiles', [...form.imageFiles, ...newFiles].slice(0, 6))
   }
 
-  const removeImage = (i) => onChange('images', form.images.filter((_, idx) => idx !== i))
+  const removeImage = (i) => {
+    onChange('imageFiles', form.imageFiles.filter((_, idx) => idx !== i))
+  }
 
   return (
     <>
@@ -201,11 +210,11 @@ function StepMedia({ form, onChange }) {
         </div>
         <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
           onChange={e => handleFiles(e.target.files)} />
-        {form.images.length > 0 && (
+        {form.imageFiles.length > 0 && (
           <div className="wizard-image-previews">
-            {form.images.map((url, i) => (
+            {form.imageFiles.map((file, i) => (
               <div className="wizard-preview-thumb" key={i}>
-                <img src={url} alt="" />
+                <img src={URL.createObjectURL(file)} alt="" />
                 <button className="wizard-preview-remove" onClick={() => removeImage(i)}>✕</button>
               </div>
             ))}
@@ -257,14 +266,14 @@ function StepRevision({ form }) {
 
       <div className="wizard-review-section">
         <div className="wizard-review-section-title">Media</div>
-        <div className="wizard-review-row"><span className="wizard-review-key">Imágenes</span><span className="wizard-review-val">{form.images.length} cargadas</span></div>
+        <div className="wizard-review-row"><span className="wizard-review-key">Imágenes</span><span className="wizard-review-val">{form.imageFiles.length} cargadas</span></div>
         {form.videoUrl && (
           <div className="wizard-review-row"><span className="wizard-review-key">Video</span><span className="wizard-review-val" style={{ maxWidth: '60%', wordBreak: 'break-all' }}>{form.videoUrl}</span></div>
         )}
-        {form.images.length > 0 && (
+        {form.imageFiles.length > 0 && (
           <div className="wizard-image-previews" style={{ marginTop: '0.75rem' }}>
-            {form.images.map((url, i) => (
-              <div className="wizard-preview-thumb" key={i}><img src={url} alt="" /></div>
+            {form.imageFiles.map((file, i) => (
+              <div className="wizard-preview-thumb" key={i}><img src={URL.createObjectURL(file)} alt="" /></div>
             ))}
           </div>
         )}
@@ -330,24 +339,44 @@ function CreateCampaign() {
     try {
       const media = []
 
+      const toBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result.split(',')[1])
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
       if (form.coverFile) {
-        const base64Data = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result.split(',')[1])
-          reader.onerror = reject
-          reader.readAsDataURL(form.coverFile)
-        })
         media.push({
-          base64Data,
+          base64Data: await toBase64(form.coverFile),
           mediaType: 'IMAGE',
           isPrimary: true,
           displayOrder: 0,
         })
       }
 
-      const endDate = new Date()
-      endDate.setDate(endDate.getDate() + Number(form.duration))
-      const endDateStr = endDate.toISOString().split('T')[0]
+      for (let i = 0; i < form.imageFiles.length; i++) {
+        media.push({
+          base64Data: await toBase64(form.imageFiles[i]),
+          mediaType: 'IMAGE',
+          isPrimary: false,
+          displayOrder: i + 1,
+        })
+      }
+
+      if (form.videoUrl) {
+        media.push({
+          url: form.videoUrl,
+          mediaType: 'VIDEO',
+          isPrimary: false,
+          displayOrder: media.length,
+        })
+      }
+
+      const categoryObj = CATEGORIES.find(c => c.name === form.category)
+
+      const startDate = new Date().toISOString().split('T')[0]
+      const endDate = new Date(Date.now() + Number(form.duration) * 86400000).toISOString().split('T')[0]
 
       await api.post('/api/campaigns', {
         title: form.title,
@@ -355,8 +384,10 @@ function CreateCampaign() {
         description: form.description,
         country: form.country,
         targetAmount: form.goal ? Number(form.goal) : null,
-        endDate: endDateStr,
+        startDate,
+        endDate,
         owner: { id: user.userId },
+        category: categoryObj ? { id: categoryObj.id } : null,
         media,
       })
       navigate('/my-campaigns')
