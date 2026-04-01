@@ -1,0 +1,26 @@
+services:
+  payments:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hornero-payments
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: jdbc:postgresql://hornero-postgres:5432/${DB_NAME:-hornero}
+      DATABASE_USER: ${DB_USER:-hornero}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-hornero123}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
+      SERVICE_KEY_PAYMENTS: ${SERVICE_KEY_PAYMENTS:-internal-secret-dev}
+      JWT_SECRET: ${JWT_SECRET:-hornero-secret-key-change-this-in-production-minimum-256-bits-for-security}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      BACKEND_URL: ${BACKEND_URL:-http://hornero-backend:8080}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000,http://localhost:8080}
+    networks:
+      - hornero-network
+    restart: unless-stopped
+
+networks:
+  hornero-network:
+    external: true

@@ -2,114 +2,108 @@
 # Hornero Project - Makefile
 # ============================================================
 
-# Variables
-COMPOSE := docker-compose
-FRONTEND_DIR := frontend
-SERVICES_ALL := backend payments postgres
-SERVICES_DEV := backend payments postgres
+BACKEND_DIR  = backend
+FRONTEND_DIR = frontend
+PAYMENTS_DIR = payments
+NETWORK      = hornero-network
 
-.PHONY: help up down restart build logs logs-backend logs-payments ps clean dev
+.PHONY: help network up down build logs dev \
+        up-pay down-pay build-pay logs-pay \
+        up-all down-all build-all \
+        ps clean
 
 # ------------------------------------------------------------
-# 📚 Ayuda
+# Ayuda
 # ------------------------------------------------------------
 help:
 	@echo ""
-	@echo "Comandos disponibles:"
-	@echo "  make up                  Levanta todo (backend + payments + postgres)"
-	@echo "  make down                Detiene y elimina todos los contenedores"
-	@echo "  make restart             Reinicia todos los servicios"
-	@echo "  make build               Reconstruye las imágenes"
-	@echo "  make logs                Muestra logs de todos los servicios"
-	@echo "  make logs-backend        Logs solo del backend"
-	@echo "  make logs-payments       Logs solo del servicio de pagos"
-	@echo "  make ps                  Lista los contenedores activos"
-	@echo "  make clean               Elimina contenedores, imágenes y volúmenes"
-	@echo "  make dev                 Levanta backend + payments (frontend en local)"
+	@echo "  make dev          Backend en Docker, frontend local (npm run dev)"
+	@echo "  make up           Levanta backend (postgres, redis, pgadmin, backend)"
+	@echo "  make down         Detiene backend"
+	@echo "  make build        Reconstruye backend"
+	@echo "  make logs         Logs del backend"
+	@echo ""
+	@echo "  make up-pay       Levanta payments"
+	@echo "  make down-pay     Detiene payments"
+	@echo "  make build-pay    Reconstruye payments"
+	@echo "  make logs-pay     Logs de payments"
+	@echo ""
+	@echo "  make up-all       Levanta todo (backend + payments)"
+	@echo "  make down-all     Detiene todo"
+	@echo "  make build-all    Reconstruye todo"
+	@echo ""
+	@echo "  make ps           Estado de contenedores"
+	@echo "  make clean        Elimina contenedores, imágenes y volúmenes"
 	@echo ""
 
 # ------------------------------------------------------------
-# 🚀 Levantar entorno completo
+# Network compartida
 # ------------------------------------------------------------
-up:
-	@echo "🟢 Levantando Proyecto Hornero..."
-	$(COMPOSE) up -d
-	@echo "🟢 Levantando frontend..."
-	cd $(FRONTEND_DIR) && $(COMPOSE) up -d
-	@echo "✅ Proyecto levantado con éxito"
-	@echo ""
-	@echo "📡 Servicios disponibles:"
-	@echo "  Frontend: http://localhost:5173"
-	@echo "  Backend:  http://localhost:8080"
-	@echo "  Payments: http://localhost:8081"
-	@echo "  Postgres: localhost:5432"
-	@echo ""
+network:
+	@docker network inspect $(NETWORK) >/dev/null 2>&1 || \
+		(echo "Creando network $(NETWORK)..." && docker network create $(NETWORK))
 
 # ------------------------------------------------------------
-# 🛑 Detener entorno completo
+# Backend
 # ------------------------------------------------------------
+up: network
+	cd $(BACKEND_DIR) && docker-compose up -d
+
 down:
-	@echo "🛑 Deteniendo frontend..."
-	cd $(FRONTEND_DIR) && $(COMPOSE) down
-	@echo "🛑 Deteniendo servicios..."
-	$(COMPOSE) down
-	@echo "✅ Servicios detenidos"
+	cd $(BACKEND_DIR) && docker-compose down || true
 
-# ------------------------------------------------------------
-# 🔄 Reiniciar contenedores
-# ------------------------------------------------------------
-restart: down build up
-
-# ------------------------------------------------------------
-# 🏗️ Reconstruir imágenes
-# ------------------------------------------------------------
 build:
-	@echo "🏗️ Reconstruyendo imágenes..."
-	$(COMPOSE) build --no-cache
-	@echo "🏗️ Reconstruyendo frontend..."
-	cd $(FRONTEND_DIR) && $(COMPOSE) build --no-cache
-	@echo "✅ Reconstrucción completa"
+	cd $(BACKEND_DIR) && docker-compose build --no-cache
 
-# ------------------------------------------------------------
-# 📜 Ver logs
-# ------------------------------------------------------------
 logs:
-	$(COMPOSE) logs -f
-
-logs-backend:
-	$(COMPOSE) logs -f backend
-
-logs-payments:
-	$(COMPOSE) logs -f payments
+	cd $(BACKEND_DIR) && docker-compose logs -f
 
 # ------------------------------------------------------------
-# 🧩 Mostrar estado de los contenedores
+# Payments
+# ------------------------------------------------------------
+up-pay: network
+	cd $(PAYMENTS_DIR) && docker-compose up -d
+
+down-pay:
+	cd $(PAYMENTS_DIR) && docker-compose down || true
+
+build-pay:
+	cd $(PAYMENTS_DIR) && docker-compose build --no-cache
+
+logs-pay:
+	cd $(PAYMENTS_DIR) && docker-compose logs -f
+
+# ------------------------------------------------------------
+# Todo junto (testing local)
+# ------------------------------------------------------------
+up-all: up up-pay
+
+down-all: down-pay down
+
+build-all: build build-pay
+
+# ------------------------------------------------------------
+# Desarrollo (backend Docker, frontend local)
+# ------------------------------------------------------------
+dev: up
+	@echo ""
+	@echo "Backend corriendo. Iniciando frontend..."
+	@echo ""
+	cd $(FRONTEND_DIR) && npm run dev
+
+# ------------------------------------------------------------
+# Estado / Limpieza
 # ------------------------------------------------------------
 ps:
-	$(COMPOSE) ps
-	cd $(FRONTEND_DIR) && $(COMPOSE) ps
+	@docker ps --filter "network=$(NETWORK)" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-# ------------------------------------------------------------
-# 🧹 Limpiar entorno (contenedores + imágenes + volúmenes)
-# ------------------------------------------------------------
 clean:
-	@echo "🧹 Limpiando entorno..."
-	cd $(FRONTEND_DIR) && $(COMPOSE) down -v --rmi all --remove-orphans || true
-	$(COMPOSE) down -v --rmi all --remove-orphans || true
-	@echo "✅ Limpieza completa"
+	cd $(PAYMENTS_DIR) && docker-compose down -v --rmi all --remove-orphans || true
+	cd $(BACKEND_DIR) && docker-compose down -v --rmi all --remove-orphans || true
+	docker network rm $(NETWORK) || true
 
-# ------------------------------------------------------------
-# 🛠️ Desarrollo (backend + payments en Docker, frontend local)
-# ------------------------------------------------------------
-dev:
-	@echo "🟢 Modo desarrollo: backend + payments en Docker"
-	$(COMPOSE) up -d $(SERVICES_DEV)
-	@echo ""
-	@echo "✅ Backend y Payments corriendo en Docker"
-	@echo "⚠️  Recordá correr el frontend localmente:"
-	@echo "     cd frontend && npm run dev"
-	@echo ""
-	@echo "📡 Servicios:"
-	@echo "  Backend:  http://localhost:8080"
-	@echo "  Payments: http://localhost:8081"
-	@echo ""
+restart: down build up
+
+restart-pay: down-pay build-pay up-pay
+
+restart-all: down-all build-all up-all
