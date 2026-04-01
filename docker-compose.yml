@@ -1,86 +1,87 @@
+version: '3.8'
+
 services:
+  # PostgreSQL Database (compartida por backend y payments)
   postgres:
-    image: postgres:15-alpine
-    container_name: hornero-postgres
+    image: postgres:${POSTGRES_VERSION:-15-alpine}
+    container_name: ${POSTGRES_CONTAINER_NAME:-hornero-postgres}
     environment:
-      POSTGRES_DB: hornero
-      POSTGRES_USER: hornero  
-      POSTGRES_PASSWORD: hornero123
+      POSTGRES_DB: ${DB_NAME:-hornero}
+      POSTGRES_USER: ${DB_USER:-hornero}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hornero123}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - hornero-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hornero"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-hornero}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: hornero-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - hornero-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
+  # Backend Service (Core API - Campaigns, Users, Auth)
   backend:
-    build: .
-    container_name: hornero-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ${BACKEND_CONTAINER_NAME:-hornero-backend}
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
+    env_file:
+      - ./backend/.env.backend
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: hornero
-      DB_USER: hornero
-      DB_PASSWORD: hornero123
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      FRONTEND_URL: http://localhost:5173 
+      # Database
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-hornero}
+      DATABASE_USER: ${DB_USER:-hornero}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-hornero123}
+      # Internal service auth
+      SERVICE_KEY_PAYMENTS: ${SERVICE_KEY_PAYMENTS:-internal-secret-dev}
+      # Services URLs
+      PAYMENTS_SERVICE_URL: ${PAYMENTS_SERVICE_URL:-http://payments:8081}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+    networks:
+      - hornero-network
+    restart: unless-stopped
+
+  # Payments Service (MercadoPago Integration)
+  payments:
+    build:
+      context: ./payments
+      dockerfile: Dockerfile
+    container_name: ${PAYMENTS_CONTAINER_NAME:-hornero-payments}
+    ports:
+      - "${PAYMENTS_PORT:-8081}:8081"
+    environment:
+      # Database
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-hornero}
+      DATABASE_USER: ${DB_USER:-hornero}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-hornero123}
+      # MercadoPago
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
+      # Internal service auth
+      SERVICE_KEY_PAYMENTS: ${SERVICE_KEY_PAYMENTS:-internal-secret-dev}
+      # JWT (mismo secret que el backend para parsear tokens)
+      JWT_SECRET: ${JWT_SECRET:-hornero-secret-key-change-this-in-production-minimum-256-bits-for-security}
+      # Services URLs
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8080}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000,http://localhost:8080}
+    depends_on:
+      postgres:
         condition: service_healthy
     networks:
       - hornero-network
-    volumes:
-      - ./src:/app/src:ro
-      - maven_cache:/root/.m2
-
-
-
-  frontend:
-    build: ./frontend
-    container_name: hornero-frontend
-    command: npm run dev -- --host
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
-    env_file:
-      - ./frontend/.env.frontend
-    depends_on:
-      - backend
-    networks:
-      - hornero-network
-
-volumes:
-  postgres_data:
-  redis_data:
-  maven_cache:
+    restart: unless-stopped
 
 networks:
   hornero-network:
     driver: bridge
+
+volumes:
+  postgres_data:
