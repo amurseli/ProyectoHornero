@@ -48,15 +48,19 @@ network:
 # ------------------------------------------------------------
 up: network
 	cd $(BACKEND_DIR) && docker-compose up -d
+	cd $(FRONTEND_DIR) && docker-compose up -d
 
 down:
 	cd $(BACKEND_DIR) && docker-compose down || true
+	cd $(FRONTEND_DIR) && docker-compose down || true
 
 build:
 	cd $(BACKEND_DIR) && docker-compose build --no-cache
+	cd $(FRONTEND_DIR) && docker-compose build --no-cache
 
 logs:
 	cd $(BACKEND_DIR) && docker-compose logs -f
+	cd $(FRONTEND_DIR) && docker-compose logs -f
 
 # ------------------------------------------------------------
 # Payments
