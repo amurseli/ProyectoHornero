@@ -390,7 +390,7 @@ function CreateCampaign() {
         category: categoryObj ? { id: categoryObj.id } : null,
         media,
       })
-      navigate('/my-campaigns')
+      navigate('/campaigns')
     } catch (err) {
       console.error('Error al crear campaña:', err)
       setError('Hubo un error al crear la campaña. Intentá de nuevo.')

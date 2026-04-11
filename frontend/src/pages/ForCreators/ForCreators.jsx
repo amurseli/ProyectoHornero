@@ -63,7 +63,7 @@ function ForCreators() {
             Hornero es la plataforma de crowdfunding con transparencia blockchain para que tus proyectos despeguen. Sin letra chica, sin vueltas.
           </p>
           <div className="fc-hero-actions">
-            <Button variant="primary" size="lg" onClick={() => navigate('/my-campaigns/new')}>
+            <Button variant="primary" size="lg" onClick={() => navigate('/campaigns/new')}>
               Crear campaña gratis
               <ArrowRight size={16} />
             </Button>
@@ -126,7 +126,7 @@ function ForCreators() {
         <div className="fc-container fc-cta-inner">
           <h2 className="fc-cta-title">¿Estás listo?</h2>
           <p className="fc-cta-desc">Empezá hoy. Es gratis y tarda menos de 10 minutos.</p>
-          <Button variant="primary" size="lg" onClick={() => navigate('/my-campaigns/new')}>
+          <Button variant="primary" size="lg" onClick={() => navigate('/campaigns/new')}>
             Crear mi campaña
             <ArrowRight size={16} />
           </Button>
