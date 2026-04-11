@@ -1,0 +1,21 @@
+services:
+  payments:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hornero-payments
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env.payments
+    environment:
+      DATABASE_URL: jdbc:postgresql://hornero-postgres:5432/${DB_NAME:-hornero}
+      DATABASE_USER: ${DB_USER:-hornero}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-hornero123}
+    networks:
+      - hornero-network
+    restart: unless-stopped
+
+networks:
+  hornero-network:
+    external: true
