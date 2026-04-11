@@ -65,7 +65,7 @@ function App() {
           <Route path="/for-creators" element={<ForCreators />} />
 
           {/* Protected */}
-          <Route path="/campaigns/mine" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
+          <Route path="/campaigns" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
           <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
