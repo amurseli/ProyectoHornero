@@ -49,7 +49,7 @@ function CampaignCard({ campaign, variant = "featured" }) {
   }
 
   return (
-    <a href={`/campaign/${campaign.id}`} className="campaign-card-full">
+    <a href={`/campaigns/${campaign.id}`} className="campaign-card-full">
       <div
         className="campaign-thumbnail"
         onMouseEnter={handleMouseEnter}

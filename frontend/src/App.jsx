@@ -14,7 +14,6 @@ import ResetPassword from '$pages/ResetPassword/ResetPassword.jsx';
 import VerifyEmail from '$pages/VerifyEmail/VerifyEmail.jsx';
 import EmailSent from '$pages/EmailSent/EmailSent.jsx';
 import OAuth2Redirect from '$pages/OAuth2Redirect/OAuth2Redirect.jsx';
-import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
 import CreateCampaign from '$pages/Campaigns/CreateCampaign';
 import ForCreators from '$pages/ForCreators/ForCreators.jsx';
@@ -62,13 +61,12 @@ function App() {
           <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
-          <Route path="/campaigns" element={<CampaignsList />} />
           <Route path="/campaigns/:id" element={<CampaignPage />} />
           <Route path="/for-creators" element={<ForCreators />} />
 
           {/* Protected */}
-          <Route path="/my-campaigns" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
-          <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+          <Route path="/campaigns/mine" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
+          <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
           

@@ -79,7 +79,7 @@ function MyCampaigns() {
           <div className="mc-empty-icon"><Rocket size={40} /></div>
           <h2>Todavía no tenés campañas</h2>
           <p>Creá tu primera campaña y empezá a recibir apoyo de la comunidad.</p>
-          <Button variant="primary" size="lg" onClick={() => navigate('/my-campaigns/new')}>
+          <Button variant="primary" size="lg" onClick={() => navigate('/campaigns/new')}>
             <Plus size={18} /> Crear mi primera campaña
           </Button>
         </div>
@@ -101,7 +101,7 @@ function MyCampaigns() {
 
       {/* Campaña destacada */}
       <section className="container mc-featured-section">
-        <a href={`/campaign/${featured.id}`} className="mc-featured">
+        <a href={`/campaigns/${featured.id}`} className="mc-featured">
           <div className="mc-featured-image">
             <img src={featured.imageUrl} alt={featured.title} />
             <span className="mc-featured-status">
@@ -158,7 +158,7 @@ function MyCampaigns() {
           {rest.map((c) => {
             const p = c.goal > 0 ? Math.min((c.raised / c.goal) * 100, 100) : 0
             return (
-              <a key={c.id} href={`/campaign/${c.id}`} className="mc-mini-card">
+              <a key={c.id} href={`/campaigns/${c.id}`} className="mc-mini-card">
                 <div className="mc-mini-image">
                   <img src={c.imageUrl} alt={c.title} />
                 </div>
@@ -175,7 +175,7 @@ function MyCampaigns() {
               </a>
             )
           })}
-          <button className="mc-mini-card mc-create-card" onClick={() => navigate('/my-campaigns/new')}>
+          <button className="mc-mini-card mc-create-card" onClick={() => navigate('/campaigns/new')}>
             <div className="mc-create-icon">
               <Plus size={32} />
             </div>

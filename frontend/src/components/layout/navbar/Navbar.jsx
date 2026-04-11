@@ -83,7 +83,7 @@ function Navbar() {
                     Configuración
                   </Link>
                   <Link
-                    to="/my-campaigns"
+                    to="/campaigns"
                     className="navbar-dropdown-item"
                     onClick={() => setUserDropdownOpen(false)}
                   >
