@@ -21,6 +21,7 @@ import ForCreators from '$pages/ForCreators/ForCreators.jsx';
 import BecomeCreator from '$pages/BecomeCreator/BecomeCreator.jsx';
 import UserConfig from '$pages/UserConfig/UserConfig';
 import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
+import CampaignPage from '$pages/CampaignPage/CampaignPage';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -62,6 +63,7 @@ function App() {
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns" element={<CampaignsList />} />
+          <Route path="/campaigns/:id" element={<CampaignPage />} />
           <Route path="/for-creators" element={<ForCreators />} />
 
           {/* Protected */}

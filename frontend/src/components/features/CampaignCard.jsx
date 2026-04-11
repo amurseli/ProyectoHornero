@@ -227,6 +227,7 @@ const fullStyles = `
     opacity: 0;
     transition: opacity 0.4s ease;
     background: black;
+    pointer-event: none;
   }
   .campaign-video-overlay.visible {
     opacity: 1;
