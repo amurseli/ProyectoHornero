@@ -55,8 +55,8 @@ down:
 	cd $(FRONTEND_DIR) && docker-compose down || true
 
 build:
-	cd $(BACKEND_DIR) && docker-compose build --no-cache
-	cd $(FRONTEND_DIR) && docker-compose build --no-cache
+	cd $(BACKEND_DIR) && docker-compose build 
+	cd $(FRONTEND_DIR) && docker-compose build 
 
 logs:
 	cd $(BACKEND_DIR) && docker-compose logs -f
@@ -72,7 +72,7 @@ down-pay:
 	cd $(PAYMENTS_DIR) && docker-compose down || true
 
 build-pay:
-	cd $(PAYMENTS_DIR) && docker-compose build --no-cache
+	cd $(PAYMENTS_DIR) && docker-compose build
 
 logs-pay:
 	cd $(PAYMENTS_DIR) && docker-compose logs -f
