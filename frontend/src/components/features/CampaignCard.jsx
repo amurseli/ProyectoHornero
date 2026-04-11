@@ -49,7 +49,7 @@ function CampaignCard({ campaign, variant = "featured" }) {
   }
 
   return (
-    <a href={`/campaign/${campaign.id}`} className="campaign-card-full">
+    <a href={`/campaigns/${campaign.id}`} className="campaign-card-full">
       <div
         className="campaign-thumbnail"
         onMouseEnter={handleMouseEnter}
@@ -227,6 +227,7 @@ const fullStyles = `
     opacity: 0;
     transition: opacity 0.4s ease;
     background: black;
+    pointer-event: none;
   }
   .campaign-video-overlay.visible {
     opacity: 1;

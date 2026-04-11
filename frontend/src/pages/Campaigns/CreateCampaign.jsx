@@ -320,7 +320,21 @@ function CreateCampaign() {
 
   const handleChange = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
 
+  const validateStep = (currentStep) => {
+    switch (currentStep) {
+      case 2: return form.country ? '' : 'Seleccioná un país para continuar.'
+      case 3: return form.title.trim() ? '' : 'El título es obligatorio.'
+      case 4: return form.coverFile ? '' : 'Subí una imagen de portada.'
+      default: return ''
+    }
+  }
+
   const goToStep = (newStep) => {
+    if (newStep > step) {
+      const err = validateStep(step)
+      if (err) { setError(err); return }
+    }
+    setError(null)
     setAnimating(true)
     setTimeout(() => {
       setStep(newStep)
@@ -390,7 +404,7 @@ function CreateCampaign() {
         category: categoryObj ? { id: categoryObj.id } : null,
         media,
       })
-      navigate('/my-campaigns')
+      navigate('/campaigns')
     } catch (err) {
       console.error('Error al crear campaña:', err)
       setError('Hubo un error al crear la campaña. Intentá de nuevo.')

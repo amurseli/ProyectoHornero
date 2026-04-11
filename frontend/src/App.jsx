@@ -14,13 +14,13 @@ import ResetPassword from '$pages/ResetPassword/ResetPassword.jsx';
 import VerifyEmail from '$pages/VerifyEmail/VerifyEmail.jsx';
 import EmailSent from '$pages/EmailSent/EmailSent.jsx';
 import OAuth2Redirect from '$pages/OAuth2Redirect/OAuth2Redirect.jsx';
-import CampaignsList from '$pages/Campaigns/CampaignsList';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
 import CreateCampaign from '$pages/Campaigns/CreateCampaign';
 import ForCreators from '$pages/ForCreators/ForCreators.jsx';
 import BecomeCreator from '$pages/BecomeCreator/BecomeCreator.jsx';
 import UserConfig from '$pages/UserConfig/UserConfig';
 import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
+import CampaignPage from '$pages/CampaignPage/CampaignPage';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -44,11 +44,18 @@ function AuthVerifier() {
   return null
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
+
 function App() {
   return (
     <UserProvider>
       <Router>
         <AuthVerifier />
+        <ScrollToTop />
         <Navbar />
         <Routes>
           {/* Public */}
@@ -61,12 +68,12 @@ function App() {
           <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
-          <Route path="/campaigns" element={<CampaignsList />} />
+          <Route path="/campaigns/:id" element={<CampaignPage />} />
           <Route path="/for-creators" element={<ForCreators />} />
 
           {/* Protected */}
-          <Route path="/my-campaigns" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
-          <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+          <Route path="/campaigns" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
+          <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
           
