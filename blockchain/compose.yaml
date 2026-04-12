@@ -1,0 +1,32 @@
+services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: hornero-api-gateway
+    environment:
+      SERVER_PORT: 8080
+      LEDGER_BASE_URL: http://ledger-service:8081
+    depends_on:
+      ledger-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    networks:
+      - hornero-network
+
+  ledger-service:
+    build:
+      context: ./ledger
+    container_name: hornero-ledger-service
+    env_file:
+      - ./ledger/.env
+    environment:
+      SERVER_PORT: 8081
+    expose:
+      - "8081"
+    networks:
+      - hornero-network
+
+networks:
+  hornero-network:
+    driver: bridge
