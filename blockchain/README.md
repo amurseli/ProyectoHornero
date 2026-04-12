@@ -1,11 +1,8 @@
 # Proyecto Hornero Blockchain
 
-El proyecto quedó separado en dos microservicios Spring Boot:
+El proyecto quedó simplificado a un solo servicio Spring Boot:
 
-- `api-gateway`: expone la API pública.
-- `ledger-service`: firma y publica la transacción en Polygon usando la wallet y el contrato configurados.
-
-Solo `api-gateway` queda publicado hacia afuera. `ledger-service` vive en la red interna de Docker.
+- `ledger-service`: expone la API pública, firma y publica la transacción en Polygon usando la wallet y el contrato configurados.
 
 ## Endpoint público
 
@@ -74,10 +71,4 @@ Servicio blockchain:
 
 ```bash
 mvn -f ledger/pom.xml spring-boot:run
-```
-
-Gateway:
-
-```bash
-mvn -f api-gateway/pom.xml spring-boot:run
 ```
