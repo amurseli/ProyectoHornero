@@ -21,6 +21,7 @@ import BecomeCreator from '$pages/BecomeCreator/BecomeCreator.jsx';
 import UserConfig from '$pages/UserConfig/UserConfig';
 import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 import CampaignPage from '$pages/CampaignPage/CampaignPage';
+import AdminVerifications from '$pages/AdminVerifications/AdminVerifications';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -72,10 +73,11 @@ function App() {
           <Route path="/for-creators" element={<ForCreators />} />
 
           {/* Protected */}
-          <Route path="/campaigns" element={<CreatorRoute><MyCampaigns /></CreatorRoute>} />
+          <Route path="/campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
           <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
+          <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

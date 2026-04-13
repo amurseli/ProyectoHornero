@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, User, Menu, ChevronDown, Settings, FolderOpen, LogOut } from "lucide-react"
+import { Search, User, Menu, ChevronDown, Settings, FolderOpen, LogOut, ShieldCheck } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../ui"
@@ -90,6 +90,16 @@ function Navbar() {
                     <FolderOpen size={16} aria-hidden="true" />
                     Mis campañas
                   </Link>
+                  {user.role === 'ADMIN' && (
+                    <Link
+                      to="/admin/verifications"
+                      className="navbar-dropdown-item"
+                      onClick={() => setUserDropdownOpen(false)}
+                    >
+                      <ShieldCheck size={16} aria-hidden="true" />
+                      Verificaciones
+                    </Link>
+                  )}
                   <div className="navbar-dropdown-divider" />
                   <button
                     className="navbar-dropdown-item navbar-dropdown-item--danger"
@@ -139,6 +149,11 @@ function Navbar() {
               <Link to="/campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
                 Mis campañas
               </Link>
+              {user.role === 'ADMIN' && (
+                <Link to="/admin/verifications" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+                  Verificaciones
+                </Link>
+              )}
               <button className="navbar-mobile-link" onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>
                 Cerrar sesión
               </button>
