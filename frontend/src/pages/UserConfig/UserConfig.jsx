@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Mail, X, AlertTriangle, Rocket } from 'lucide-react'
+import { Eye, EyeOff, Mail, X, AlertTriangle, Rocket, ShieldCheck, Info, CheckCircle } from 'lucide-react'
 import { useUser } from '../../store/useUser'
 import { Button } from '../../components/ui'
 import api from '../../utils/api/api'
@@ -66,6 +66,7 @@ function UserConfig() {
   const [profileLoading, setProfileLoading] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
+  const [verification, setVerification] = useState(undefined)
 
   // Load full profile on mount
   useEffect(() => {
@@ -95,6 +96,14 @@ function UserConfig() {
       }
     }
     loadProfile()
+  }, [user])
+
+  // Load verification status for non-creator users
+  useEffect(() => {
+    if (user?.role === 'CREATOR' || user?.role === 'ADMIN') return
+    api.get('/api/users/me/verification')
+      .then(data => setVerification(data))
+      .catch(() => setVerification(null))
   }, [user])
 
   // Load connections
@@ -471,21 +480,50 @@ function UserConfig() {
           </div>
         )}
 
-        {/* ═══════ Become Creator Section ═══════ */}
-        {user?.role === 'USER' && (
+        {/* ═══════ Creator Section ═══════ */}
+        {user?.role !== 'ADMIN' && (
           <div className="config-section">
             <h2 className="config-section-title">Creador</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-              <div style={{ flex: 1 }}>
+            {user?.role === 'CREATOR' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <CheckCircle size={20} style={{ color: 'var(--color-success, #16a34a)', flexShrink: 0 }} />
                 <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                  Convertite en creador para publicar y gestionar tus propias campañas de crowdfunding.
+                  Tu cuenta está verificada como creador. Podés publicar y gestionar campañas.
                 </p>
               </div>
-              <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>
-                <Rocket size={14} style={{ marginRight: '0.375rem' }} />
-                Hacete Creador
-              </Button>
-            </div>
+            ) : (!verification || verification.verificationStatus === 'NOT_SUBMITTED') ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                    Convertite en creador para publicar y gestionar tus propias campañas de crowdfunding.
+                  </p>
+                </div>
+                <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>
+                  <Rocket size={14} style={{ marginRight: '0.375rem' }} />
+                  Hacete Creador
+                </Button>
+              </div>
+            ) : verification.verificationStatus === 'PENDING' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <Info size={20} style={{ color: '#92400e', flexShrink: 0 }} />
+                <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                  Tu solicitud de verificación está siendo evaluada por nuestro equipo. Te notificaremos cuando haya una respuesta.
+                </p>
+              </div>
+            ) : verification.verificationStatus === 'REJECTED' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <AlertTriangle size={20} style={{ color: '#991b1b', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                    Tu verificación fue rechazada. {verification.rejectionReason || 'Podés volver a intentarlo.'}
+                  </p>
+                </div>
+                <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>
+                  <Rocket size={14} style={{ marginRight: '0.375rem' }} />
+                  Reintentar
+                </Button>
+              </div>
+            ) : null}
           </div>
         )}
 
