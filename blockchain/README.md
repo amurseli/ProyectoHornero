@@ -1,58 +1,90 @@
-# Proyecto Hornero Blockchain
+# Hornero Blockchain
 
-El proyecto quedó simplificado a un solo servicio Spring Boot:
+Este repositorio queda reducido a un unico servicio:
 
-- `ledger-service`: expone la API pública, firma y publica la transacción en Polygon usando la wallet y el contrato configurados.
+- `ledger-service`: microservicio Spring Boot que registra transacciones en Polygon y expone una API HTTP.
 
-## Endpoint público
+## Levantar con Docker
 
-`POST /api/v1/transactions`
+1. Completa `ledger/.env` con estas variables obligatorias:
 
-Body:
+```env
+POLYGON_RPC_URL=https://polygon-amoy.g.alchemy.com/v2/TU_API_KEY
+PRIVATE_KEY=tu-private-key
+CONTRACT_ADDRESS=0xTuContrato
+```
+
+Variables opcionales:
+
+```env
+POLYGON_CHAIN_ID=80002
+POLYGON_MIN_GAS_PRICE_GWEI=25
+POLYGON_MAX_GAS_PRICE_GWEI=100
+POLYGON_GAS_LIMIT=500000
+TX_REFERENCE=sin-referencia
+```
+
+2. Levanta el servicio desde la raiz del repo:
+
+```bash
+docker compose up --build
+```
+
+La API queda disponible en `http://localhost:8080`.
+
+## Endpoints
+
+### `POST /api/v1/transactions`
+
+Registra una transaccion en el contrato configurado.
+
+Request:
 
 ```json
 {
   "emisor": "proveedor-001",
   "receptor": "cliente-002",
   "amount": 1000,
-  "referencia": "factura-0001"
+  "reference": "factura-0001"
 }
 ```
 
-También acepta `reference` en lugar de `referencia`.
+Notas:
 
-Respuesta:
+- `reference` tambien puede enviarse como `referencia`.
+- `amount` debe ser un numero entero positivo.
+- `emisor`, `receptor` y `reference` son obligatorios.
+
+Respuesta exitosa (`201 Created`):
 
 ```json
 {
   "ok": true,
   "txHash": "0x...",
-  "explorerUrl": "https://amoy.polygonscan.com/tx/0x...",
-  "contractAddress": "0x..."
+  "contractAddress": "0x...",
+  "explorerUrl": "https://amoy.polygonscan.com/tx/0x..."
 }
 ```
 
-## Levantar con Docker
+Error de validacion o configuracion (`400 Bad Request`):
 
-Completar `ledger/.env` con al menos:
-
-- `POLYGON_RPC_URL`
-- `PRIVATE_KEY`
-- `CONTRACT_ADDRESS`
-
-Luego:
-
-```bash
-docker compose up --build
+```json
+{
+  "ok": false,
+  "error": "reference must not be blank"
+}
 ```
 
-La API pública queda en:
+Error interno al publicar en blockchain (`500 Internal Server Error`):
 
-```text
-http://localhost:8080/api/v1/transactions
+```json
+{
+  "ok": false,
+  "error": "Internal error while registering transaction"
+}
 ```
 
-## Probar el endpoint
+Ejemplo con `curl`:
 
 ```bash
 curl --request POST http://localhost:8080/api/v1/transactions \
@@ -61,14 +93,18 @@ curl --request POST http://localhost:8080/api/v1/transactions \
     "emisor": "proveedor-001",
     "receptor": "cliente-002",
     "amount": 1000,
-    "referencia": "factura-0001"
+    "reference": "factura-0001"
   }'
 ```
 
-## Ejecución local sin Docker
+### `GET /actuator/health`
 
-Servicio blockchain:
+Chequeo basico de salud del servicio.
 
-```bash
-mvn -f ledger/pom.xml spring-boot:run
+Respuesta esperada:
+
+```json
+{
+  "status": "UP"
+}
 ```
