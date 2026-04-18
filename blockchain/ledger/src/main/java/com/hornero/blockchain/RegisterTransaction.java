@@ -36,16 +36,6 @@ public class RegisterTransaction {
     private static final BigDecimal WEI_PER_MATIC = new BigDecimal("1000000000000000000");
     private static final BigDecimal WEI_PER_GWEI = new BigDecimal("1000000000");
 
-    public static void main(String[] args) throws Exception {
-        String contractAddress = args.length > 0 ? args[0] : EnvConfig.getRequired("CONTRACT_ADDRESS");
-        String emisor = args.length > 1 ? args[1] : EnvConfig.getRequired("TX_EMISOR");
-        String receptor = args.length > 2 ? args[2] : EnvConfig.getRequired("TX_RECEPTOR");
-        BigInteger amount = new BigInteger(args.length > 3 ? args[3] : EnvConfig.getRequired("TX_AMOUNT"));
-        String reference = args.length > 4 ? args[4] : EnvConfig.getOrDefault("TX_REFERENCE", "sin-referencia");
-
-        register(contractAddress, emisor, receptor, amount, reference);
-    }
-
     public static String register(
         String contractAddress,
         String emisor,
