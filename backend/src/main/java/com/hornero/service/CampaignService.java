@@ -32,6 +32,14 @@ public class CampaignService {
         return campaignRepository.findAllWithRelations();
     }
 
+    public List<Campaign> getPublicCampaigns() {
+        return campaignRepository.findAllPublicWithRelations();
+    }
+
+    public List<Campaign> getCampaignsByOwner(Long ownerId) {
+        return campaignRepository.findAllByOwnerIdWithRelations(ownerId);
+    }
+
     public Optional<Campaign> getCampaignById(Long id) {
         return campaignRepository.findByIdWithRelations(id);
     }

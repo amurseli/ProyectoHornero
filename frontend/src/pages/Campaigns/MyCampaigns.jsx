@@ -59,14 +59,30 @@ function MyCampaigns() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [verification, setVerification] = useState(null)
+  const [publishing, setPublishing] = useState(null)
   const { user } = useUser()
   const navigate = useNavigate()
 
+  async function handlePublish(e, campaignId) {
+    e.preventDefault()
+    e.stopPropagation()
+    setPublishing(campaignId)
+    try {
+      await api.post(`/api/campaigns/${campaignId}/publish`)
+      setCampaigns(prev => prev.map(c =>
+        c.id === campaignId ? { ...c, status: 'CROWDFUNDING' } : c
+      ))
+    } catch (err) {
+      alert(err?.message || 'No se pudo publicar la campaña. Verificá que esté completa.')
+    } finally {
+      setPublishing(null)
+    }
+  }
+
   useEffect(() => {
-    api.get('/api/campaigns')
+    api.get('/api/users/me/campaigns')
       .then((data) => {
         const mine = data
-          .filter(c => c.owner?.id === user?.userId)
           .map(normalizeCampaign)
           .sort((a, b) => {
             if (a.status === 'CROWDFUNDING' && b.status !== 'CROWDFUNDING') return -1
@@ -257,6 +273,13 @@ function MyCampaigns() {
                 <div className="mc-mini-body">
                   <h4 className="mc-mini-title">{item.title}</h4>
                   <p className="mc-draft-hint">Campaña sin publicar</p>
+                  <button
+                    className="mc-publish-btn"
+                    onClick={(e) => handlePublish(e, item.id)}
+                    disabled={publishing === item.id}
+                  >
+                    {publishing === item.id ? 'Publicando...' : 'Publicar'}
+                  </button>
                 </div>
               </a>
             )
@@ -488,8 +511,18 @@ const styles = `
   }
   .mc-draft-hint {
     font-size: var(--font-size-xs); color: var(--color-text-muted);
-    margin: 0;
+    margin: 0 0 0.625rem;
   }
+  .mc-publish-btn {
+    width: 100%; padding: 0.4rem 0;
+    background: var(--color-primary); color: white;
+    border: none; border-radius: var(--radius-md);
+    font-size: var(--font-size-xs); font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: opacity var(--transition-fast);
+  }
+  .mc-publish-btn:hover { opacity: 0.88; }
+  .mc-publish-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* Create card */
   .mc-create-card {

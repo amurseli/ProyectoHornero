@@ -25,7 +25,7 @@ export const campaignService = {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     const data = await response.json()
-    return data.map(normalizeCampaign).filter((c) => c.status !== "DRAFT")
+    return data.map(normalizeCampaign)
   },
 
   async getFeaturedCampaigns(limit = 4) {
@@ -48,7 +48,9 @@ export const campaignService = {
   },
 
   async getCampaignById(id) {
-    const campaigns = await this.getAllCampaigns()
-    return campaigns.find((c) => c.id === Number.parseInt(id))
+    const response = await fetch(`${API_URL}/api/campaigns/${id}`, { credentials: 'include' })
+    if (response.status === 404) return null
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    return normalizeCampaign(await response.json())
   },
 }

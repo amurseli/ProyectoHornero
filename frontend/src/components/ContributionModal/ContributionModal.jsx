@@ -37,7 +37,7 @@ export default function ContributionModal({ campaignId, initialAmount = 1, onClo
     }
   }
 
-  async function handlePaymentSubmit(formData) {
+  async function handlePaymentSubmit({ formData }) {
     try {
       const data = await contributionService.process(contributionId, formData)
       setResult(data)
