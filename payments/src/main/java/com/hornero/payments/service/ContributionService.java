@@ -4,11 +4,11 @@ import com.hornero.payments.client.BackendClient;
 import com.hornero.payments.dto.ContributionStatusResponse;
 import com.hornero.payments.dto.InitiateContributionResponse;
 import com.hornero.payments.dto.ProcessContributionRequest;
+import com.hornero.payments.gateway.MercadoPagoGateway;
 import com.hornero.payments.model.Contribution;
 import com.hornero.payments.model.Transaction;
 import com.hornero.payments.repository.ContributionRepository;
 import com.hornero.payments.repository.TransactionRepository;
-import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.client.payment.PaymentCreateRequest;
 import com.mercadopago.client.payment.PaymentPayerRequest;
 import com.mercadopago.exceptions.MPApiException;
@@ -30,16 +30,19 @@ public class ContributionService {
     private final ContributionRepository contributionRepository;
     private final TransactionRepository transactionRepository;
     private final BackendClient backendClient;
+    private final MercadoPagoGateway mercadoPagoGateway;
 
     @Value("${mercadopago.public-key}")
     private String mpPublicKey;
 
     public ContributionService(ContributionRepository contributionRepository,
                                TransactionRepository transactionRepository,
-                               BackendClient backendClient) {
+                               BackendClient backendClient,
+                               MercadoPagoGateway mercadoPagoGateway) {
         this.contributionRepository = contributionRepository;
         this.transactionRepository = transactionRepository;
         this.backendClient = backendClient;
+        this.mercadoPagoGateway = mercadoPagoGateway;
     }
 
     // Crea el registro PENDING y devuelve la publicKey para que el frontend inicialice el Payment Brick
@@ -97,7 +100,7 @@ public class ContributionService {
                             .build())
                     .build();
 
-            Payment mpPayment = new PaymentClient().create(mpRequest);
+            Payment mpPayment = mercadoPagoGateway.create(mpRequest);
 
             transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
             transaction.setPaymentProvider("MERCADO_PAGO");
@@ -142,7 +145,7 @@ public class ContributionService {
         }
 
         try {
-            Payment mpPayment = new PaymentClient().get(paymentId);
+            Payment mpPayment = mercadoPagoGateway.get(paymentId);
             String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
 
             transactionRepository.findByIdTransactionExternal(String.valueOf(paymentId)).ifPresent(transaction -> {

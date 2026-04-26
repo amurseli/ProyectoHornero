@@ -422,7 +422,7 @@ function CreateCampaign() {
             {step < 5
               ? <Button variant="primary" onClick={() => goToStep(step + 1)}>Siguiente →</Button>
               : <Button variant="primary" size="lg" onClick={handleSubmit} disabled={loading}>
-                  {loading ? 'Publicando...' : 'Publicar campaña'}
+                  {loading ? 'Guardando...' : 'Guardar borrador'}
                 </Button>
             }
           </div>

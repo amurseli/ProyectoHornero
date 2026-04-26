@@ -24,18 +24,31 @@ public class CampaignController {
     @Value("${app.service-key:internal-secret-dev}")
     private String serviceKey;
 
-    // GET /api/campaigns
+    // GET /api/campaigns — solo campañas en CROWDFUNDING (vista pública)
+    // Acepta ?search y ?categoryId para búsqueda futura (ignorados por ahora)
     @GetMapping
-    public List<Campaign> getAllCampaigns() {
-        return campaignService.getAllCampaigns();
+    public List<Campaign> getPublicCampaigns(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId) {
+        return campaignService.getPublicCampaigns();
     }
 
     // GET /api/campaigns/{id}
+    // Devuelve la campaña si está en CROWDFUNDING (cualquier visitante)
+    // o si el usuario autenticado es el dueño (cualquier estado)
     @GetMapping("/{id}")
-    public ResponseEntity<Campaign> getCampaignById(@PathVariable Long id) {
-        return campaignService.getCampaignById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Campaign> getCampaignById(@PathVariable Long id, HttpServletRequest request) {
+        Campaign campaign = campaignService.getCampaignById(id).orElse(null);
+        if (campaign == null) return ResponseEntity.notFound().build();
+
+        if ("CROWDFUNDING".equals(campaign.getStatus())) return ResponseEntity.ok(campaign);
+
+        Long requestingUserId = (Long) request.getAttribute("userId");
+        boolean isOwner = requestingUserId != null
+                && campaign.getOwner() != null
+                && campaign.getOwner().getId().equals(requestingUserId);
+
+        return isOwner ? ResponseEntity.ok(campaign) : ResponseEntity.notFound().build();
     }
 
     // POST /api/campaigns

@@ -98,11 +98,10 @@ public class PayoutService {
             payout.setStatus("PROCESSING");
             payoutRepository.save(payout);
 
-            // Una vez confirmado el payout exitoso por parte del proveedor, se actualiza el estado a COMPLETED 
-            // y se notifica al backend. Puede ser que esto se haga en otro proceso asíncrono. 
+            // Una vez confirmado el payout exitoso por parte del proveedor, se actualiza el estado a COMPLETED.
+            // Puede hacerse en otro proceso asíncrono cuando se integre la API real de MP Payouts.
             // payout.setStatus("COMPLETED");
             // payout.setProcessedAt(LocalDateTime.now());
-            // backendClient.updateCampaignStatusToPaidOut(campaignId);
 
         } catch (Exception e) {
             logger.error("Error al ejecutar payout para campaña {}: {}", campaignId, e.getMessage());
