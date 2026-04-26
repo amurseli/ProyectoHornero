@@ -461,6 +461,11 @@
   box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
+.cp-contribute-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
 /* ── Loading / Error ── */
 
 .cp-loading,
