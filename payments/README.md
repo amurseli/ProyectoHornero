@@ -70,6 +70,35 @@ El resultado del pago se controla con el **nombre del titular** de la tarjeta.
 | `EXPI` | Rechazado por fecha de vencimiento |
 | `FORM` | Rechazado por error en formulario |
 
+## Tests
+
+Los tests corren completamente en local, sin Docker ni contenedores. Usan H2 en memoria y Mockito para mockear MercadoPago y el backend.
+
+```bash
+# Correr todos los tests
+cd payments
+mvn test
+
+# Correr solo una clase
+mvn test -Dtest=ContributionServiceTest
+mvn test -Dtest=PayoutServiceTest
+mvn test -Dtest=RefundServiceTest
+
+# Correr todos los tests de controllers
+mvn test -Dtest="*Controller*"
+```
+
+### Cobertura
+
+| Suite | Tests | Tipo |
+|-------|-------|------|
+| `ContributionServiceTest` | 11 | Unitario |
+| `PayoutServiceTest` | 4 | Unitario |
+| `RefundServiceTest` | 4 | Unitario |
+| `GlobalExceptionHandlerTest` | 4 | MockMvc standalone |
+| `ContributionControllerTest` | 4 | `@WebMvcTest` |
+| `PayoutControllerTest` | 3 | `@WebMvcTest` |
+
 ## Arquitectura
 
 Este servicio es parte de un **monolito modular**:
