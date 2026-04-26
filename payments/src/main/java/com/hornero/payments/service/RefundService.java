@@ -1,11 +1,11 @@
 package com.hornero.payments.service;
 
 import com.hornero.payments.dto.RefundSummaryResponse;
+import com.hornero.payments.gateway.MercadoPagoGateway;
 import com.hornero.payments.model.Contribution;
 import com.hornero.payments.model.Refund;
 import com.hornero.payments.repository.ContributionRepository;
 import com.hornero.payments.repository.RefundRepository;
-import com.mercadopago.client.payment.PaymentRefundClient;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.PaymentRefund;
@@ -25,11 +25,14 @@ public class RefundService {
 
     private final RefundRepository refundRepository;
     private final ContributionRepository contributionRepository;
+    private final MercadoPagoGateway mercadoPagoGateway;
 
     public RefundService(RefundRepository refundRepository,
-                         ContributionRepository contributionRepository) {
+                         ContributionRepository contributionRepository,
+                         MercadoPagoGateway mercadoPagoGateway) {
         this.refundRepository = refundRepository;
         this.contributionRepository = contributionRepository;
+        this.mercadoPagoGateway = mercadoPagoGateway;
     }
 
     // Reembolsa todas las contributions APPROVED de una campaña.
@@ -67,8 +70,7 @@ public class RefundService {
                 logger.warn("Contribution {} sin transacción registrada, refund marcado como FAILED para gestión manual", contribution.getId());
             } else {
                 try {
-                    PaymentRefundClient refundClient = new PaymentRefundClient();
-                    PaymentRefund providerRefund = refundClient.refund(Long.valueOf(transactionId));
+                    PaymentRefund providerRefund = mercadoPagoGateway.refund(Long.valueOf(transactionId));
 
                     refund.setIdRefundExternal(String.valueOf(providerRefund.getId()));
                     refund.setStatus("COMPLETED");
