@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { campaignService } from '$utils/campaignService'
 import { Button } from '$components/ui'
+import ContributionModal from '$components/ContributionModal/ContributionModal'
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Clock, Users, MapPin, Tag } from 'lucide-react'
 import './CampaignPage.css'
 
@@ -16,7 +17,7 @@ function getProgress(current, goal) {
 
 /* ─── Hero: media carousel + stats panel ─── */
 
-function CampaignHero({ campaign }) {
+function CampaignHero({ campaign, onContribute }) {
   const [mediaIndex, setMediaIndex] = useState(0)
   const progress = getProgress(campaign.currentAmount, campaign.goal)
 
@@ -95,7 +96,7 @@ function CampaignHero({ campaign }) {
             </div>
           </div>
 
-          <Button variant="primary" size="lg" className="cp-cta">Patrocinar este proyecto</Button>
+          <Button variant="primary" size="lg" className="cp-cta" onClick={() => onContribute()}>Patrocinar este proyecto</Button>
 
           <div className="cp-secondary-actions">
             <button className="cp-sec-btn"><Bookmark size={14} /> Recordarme</button>
@@ -147,8 +148,9 @@ const TOC_ITEMS = [
   'Riesgos y desafíos',
 ]
 
-function CampaignContent({ campaign, activeTab }) {
+function CampaignContent({ campaign, activeTab, onContribute }) {
   const [activeToc, setActiveToc] = useState(0)
+  const [sidebarAmount, setSidebarAmount] = useState(1)
 
   if (activeTab === 'rewards') {
     return (
@@ -245,9 +247,23 @@ function CampaignContent({ campaign, activeTab }) {
           <span className="cp-contribute-title">Contribuir sin recompensa</span>
           <p className="cp-contribute-desc">Apoyá el proyecto simplemente porque te parece interesante.</p>
           <div className="cp-amount-input">
-            <span className="cp-amount-prefix">US$</span>
-            <input type="number" defaultValue={1} min={1} className="cp-amount-field" />
+            <span className="cp-amount-prefix">ARS $</span>
+            <input
+              type="number"
+              value={sidebarAmount}
+              onChange={(e) => setSidebarAmount(Number(e.target.value))}
+              min={1}
+              className="cp-amount-field"
+            />
           </div>
+          <Button
+            variant="primary"
+            size="sm"
+            className="cp-contribute-btn"
+            onClick={() => onContribute(sidebarAmount)}
+          >
+            Aportar
+          </Button>
         </div>
       </aside>
     </div>
@@ -263,6 +279,13 @@ export default function CampaignPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('campaign')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalAmount, setModalAmount] = useState(1)
+
+  function openModal(amount = 1) {
+    setModalAmount(amount)
+    setModalOpen(true)
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -308,9 +331,16 @@ export default function CampaignPage() {
           <ArrowLeft size={16} /> Campañas
         </button>
 
-        <CampaignHero campaign={campaign} />
+        <CampaignHero campaign={campaign} onContribute={openModal} />
         <CampaignTabs active={activeTab} onChange={setActiveTab} />
-        <CampaignContent campaign={campaign} activeTab={activeTab} />
+        <CampaignContent campaign={campaign} activeTab={activeTab} onContribute={openModal} />
+        {modalOpen && (
+          <ContributionModal
+            campaignId={Number(id)}
+            initialAmount={modalAmount}
+            onClose={() => setModalOpen(false)}
+          />
+        )}
       </div>
     </div>
   )
