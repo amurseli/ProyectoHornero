@@ -16,7 +16,7 @@ function CampaignCard({ campaign, variant = "featured" }) {
 
   const handleMouseEnter = () => {
     if (!videoUrl) return
-    hoverTimer.current = setTimeout(() => setHovered(true), 400)
+    hoverTimer.current = setTimeout(() => setHovered(true), 1000)
   }
 
   const handleMouseLeave = () => {
