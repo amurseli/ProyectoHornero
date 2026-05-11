@@ -1,0 +1,79 @@
+name: Deploy To EC2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'payments/**'
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy changed services
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed services
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            payments:
+              - 'payments/**'
+
+      - name: Decode SSH private key
+        env:
+          SSH_KEY_B64: ${{ secrets.BACKEND_SSH_KEY }}
+        run: |
+          echo "$SSH_KEY_B64" | base64 --decode > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+      - name: Deploy on EC2
+        env:
+          EC2_USER: ${{ secrets.EC2_USER }}
+          BACKEND_HOST: ${{ secrets.BACKEND_HOST }}
+          BACKEND_CHANGED: ${{ steps.changes.outputs.backend }}
+          FRONTEND_CHANGED: ${{ steps.changes.outputs.frontend }}
+          PAYMENTS_CHANGED: ${{ steps.changes.outputs.payments }}
+        run: |
+          ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no "${EC2_USER}@${BACKEND_HOST}" <<EOF
+          set -e
+          cd /home/${EC2_USER}/ProyectoHornero
+
+          git pull --ff-only origin main
+
+          docker network inspect hornero-network >/dev/null 2>&1 || docker network create hornero-network
+
+          if [ "${BACKEND_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/backend
+            docker compose up --build -d
+          fi
+
+          if [ "${PAYMENTS_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/payments
+            docker compose up --build -d
+          fi
+
+          if [ "${FRONTEND_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/frontend
+            docker compose up --build -d
+          fi
+          EOF
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f /tmp/deploy_key
