@@ -51,23 +51,38 @@ network:
 		true
 
 # ------------------------------------------------------------
-# Backend
+# Backend + frontend (dev por defecto, con HMR)
 # ------------------------------------------------------------
 up: network
 	cd $(BACKEND_DIR) && docker-compose up -d
-	cd $(FRONTEND_DIR) && docker-compose up -d
+	cd $(FRONTEND_DIR) && docker-compose -f docker-compose.dev.yml up -d
 
 down:
 	cd $(BACKEND_DIR) && docker-compose down || true
+	cd $(FRONTEND_DIR) && docker-compose -f docker-compose.dev.yml down || true
 	cd $(FRONTEND_DIR) && docker-compose down || true
 
 build:
-	cd $(BACKEND_DIR) && docker-compose build 
-	cd $(FRONTEND_DIR) && docker-compose build 
+	cd $(BACKEND_DIR) && docker-compose build
+	cd $(FRONTEND_DIR) && docker-compose -f docker-compose.dev.yml build
 
 logs:
 	cd $(BACKEND_DIR) && docker-compose logs -f
-	cd $(FRONTEND_DIR) && docker-compose logs -f
+
+# ------------------------------------------------------------
+# Frontend modo prod (nginx, build estático) — solo para testear deploy
+# ------------------------------------------------------------
+up-prod: network
+	cd $(BACKEND_DIR) && docker-compose up -d
+	cd $(FRONTEND_DIR) && docker-compose up -d
+
+down-prod:
+	cd $(BACKEND_DIR) && docker-compose down || true
+	cd $(FRONTEND_DIR) && docker-compose down || true
+
+build-prod:
+	cd $(BACKEND_DIR) && docker-compose build
+	cd $(FRONTEND_DIR) && docker-compose build
 
 # ------------------------------------------------------------
 # Payments
