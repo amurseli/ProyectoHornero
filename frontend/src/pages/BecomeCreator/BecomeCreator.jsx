@@ -127,17 +127,23 @@ export function BecomeCreatorModule({ onSuccess }) {
     uploadStatus.DNI_BACK === 'success' &&
     uploadStatus.SELFIE_WITH_DNI === 'success'
 
+  const isBlank = (v) => !v || !String(v).trim()
+
   const validateStep = () => {
     setError(null)
     switch (step) {
       case 0: {
         const { fullLegalName, dniNumber, cuilNumber, dateOfBirth, phoneNumber, addressStreet, addressCity, addressProvince, addressZipCode } = personal
-        if (!fullLegalName || !dniNumber || !cuilNumber || !dateOfBirth || !phoneNumber || !addressStreet || !addressCity || !addressProvince || !addressZipCode) {
+        if (isBlank(fullLegalName) || isBlank(dniNumber) || isBlank(cuilNumber) || !dateOfBirth || isBlank(phoneNumber) || isBlank(addressStreet) || isBlank(addressCity) || isBlank(addressProvince) || isBlank(addressZipCode)) {
           setError('Completá todos los campos obligatorios')
           return false
         }
         if (!/^\d{7,8}$/.test(dniNumber)) { setError('El DNI debe tener 7 u 8 dígitos'); return false }
         if (!/^\d{11}$/.test(cuilNumber)) { setError('El CUIL debe tener 11 dígitos'); return false }
+        const dob = new Date(dateOfBirth)
+        if (isNaN(dob.getTime())) { setError('Fecha de nacimiento inválida'); return false }
+        const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
+        if (dob >= startOfToday) { setError('La fecha de nacimiento debe ser en el pasado'); return false }
         return true
       }
       case 1:
@@ -155,8 +161,9 @@ export function BecomeCreatorModule({ onSuccess }) {
         if (tax.cuitNumber && !/^\d{11}$/.test(tax.cuitNumber)) { setError('El CUIT debe tener 11 dígitos'); return false }
         return true
       case 3: {
-        const { accountNumber, bankOrWalletName, accountHolderName } = bank
-        if (!accountNumber || !bankOrWalletName || !accountHolderName) {
+        const { accountType, accountNumber, bankOrWalletName, accountHolderName } = bank
+        if (!accountType) { setError('Seleccioná el tipo de cuenta'); return false }
+        if (isBlank(accountNumber) || isBlank(bankOrWalletName) || isBlank(accountHolderName)) {
           setError('Completá todos los campos bancarios obligatorios')
           return false
         }
@@ -183,12 +190,14 @@ export function BecomeCreatorModule({ onSuccess }) {
     setLoading(true)
 
     try {
+      const trim = (v) => (typeof v === 'string' ? v.trim() : v)
+      const trimObj = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, trim(v)]))
       const payload = {
-        ...personal,
-        ...tax,
-        cuitNumber: tax.cuitNumber || null,
-        ...bank,
-        accountAlias: bank.accountAlias || null,
+        ...trimObj(personal),
+        ...trimObj(tax),
+        cuitNumber: trim(tax.cuitNumber) || null,
+        ...trimObj(bank),
+        accountAlias: trim(bank.accountAlias) || null,
         termsAccepted,
       }
       await api.post('/api/users/me/verification', payload)
@@ -282,7 +291,12 @@ export function BecomeCreatorModule({ onSuccess }) {
             </div>
             <div className="bc-form-field">
               <label>Fecha de nacimiento *</label>
-              <input type="date" value={personal.dateOfBirth} onChange={e => updatePersonal('dateOfBirth', e.target.value)} />
+              <input
+                type="date"
+                value={personal.dateOfBirth}
+                max={new Date(Date.now() - 86400000).toISOString().split('T')[0]}
+                onChange={e => updatePersonal('dateOfBirth', e.target.value)}
+              />
             </div>
             <div className="bc-form-field">
               <label>Teléfono *</label>

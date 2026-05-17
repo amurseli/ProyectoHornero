@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { campaignService } from '$utils/campaignService'
 import { Button } from '$components/ui'
 import ContributionModal from '$components/ContributionModal/ContributionModal'
+import { useUser } from '../../store/useUser'
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Clock, Users, MapPin, Tag } from 'lucide-react'
 import './CampaignPage.css'
 
@@ -17,7 +18,7 @@ function getProgress(current, goal) {
 
 /* ─── Hero: media carousel + stats panel ─── */
 
-function CampaignHero({ campaign, onContribute }) {
+function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
   const [mediaIndex, setMediaIndex] = useState(0)
   const progress = getProgress(campaign.currentAmount, campaign.goal)
 
@@ -96,7 +97,19 @@ function CampaignHero({ campaign, onContribute }) {
             </div>
           </div>
 
-          <Button variant="primary" size="lg" className="cp-cta" onClick={() => onContribute()}>Patrocinar este proyecto</Button>
+          <Button
+            variant="primary"
+            size="lg"
+            className="cp-cta"
+            onClick={() => onContribute()}
+            disabled={!!contributeDisabledReason}
+            title={contributeDisabledReason || undefined}
+          >
+            Patrocinar este proyecto
+          </Button>
+          {contributeDisabledReason && (
+            <p className="cp-disabled-note">{contributeDisabledReason}</p>
+          )}
 
           <div className="cp-secondary-actions">
             <button className="cp-sec-btn"><Bookmark size={14} /> Recordarme</button>
@@ -148,7 +161,7 @@ const TOC_ITEMS = [
   'Riesgos y desafíos',
 ]
 
-function CampaignContent({ campaign, activeTab, onContribute }) {
+function CampaignContent({ campaign, activeTab, onContribute, contributeDisabledReason }) {
   const [activeToc, setActiveToc] = useState(0)
   const [sidebarAmount, setSidebarAmount] = useState(1)
 
@@ -261,6 +274,8 @@ function CampaignContent({ campaign, activeTab, onContribute }) {
             size="sm"
             className="cp-contribute-btn"
             onClick={() => onContribute(sidebarAmount)}
+            disabled={!!contributeDisabledReason}
+            title={contributeDisabledReason || undefined}
           >
             Aportar
           </Button>
@@ -275,6 +290,7 @@ function CampaignContent({ campaign, activeTab, onContribute }) {
 export default function CampaignPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useUser()
   const [campaign, setCampaign] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -285,6 +301,13 @@ export default function CampaignPage() {
   function openModal(amount = 1) {
     setModalAmount(amount)
     setModalOpen(true)
+  }
+
+  function getContributeDisabledReason(c) {
+    if (!c) return null
+    if (c.status === 'DRAFT') return 'Esta campaña aún no fue publicada'
+    if (user && c.owner?.id === user.userId) return 'No podés patrocinar tu propia campaña'
+    return null
   }
 
   useEffect(() => {
@@ -331,9 +354,25 @@ export default function CampaignPage() {
           <ArrowLeft size={16} /> Campañas
         </button>
 
-        <CampaignHero campaign={campaign} onContribute={openModal} />
-        <CampaignTabs active={activeTab} onChange={setActiveTab} />
-        <CampaignContent campaign={campaign} activeTab={activeTab} onContribute={openModal} />
+        {(() => {
+          const contributeDisabledReason = getContributeDisabledReason(campaign)
+          return (
+            <>
+              <CampaignHero
+                campaign={campaign}
+                onContribute={openModal}
+                contributeDisabledReason={contributeDisabledReason}
+              />
+              <CampaignTabs active={activeTab} onChange={setActiveTab} />
+              <CampaignContent
+                campaign={campaign}
+                activeTab={activeTab}
+                onContribute={openModal}
+                contributeDisabledReason={contributeDisabledReason}
+              />
+            </>
+          )
+        })()}
         {modalOpen && (
           <ContributionModal
             campaignId={Number(id)}

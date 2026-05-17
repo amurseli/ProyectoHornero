@@ -210,6 +210,13 @@
 
 .cp-cta { width: 100%; }
 
+.cp-disabled-note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0.5rem 0 0;
+}
+
 .cp-secondary-actions {
   display: flex;
   gap: 0.5rem;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, ChevronLeft, ChevronRight, Clock, Users, TrendingUp, Rocket, Pencil, ShieldCheck, AlertTriangle, Info, CheckCircle } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Clock, Users, TrendingUp, Rocket, Pencil, ShieldCheck, AlertTriangle, Info } from 'lucide-react'
 import { Button } from '$components/ui'
 import { useUser } from '../../store/useUser'
 import api from '$utils/api/api'
@@ -62,6 +62,7 @@ function MyCampaigns() {
   const [publishing, setPublishing] = useState(null)
   const { user } = useUser()
   const navigate = useNavigate()
+  const isCreator = user?.role === 'CREATOR' || user?.role === 'ADMIN'
 
   async function handlePublish(e, campaignId) {
     e.preventDefault()
@@ -96,11 +97,13 @@ function MyCampaigns() {
   }, [user])
 
   useEffect(() => {
-    if (user?.role === 'CREATOR' || user?.role === 'ADMIN') return
+    if (isCreator) return
     api.get('/api/users/me/verification')
       .then(data => setVerification(data))
       .catch(() => setVerification(null))
-  }, [user])
+  }, [user, isCreator])
+
+  const verifStatus = verification?.verificationStatus ?? verification?.status ?? 'NOT_SUBMITTED'
 
   const active = campaigns.find(c => c.status === 'CROWDFUNDING') || null
   const drafts = campaigns.filter(c => c.status === 'DRAFT')
@@ -117,9 +120,26 @@ function MyCampaigns() {
   if (campaigns.length === 0) {
     return (
       <main className="mc-page">
-        {user?.role !== 'CREATOR' && user?.role !== 'ADMIN' && (
+        {!isCreator && (
           <section className="container mc-verification-banner">
-            {(!verification || verification.verificationStatus === 'NOT_SUBMITTED') ? (
+            {verifStatus === 'PENDING' ? (
+              <div className="mc-vb mc-vb--pending">
+                <Info size={22} />
+                <div className="mc-vb-content">
+                  <strong>Verificación en revisión</strong>
+                  <p>Tu solicitud está siendo evaluada por nuestro equipo. Te notificaremos cuando haya una respuesta.</p>
+                </div>
+              </div>
+            ) : verifStatus === 'REJECTED' ? (
+              <div className="mc-vb mc-vb--rejected">
+                <AlertTriangle size={22} />
+                <div className="mc-vb-content">
+                  <strong>Verificación rechazada</strong>
+                  <p>{verification?.rejectionReason || 'Tu solicitud fue rechazada. Podés volver a intentarlo.'}</p>
+                </div>
+                <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Reintentar</Button>
+              </div>
+            ) : (
               <div className="mc-vb mc-vb--info">
                 <ShieldCheck size={22} />
                 <div className="mc-vb-content">
@@ -128,24 +148,7 @@ function MyCampaigns() {
                 </div>
                 <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Verificarme</Button>
               </div>
-            ) : verification.verificationStatus === 'PENDING' ? (
-              <div className="mc-vb mc-vb--pending">
-                <Info size={22} />
-                <div className="mc-vb-content">
-                  <strong>Verificación en revisión</strong>
-                  <p>Tu solicitud está siendo evaluada por nuestro equipo. Te notificaremos cuando haya una respuesta.</p>
-                </div>
-              </div>
-            ) : verification.verificationStatus === 'REJECTED' ? (
-              <div className="mc-vb mc-vb--rejected">
-                <AlertTriangle size={22} />
-                <div className="mc-vb-content">
-                  <strong>Verificación rechazada</strong>
-                  <p>{verification.rejectionReason || 'Tu solicitud fue rechazada. Podés volver a intentarlo.'}</p>
-                </div>
-                <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Reintentar</Button>
-              </div>
-            ) : null}
+            )}
           </section>
         )}
         <div className="container mc-empty">
@@ -172,10 +175,26 @@ function MyCampaigns() {
         <p className="mc-page-subtitle">Gestioná tus proyectos y seguí su progreso</p>
       </header>
 
-      {/* Verification banner */}
-      {user?.role !== 'CREATOR' && user?.role !== 'ADMIN' && (
+      {!isCreator && (
         <section className="container mc-verification-banner">
-          {(!verification || verification.verificationStatus === 'NOT_SUBMITTED') ? (
+          {verifStatus === 'PENDING' ? (
+            <div className="mc-vb mc-vb--pending">
+              <Info size={22} />
+              <div className="mc-vb-content">
+                <strong>Verificación en revisión</strong>
+                <p>Tu solicitud está siendo evaluada por nuestro equipo. Te notificaremos cuando haya una respuesta.</p>
+              </div>
+            </div>
+          ) : verifStatus === 'REJECTED' ? (
+            <div className="mc-vb mc-vb--rejected">
+              <AlertTriangle size={22} />
+              <div className="mc-vb-content">
+                <strong>Verificación rechazada</strong>
+                <p>{verification?.rejectionReason || 'Tu solicitud fue rechazada. Podés volver a intentarlo.'}</p>
+              </div>
+              <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Reintentar</Button>
+            </div>
+          ) : (
             <div className="mc-vb mc-vb--info">
               <ShieldCheck size={22} />
               <div className="mc-vb-content">
@@ -184,24 +203,7 @@ function MyCampaigns() {
               </div>
               <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Verificarme</Button>
             </div>
-          ) : verification.verificationStatus === 'PENDING' ? (
-            <div className="mc-vb mc-vb--pending">
-              <Info size={22} />
-              <div className="mc-vb-content">
-                <strong>Verificación en revisión</strong>
-                <p>Tu solicitud está siendo evaluada por nuestro equipo. Te notificaremos cuando haya una respuesta.</p>
-              </div>
-            </div>
-          ) : verification.verificationStatus === 'REJECTED' ? (
-            <div className="mc-vb mc-vb--rejected">
-              <AlertTriangle size={22} />
-              <div className="mc-vb-content">
-                <strong>Verificación rechazada</strong>
-                <p>{verification.rejectionReason || 'Tu solicitud fue rechazada. Podés volver a intentarlo.'}</p>
-              </div>
-              <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Reintentar</Button>
-            </div>
-          ) : null}
+          )}
         </section>
       )}
 
@@ -276,7 +278,8 @@ function MyCampaigns() {
                   <button
                     className="mc-publish-btn"
                     onClick={(e) => handlePublish(e, item.id)}
-                    disabled={publishing === item.id}
+                    disabled={publishing === item.id || !isCreator}
+                    title={!isCreator ? 'Necesitás ser creador verificado para publicar' : undefined}
                   >
                     {publishing === item.id ? 'Publicando...' : 'Publicar'}
                   </button>

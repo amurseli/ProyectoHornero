@@ -7,6 +7,12 @@ FRONTEND_DIR = frontend
 PAYMENTS_DIR = payments
 NETWORK      = hornero-network
 
+ifeq ($(OS),Windows_NT)
+    DEVNULL := NUL
+else
+    DEVNULL := /dev/null
+endif
+
 .PHONY: help network up down build logs dev \
         up-pay down-pay build-pay logs-pay \
         up-all down-all build-all \
@@ -40,8 +46,9 @@ help:
 # Network compartida
 # ------------------------------------------------------------
 network:
-	@docker network inspect $(NETWORK) >/dev/null 2>&1 || \
-		(echo "Creando network $(NETWORK)..." && docker network create $(NETWORK))
+	@docker network inspect $(NETWORK) >$(DEVNULL) 2>&1 || \
+		(echo "Creando network $(NETWORK)..." && docker network create $(NETWORK) >$(DEVNULL) 2>&1) || \
+		true
 
 # ------------------------------------------------------------
 # Backend
