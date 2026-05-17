@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronDown, Check, AlertCircle, FileText, Image, Gift, Help
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import SectionBasicos from './DraftSections/BasicSection'
+import SectionHistoria from './DraftSections/HistoriaSection'
 import './EditDraftCampaign.css'
 
 const REQUIRED_SECTIONS = [
@@ -19,7 +20,7 @@ const REQUIRED_SECTIONS = [
     title: 'Historia',
     subtitle: 'Contá de qué se trata tu proyecto, cómo funciona y cuáles son los riesgos.',
     icon: FileText,
-    isComplete: (c) => !!(c.description && c.description.length > 50),
+    isComplete: (c) => !!(c.description && c.description.length > 500),
   },
   {
     key: 'recompensas',
@@ -75,8 +76,15 @@ function SectionContent({ sectionKey, campaign, onSaved }) {
     )
   }
 
+  if (sectionKey === 'historia') {
+    return (
+      <div className="edc-section-content">
+        <SectionHistoria campaign={campaign} onSaved={onSaved} />
+      </div>
+    )
+  }
+
   const placeholders = {
-    historia: 'Acá va el editor de la descripción larga del proyecto.',
     recompensas: 'Acá va el CRUD de tiers de contribución.',
     faq: 'Acá va el CRUD de preguntas frecuentes.',
     equipo: 'Acá se muestran y agregan los miembros del equipo.',
@@ -88,7 +96,6 @@ function SectionContent({ sectionKey, campaign, onSaved }) {
     </div>
   )
 }
-
 function SectionGroup({ title, sections, campaign, openSection, onToggle, onSaved }) {
   return (
     <div className="edc-group">
