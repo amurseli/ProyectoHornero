@@ -50,6 +50,9 @@ public class Campaign {
     @Column(name = "country")
     private String country;
 
+    @Column(name = "money_status", length = 30)
+    private String moneyStatus;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_owner")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "campaigns"})
@@ -96,6 +99,7 @@ public class Campaign {
     public List<CampaignMedia> getMedia() { return media; }
     public List<CreatorsCampaign> getCreators() { return creators; }
     public String getCountry() { return country; }
+    public String getMoneyStatus() { return moneyStatus; }
 
 
     // Setters
@@ -110,4 +114,5 @@ public class Campaign {
     public void setOwner(User owner) { this.owner = owner; }
     public void setCategory(CampaignCategory category) { this.category = category; }
     public void setCountry(String country) { this.country = country; }
+    public void setMoneyStatus(String moneyStatus) { this.moneyStatus = moneyStatus; }
 }
