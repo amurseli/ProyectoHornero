@@ -139,26 +139,6 @@ public class BackendClient {
         }
     }
 
-    // Notifica al backend que el payout fue completado y la campaña debe pasar a PAID_OUT.
-    public void updateCampaignStatusToPaidOut(Long campaignId) {
-        String url = backendUrl + "/api/campaigns/" + campaignId + "/status";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("X-Service-Key", serviceKey);
-
-        Map<String, String> body = Map.of("status", "PAID_OUT");
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
-
-        try {
-            restTemplate.exchange(url, HttpMethod.PATCH, entity, Void.class);
-            logger.info("Campaña {} actualizada a PAID_OUT", campaignId);
-        } catch (Exception e) {
-            logger.error("Error al actualizar status de campaña {} a PAID_OUT: {}", campaignId, e.getMessage());
-            throw new RuntimeException("Error al notificar PAID_OUT al backend", e);
-        }
-    }
-
     // Suma el monto al current_amount de la campana en el backend.
     public void updateCampaignAmount(Long campaignId, BigDecimal amount) {
         String url = backendUrl + "/api/campaigns/" + campaignId + "/current-amount";

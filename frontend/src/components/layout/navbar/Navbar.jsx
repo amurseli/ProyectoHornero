@@ -1,14 +1,14 @@
 'use client';
 
-import { Search, User, Menu, ChevronDown, Settings, FolderOpen, LogOut } from "lucide-react"
+import { User, Menu, ChevronDown, Settings, FolderOpen, LogOut, ShieldCheck } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../ui"
+import { NavbarSearchBar } from "../../features"
 import { useUser } from "../../../store/useUser"
 import "./Navbar.css"
 
 function Navbar() {
-  const [searchQuery, setSearchQuery] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const { user, logout } = useUser()
@@ -36,17 +36,7 @@ function Navbar() {
       <div className="container navbar-container">
         <Link to="/" className="navbar-logo">PROYECTO HORNERO</Link>
 
-        <div className="navbar-search">
-          <Search className="navbar-search-icon" aria-hidden="true" />
-          <input
-            type="text"
-            placeholder="Buscar proyectos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="navbar-search-input"
-            aria-label="Buscar proyectos"
-          />
-        </div>
+        <NavbarSearchBar />
 
         <div className="navbar-actions">
           <Link to="/for-creators" className="navbar-creators-link">
@@ -90,6 +80,16 @@ function Navbar() {
                     <FolderOpen size={16} aria-hidden="true" />
                     Mis campañas
                   </Link>
+                  {user.role === 'ADMIN' && (
+                    <Link
+                      to="/admin/verifications"
+                      className="navbar-dropdown-item"
+                      onClick={() => setUserDropdownOpen(false)}
+                    >
+                      <ShieldCheck size={16} aria-hidden="true" />
+                      Verificaciones
+                    </Link>
+                  )}
                   <div className="navbar-dropdown-divider" />
                   <button
                     className="navbar-dropdown-item navbar-dropdown-item--danger"
@@ -139,6 +139,11 @@ function Navbar() {
               <Link to="/campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
                 Mis campañas
               </Link>
+              {user.role === 'ADMIN' && (
+                <Link to="/admin/verifications" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+                  Verificaciones
+                </Link>
+              )}
               <button className="navbar-mobile-link" onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>
                 Cerrar sesión
               </button>

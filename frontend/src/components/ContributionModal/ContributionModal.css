@@ -1,0 +1,164 @@
+/* ═══════════════════════════════════════════
+   ContributionModal
+═══════════════════════════════════════════ */
+
+.cm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-lg);
+}
+
+.cm-modal {
+  background: var(--color-bg-card, white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  padding: var(--space-xl);
+}
+
+.cm-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 32px;
+  height: 32px;
+  background: var(--color-muted);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+.cm-close:hover {
+  background: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+/* ── Step container ── */
+
+.cm-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.cm-title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+  padding-right: 2rem;
+}
+
+.cm-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Amount input ── */
+
+.cm-amount-row {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: box-shadow var(--transition-fast);
+}
+.cm-amount-row:focus-within {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  border-color: var(--color-primary);
+}
+
+.cm-amount-prefix {
+  padding: 0.625rem 0.875rem;
+  background: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.cm-amount-input {
+  border: none;
+  padding: 0.625rem 0.75rem;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: transparent;
+}
+.cm-amount-input::-webkit-inner-spin-button,
+.cm-amount-input::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
+
+/* ── Buttons ── */
+
+.cm-btn {
+  width: 100%;
+}
+
+.cm-btn-row {
+  display: flex;
+  gap: var(--space-sm);
+}
+.cm-btn-row .cm-btn {
+  flex: 1;
+}
+
+/* ── Error ── */
+
+.cm-error-msg {
+  font-size: var(--font-size-sm);
+  color: #dc2626;
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  background: #fef2f2;
+  border-radius: var(--radius-md);
+  border: 1px solid #fecaca;
+}
+
+/* ── Result step ── */
+
+.cm-result {
+  align-items: center;
+  text-align: center;
+  padding: var(--space-md) 0;
+}
+
+.cm-icon {
+  flex-shrink: 0;
+}
+.cm-icon--success { color: #16a34a; }
+.cm-icon--error   { color: #dc2626; }
+.cm-icon--pending { color: var(--color-primary); }
+
+/* ── Spinner animation ── */
+
+@keyframes cm-spin {
+  to { transform: rotate(360deg); }
+}
+.cm-spin {
+  animation: cm-spin 0.7s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}

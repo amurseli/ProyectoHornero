@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, ChevronLeft, ChevronRight, Clock, Users, TrendingUp, Rocket, Pencil } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Clock, Users, TrendingUp, Rocket, Pencil, ShieldCheck, AlertTriangle, Info } from 'lucide-react'
 import { Button } from '$components/ui'
 import { useUser } from '../../store/useUser'
 import api from '$utils/api/api'
@@ -58,14 +58,32 @@ function MyCampaigns() {
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [verification, setVerification] = useState(null)
+  const [publishing, setPublishing] = useState(null)
   const { user } = useUser()
   const navigate = useNavigate()
+  const isCreator = user?.role === 'CREATOR' || user?.role === 'ADMIN'
+
+  async function handlePublish(e, campaignId) {
+    e.preventDefault()
+    e.stopPropagation()
+    setPublishing(campaignId)
+    try {
+      await api.post(`/api/campaigns/${campaignId}/publish`)
+      setCampaigns(prev => prev.map(c =>
+        c.id === campaignId ? { ...c, status: 'CROWDFUNDING' } : c
+      ))
+    } catch (err) {
+      alert(err?.message || 'No se pudo publicar la campaña. Verificá que esté completa.')
+    } finally {
+      setPublishing(null)
+    }
+  }
 
   useEffect(() => {
-    api.get('/api/campaigns')
+    api.get('/api/users/me/campaigns')
       .then((data) => {
         const mine = data
-          .filter(c => c.owner?.id === user?.userId)
           .map(normalizeCampaign)
           .sort((a, b) => {
             if (a.status === 'CROWDFUNDING' && b.status !== 'CROWDFUNDING') return -1
@@ -77,6 +95,15 @@ function MyCampaigns() {
       .catch(() => setError('No se pudieron cargar las campañas'))
       .finally(() => setLoading(false))
   }, [user])
+
+  useEffect(() => {
+    if (isCreator) return
+    api.get('/api/users/me/verification')
+      .then(data => setVerification(data))
+      .catch(() => setVerification(null))
+  }, [user, isCreator])
+
+  const verifStatus = verification?.verificationStatus ?? verification?.status ?? 'NOT_SUBMITTED'
 
   const active = campaigns.find(c => c.status === 'CROWDFUNDING') || null
   const drafts = campaigns.filter(c => c.status === 'DRAFT')
@@ -93,6 +120,37 @@ function MyCampaigns() {
   if (campaigns.length === 0) {
     return (
       <main className="mc-page">
+        {!isCreator && (
+          <section className="container mc-verification-banner">
+            {verifStatus === 'PENDING' ? (
+              <div className="mc-vb mc-vb--pending">
+                <Info size={22} />
+                <div className="mc-vb-content">
+                  <strong>Verificación en revisión</strong>
+                  <p>Tu solicitud está siendo evaluada por nuestro equipo. Te notificaremos cuando haya una respuesta.</p>
+                </div>
+              </div>
+            ) : verifStatus === 'REJECTED' ? (
+              <div className="mc-vb mc-vb--rejected">
+                <AlertTriangle size={22} />
+                <div className="mc-vb-content">
+                  <strong>Verificación rechazada</strong>
+                  <p>{verification?.rejectionReason || 'Tu solicitud fue rechazada. Podés volver a intentarlo.'}</p>
+                </div>
+                <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Reintentar</Button>
+              </div>
+            ) : (
+              <div className="mc-vb mc-vb--info">
+                <ShieldCheck size={22} />
+                <div className="mc-vb-content">
+                  <strong>Verificá tu identidad para publicar campañas</strong>
+                  <p>Necesitás ser creador verificado para que tus campañas se publiquen.</p>
+                </div>
+                <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Verificarme</Button>
+              </div>
+            )}
+          </section>
+        )}
         <div className="container mc-empty">
           <div className="mc-empty-icon"><Rocket size={40} /></div>
           <h2>Todavía no tenés campañas</h2>
@@ -116,6 +174,38 @@ function MyCampaigns() {
         <h1 className="mc-page-title">Mis Campañas</h1>
         <p className="mc-page-subtitle">Gestioná tus proyectos y seguí su progreso</p>
       </header>
+
+      {!isCreator && (
+        <section className="container mc-verification-banner">
+          {verifStatus === 'PENDING' ? (
+            <div className="mc-vb mc-vb--pending">
+              <Info size={22} />
+              <div className="mc-vb-content">
+                <strong>Verificación en revisión</strong>
+                <p>Tu solicitud está siendo evaluada por nuestro equipo. Te notificaremos cuando haya una respuesta.</p>
+              </div>
+            </div>
+          ) : verifStatus === 'REJECTED' ? (
+            <div className="mc-vb mc-vb--rejected">
+              <AlertTriangle size={22} />
+              <div className="mc-vb-content">
+                <strong>Verificación rechazada</strong>
+                <p>{verification?.rejectionReason || 'Tu solicitud fue rechazada. Podés volver a intentarlo.'}</p>
+              </div>
+              <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Reintentar</Button>
+            </div>
+          ) : (
+            <div className="mc-vb mc-vb--info">
+              <ShieldCheck size={22} />
+              <div className="mc-vb-content">
+                <strong>Verificá tu identidad para publicar campañas</strong>
+                <p>Necesitás ser creador verificado para que tus campañas se publiquen.</p>
+              </div>
+              <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>Verificarme</Button>
+            </div>
+          )}
+        </section>
+      )}
 
       {active && (
         <section className="container mc-featured-section">
@@ -185,6 +275,14 @@ function MyCampaigns() {
                 <div className="mc-mini-body">
                   <h4 className="mc-mini-title">{item.title}</h4>
                   <p className="mc-draft-hint">Campaña sin publicar</p>
+                  <button
+                    className="mc-publish-btn"
+                    onClick={(e) => handlePublish(e, item.id)}
+                    disabled={publishing === item.id || !isCreator}
+                    title={!isCreator ? 'Necesitás ser creador verificado para publicar' : undefined}
+                  >
+                    {publishing === item.id ? 'Publicando...' : 'Publicar'}
+                  </button>
                 </div>
               </a>
             )
@@ -416,8 +514,18 @@ const styles = `
   }
   .mc-draft-hint {
     font-size: var(--font-size-xs); color: var(--color-text-muted);
-    margin: 0;
+    margin: 0 0 0.625rem;
   }
+  .mc-publish-btn {
+    width: 100%; padding: 0.4rem 0;
+    background: var(--color-primary); color: white;
+    border: none; border-radius: var(--radius-md);
+    font-size: var(--font-size-xs); font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: opacity var(--transition-fast);
+  }
+  .mc-publish-btn:hover { opacity: 0.88; }
+  .mc-publish-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* Create card */
   .mc-create-card {
@@ -445,6 +553,34 @@ const styles = `
     .mc-featured-body { padding: 1.5rem; }
     .mc-featured-stats { gap: 1rem; }
     .mc-mini-card { flex: 0 0 220px; }
+    .mc-vb { flex-direction: column; text-align: center; }
+  }
+
+  /* Verification banner */
+  .mc-verification-banner { padding-top: 0; animation: mc-fadeUp 0.5s ease 0.15s both; }
+  .mc-vb {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 1.5rem; border-radius: var(--radius-lg);
+    border: 1px solid; font-size: var(--font-size-sm);
+  }
+  .mc-vb > svg { flex-shrink: 0; }
+  .mc-vb-content { flex: 1; }
+  .mc-vb-content strong { display: block; margin-bottom: 0.125rem; }
+  .mc-vb-content p { margin: 0; opacity: 0.85; }
+  .mc-vb--info {
+    background: color-mix(in srgb, var(--color-primary) 6%, white);
+    border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+    color: var(--color-primary);
+  }
+  .mc-vb--pending {
+    background: color-mix(in srgb, #f59e0b 6%, white);
+    border-color: color-mix(in srgb, #f59e0b 25%, transparent);
+    color: #92400e;
+  }
+  .mc-vb--rejected {
+    background: color-mix(in srgb, #ef4444 6%, white);
+    border-color: color-mix(in srgb, #ef4444 25%, transparent);
+    color: #991b1b;
   }
 `
 

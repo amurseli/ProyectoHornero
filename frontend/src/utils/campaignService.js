@@ -25,7 +25,7 @@ export const campaignService = {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     const data = await response.json()
-    return data.map(normalizeCampaign).filter((c) => c.status !== "DRAFT")
+    return data.map(normalizeCampaign)
   },
 
   async getFeaturedCampaigns(limit = 4) {
@@ -48,7 +48,35 @@ export const campaignService = {
   },
 
   async getCampaignById(id) {
-    const campaigns = await this.getAllCampaigns()
-    return campaigns.find((c) => c.id === Number.parseInt(id))
+    const response = await fetch(`${API_URL}/api/campaigns/${id}`, { credentials: 'include' })
+    if (response.status === 404) return null
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    return normalizeCampaign(await response.json())
+  },
+
+  async getCategories() {
+    const response = await fetch(`${API_URL}/api/campaigns/categories`)
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    return await response.json()
+  },
+
+  async searchCampaigns({ search = "", categoryId = null, page = 1, size = 12, signal } = {}) {
+    const params = new URLSearchParams()
+    params.set("page", String(Math.max(0, page - 1)))
+    params.set("size", String(size))
+    if (search && search.trim() !== "") params.set("search", search.trim())
+    if (categoryId != null) params.set("categoryId", String(categoryId))
+
+    const response = await fetch(`${API_URL}/api/campaigns?${params.toString()}`, { signal })
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    const data = await response.json()
+    const content = Array.isArray(data.content) ? data.content : []
+    return {
+      campaigns: content.map(normalizeCampaign),
+      totalElements: data.totalElements ?? content.length,
+      totalPages: data.totalPages ?? 1,
+      page: (data.number ?? 0) + 1,
+      size: data.size ?? size,
+    }
   },
 }

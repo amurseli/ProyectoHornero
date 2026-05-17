@@ -11,10 +11,12 @@ import com.hornero.dto.ProfileResponse;
 import com.hornero.dto.RegisterRequest;
 import com.hornero.dto.ResetPasswordRequest;
 import com.hornero.dto.UpdateProfileRequest;
+import com.hornero.model.Campaign;
 import com.hornero.model.RefreshToken;
 import com.hornero.model.User;
 import com.hornero.model.UserConnection;
 import com.hornero.repository.UserConnectionRepository;
+import com.hornero.service.CampaignService;
 import com.hornero.service.EmailVerificationService;
 import com.hornero.service.EmailChangeService;
 import com.hornero.service.PasswordResetService;
@@ -45,7 +47,10 @@ public class UserController {
     
     @Autowired
     private UserService userService;
-    
+
+    @Autowired
+    private CampaignService campaignService;
+
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -594,6 +599,20 @@ public class UserController {
             return ResponseEntity.badRequest()
                     .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
         }
+    }
+
+    // ═══════ Campaigns Endpoints ═══════
+
+    // GET /api/users/me/campaigns — todas las campañas del usuario autenticado (todos los estados)
+    @GetMapping("/me/campaigns")
+    public ResponseEntity<?> getMyCampaigns(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        List<Campaign> campaigns = campaignService.getCampaignsByOwner(userId);
+        return ResponseEntity.ok(campaigns);
     }
 
     // ═══════ Connections Endpoints ═══════

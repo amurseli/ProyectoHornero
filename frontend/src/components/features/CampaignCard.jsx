@@ -16,7 +16,7 @@ function CampaignCard({ campaign, variant = "featured" }) {
 
   const handleMouseEnter = () => {
     if (!videoUrl) return
-    hoverTimer.current = setTimeout(() => setHovered(true), 400)
+    hoverTimer.current = setTimeout(() => setHovered(true), 1000)
   }
 
   const handleMouseLeave = () => {
@@ -26,7 +26,7 @@ function CampaignCard({ campaign, variant = "featured" }) {
 
   if (variant === "compact" || variant === "spotlight") {
     return (
-      <a href={`/campaign/${campaign.id}`} className="campaign-card-compact">
+      <a href={`/campaigns/${campaign.id}`} className="campaign-card-compact">
         <img
           src={campaign.imageUrl || campaign.image || "/crowdfunding-campaign.jpg"}
           alt={campaign.title}

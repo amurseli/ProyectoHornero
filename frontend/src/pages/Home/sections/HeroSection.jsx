@@ -1,6 +1,6 @@
-import { CategoryTabs } from "../../../components/features"
+import { SearchBar } from "../../../components/features"
 
-function HeroSection({ activeTab, onTabChange }) {
+function HeroSection({ search }) {
   return (
     <section className="hero-section">
       <div className="hero-content-wrapper">
@@ -11,7 +11,7 @@ function HeroSection({ activeTab, onTabChange }) {
           </p>
         </div>
 
-        <CategoryTabs activeTab={activeTab} onTabChange={onTabChange} />
+        <SearchBar search={search} />
       </div>
 
       <style>{`

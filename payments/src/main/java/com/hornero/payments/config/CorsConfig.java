@@ -10,14 +10,6 @@ import org.springframework.web.filter.CorsFilter;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Configuración de CORS para el servicio de pagos
- * 
- * Permite requests desde:
- * - Frontend (React en puerto 5173)
- * - Backend (Spring Boot en puerto 8080)
- * - Otros orígenes configurados en CORS_ORIGINS
- */
 @Configuration
 public class CorsConfig {
 

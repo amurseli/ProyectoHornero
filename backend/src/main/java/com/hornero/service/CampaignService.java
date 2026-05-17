@@ -1,14 +1,22 @@
 package com.hornero.service;
 
 import com.hornero.model.Campaign;
+import com.hornero.model.CampaignCategory;
+import com.hornero.repository.CampaignCategoryRepository;
 import com.hornero.repository.CampaignRepository;
 import com.hornero.service.validator.CampaignPublishValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -16,6 +24,9 @@ public class CampaignService {
 
     @Autowired
     private CampaignRepository campaignRepository;
+
+    @Autowired
+    private CampaignCategoryRepository campaignCategoryRepository;
 
     @Autowired
     private List<CampaignPublishValidator> publishValidators;
@@ -30,6 +41,32 @@ public class CampaignService {
 
     public List<Campaign> getAllCampaigns() {
         return campaignRepository.findAllWithRelations();
+    }
+
+    public List<Campaign> getPublicCampaigns() {
+        return campaignRepository.findAllPublicWithRelations();
+    }
+
+    public Page<Campaign> getPublicCampaignsPaged(String search, Long categoryId, Pageable pageable) {
+        String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
+        Page<Long> idPage = campaignRepository.findPublicIdsPaged(normalizedSearch, categoryId, pageable);
+        List<Long> ids = idPage.getContent();
+        if (ids.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
+        }
+        List<Campaign> campaigns = campaignRepository.findAllByIdsWithRelations(ids);
+        Map<Long, Integer> orderMap = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) orderMap.put(ids.get(i), i);
+        campaigns.sort(Comparator.comparingInt(c -> orderMap.get(c.getId())));
+        return new PageImpl<>(campaigns, pageable, idPage.getTotalElements());
+    }
+
+    public List<CampaignCategory> getAllCategories() {
+        return campaignCategoryRepository.findAll();
+    }
+
+    public List<Campaign> getCampaignsByOwner(Long ownerId) {
+        return campaignRepository.findAllByOwnerIdWithRelations(ownerId);
     }
 
     public Optional<Campaign> getCampaignById(Long id) {
