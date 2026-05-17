@@ -33,6 +33,9 @@ public class Reward {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "image_base64", columnDefinition = "TEXT")
+    private String imageBase64;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -45,10 +48,13 @@ public class Reward {
     public BigDecimal getPrice() { return price; }
     public Integer getDisplayOrder() { return displayOrder; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getImageBase64() { return imageBase64; }
 
     public void setCampaign(Campaign campaign) { this.campaign = campaign; }
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
     public void setPrice(BigDecimal price) { this.price = price; }
     public void setDisplayOrder(Integer displayOrder) { this.displayOrder = displayOrder; }
+    public void setImageBase64(String imageBase64) { this.imageBase64 = imageBase64; }
+
 }

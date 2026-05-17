@@ -5,6 +5,7 @@ import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import SectionBasicos from './DraftSections/BasicSection'
 import SectionHistoria from './DraftSections/HistoriaSection'
+import SectionRewards from './DraftSections/RewardsSection'
 import './EditDraftCampaign.css'
 
 const REQUIRED_SECTIONS = [
@@ -84,8 +85,15 @@ function SectionContent({ sectionKey, campaign, onSaved }) {
     )
   }
 
+  if (sectionKey === 'recompensas') {
+    return (
+      <div className="edc-section-content">
+        <SectionRewards campaign={campaign} onSaved={onSaved} />
+      </div>
+    )
+  }
+
   const placeholders = {
-    recompensas: 'Acá va el CRUD de tiers de contribución.',
     faq: 'Acá va el CRUD de preguntas frecuentes.',
     equipo: 'Acá se muestran y agregan los miembros del equipo.',
   }
@@ -96,6 +104,7 @@ function SectionContent({ sectionKey, campaign, onSaved }) {
     </div>
   )
 }
+
 function SectionGroup({ title, sections, campaign, openSection, onToggle, onSaved }) {
   return (
     <div className="edc-group">
@@ -130,21 +139,32 @@ export default function EditDraftCampaign() {
 
   useEffect(() => {
     setLoading(true)
-    api.get(`/api/campaigns/${id}`)
-      .then(data => {
+    Promise.all([
+      api.get(`/api/campaigns/${id}`),
+      api.get(`/api/campaigns/${id}/rewards`),
+    ])
+      .then(([data, rewards]) => {
         if (!data) throw new Error('Campaña no encontrada')
         if (data.status !== 'DRAFT') {
           navigate(`/campaigns/${id}`)
           return
         }
-        setCampaign(data)
+        setCampaign({ ...data, rewards: rewards || [] })
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [id, navigate])
 
-  const refreshCampaign = () => {
-    api.get(`/api/campaigns/${id}`).then(data => setCampaign(data))
+  const refreshCampaign = async () => {
+    try {
+      const [data, rewards] = await Promise.all([
+        api.get(`/api/campaigns/${id}`),
+        api.get(`/api/campaigns/${id}/rewards`),
+      ])
+      setCampaign({ ...data, rewards: rewards || [] })
+    } catch (err) {
+      console.error('Error refreshing campaign', err)
+    }
   }
 
   const toggleSection = (key) => {

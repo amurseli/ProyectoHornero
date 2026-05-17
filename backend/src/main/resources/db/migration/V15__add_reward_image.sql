@@ -1,0 +1,1 @@
+ALTER TABLE reward ADD COLUMN image_base64 TEXT;

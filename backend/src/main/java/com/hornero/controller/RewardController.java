@@ -43,6 +43,7 @@ public class RewardController {
         existing.setDescription(details.getDescription());
         existing.setPrice(details.getPrice());
         existing.setDisplayOrder(details.getDisplayOrder());
+        existing.setImageBase64(details.getImageBase64());
         return ResponseEntity.ok(rewardRepository.save(existing));
     }
 
