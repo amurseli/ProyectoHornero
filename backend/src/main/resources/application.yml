@@ -78,6 +78,10 @@ spring.security:
           user-name-attribute: sub
 
 # Frontend URL for OAuth redirects
+payments:
+  service:
+    url: ${PAYMENTS_URL:http://localhost:8081}
+
 app:
   service-key: ${SERVICE_KEY_PAYMENTS:internal-secret-dev}
   frontend:
