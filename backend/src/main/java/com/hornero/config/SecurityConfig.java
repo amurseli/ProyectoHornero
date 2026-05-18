@@ -44,9 +44,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/refresh").permitAll() // Allow refresh token endpoint without authentication
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll() // Allow OAuth2 endpoints
                 .requestMatchers(HttpMethod.GET, "/api/campaigns", "/api/campaigns/**").permitAll() // Allow public access to view campaigns
-                .requestMatchers(HttpMethod.PATCH, "/api/campaigns/*/current-amount").permitAll() // Endpoint interno para payments service (protegido por X-Service-Key en el controller)
-                .requestMatchers(HttpMethod.PATCH, "/api/campaigns/*/money-status").permitAll() // Callback interno de payments (protegido por X-Service-Key en el controller)
-                .requestMatchers("/internal/**").permitAll() // Endpoints internos del scheduler (protegidos por X-Service-Key en el controller)
+                .requestMatchers(HttpMethod.PATCH, "/api/campaigns/*/current-amount").permitAll()
+                .requestMatchers(HttpMethod.PATCH, "/api/campaigns/*/money-status").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/users/*/payout-info").permitAll()
+                .requestMatchers("/internal/**").permitAll()
                 .requestMatchers("/api/users/me").authenticated() // Require authentication for /me endpoint
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()

@@ -41,11 +41,12 @@ public class PayoutService {
     }
 
     // Ejecuta el payout al creador para una campaña SUCCESSFUL.
-    // Solo puede llamarse una vez por campaña (idempotente: falla si ya existe un payout).
+    // Idempotente: si ya existe un payout para la campaña, retorna el existente sin crear uno nuevo.
     @Transactional
     public PayoutStatusResponse executePayout(Long campaignId, Long creatorUserId) {
         if (payoutRepository.existsByIdCampaign(campaignId)) {
-            throw new IllegalStateException("Ya existe un payout para la campaña " + campaignId);
+            logger.info("Payout para campaña {} ya existe, retornando estado actual", campaignId);
+            return buildResponse(payoutRepository.findByIdCampaign(campaignId).get());
         }
 
         // Verificar que la campaña está en SUCCESSFUL consultando al backend
@@ -78,38 +79,34 @@ public class PayoutService {
         payout.setProviderFee(providerFee);
         payout.setNetAmount(netAmount);
         payout.setPaymentProvider("MERCADO_PAGO");
-        payout.setStatus("PROCESSING");
+        payout.setStatus("PENDING_MANUAL_TRANSFER");
         payoutRepository.save(payout);
 
-        logger.info("Iniciando payout para campaña {}: gross={} platform_fee={} provider_fee={} net={}",
-                campaignId, grossAmount, platformFee, providerFee, netAmount);
+        logger.info("Payout registrado para campaña {} — transferencia manual pendiente: gross={} net={} CBU={}",
+                campaignId, grossAmount, netAmount, creatorCbu);
+
+        return buildResponse(payout);
+    }
+
+    @Transactional
+    public PayoutStatusResponse confirmManualPayout(Long campaignId, String mpTransferReference) {
+        Payout payout = payoutRepository.findByIdCampaign(campaignId)
+                .orElseThrow(() -> new IllegalArgumentException("No existe payout para la campaña " + campaignId));
+
+        payout.setStatus("COMPLETED");
+        payout.setProcessedAt(LocalDateTime.now());
+        if (mpTransferReference != null && !mpTransferReference.isBlank()) {
+            payout.setIdPayoutExternal(mpTransferReference);
+        }
+        payoutRepository.save(payout);
 
         try {
-            // TODO: ver como transferir este dinero a la cuenta del creador
-            // Por ahora se registra el payout y queda en PROCESSING para gestión manual
-            // POST https://api.mercadopago.com/v1/payouts { cbu: creatorCbu, amount: netAmount }
-            // String mpPayoutId = callMpPayoutsApi(creatorCbu, netAmount);
-            // payout.setIdPayoutExternal(mpPayoutId);
-
-            // Simulación hasta que se integre la API real
-            logger.warn("Payout {} en PROCESSING - integración con MP Payouts API pendiente (CBU destino: {})",
-                    payout.getId(), creatorCbu);
-
-            payout.setStatus("PROCESSING");
-            payoutRepository.save(payout);
-
-            // Una vez confirmado el payout exitoso por parte del proveedor, se actualiza el estado a COMPLETED.
-            // Puede hacerse en otro proceso asíncrono cuando se integre la API real de MP Payouts.
-            // payout.setStatus("COMPLETED");
-            // payout.setProcessedAt(LocalDateTime.now());
-
+            backendClient.updateCampaignMoneyStatus(campaignId, "PAYOUT_COMPLETED");
         } catch (Exception e) {
-            logger.error("Error al ejecutar payout para campaña {}: {}", campaignId, e.getMessage());
-            payout.setStatus("FAILED");
-            payoutRepository.save(payout);
-            throw new RuntimeException("Error al ejecutar el payout: " + e.getMessage(), e);
+            logger.error("Error al notificar PAYOUT_COMPLETED al backend para campaña {}: {}", campaignId, e.getMessage());
         }
 
+        logger.info("Payout de campaña {} confirmado manualmente. Referencia MP: {}", campaignId, mpTransferReference);
         return buildResponse(payout);
     }
 

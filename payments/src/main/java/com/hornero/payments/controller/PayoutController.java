@@ -93,6 +93,36 @@ public class PayoutController {
         return ResponseEntity.ok(response);
     }
 
+    // PATCH /api/payments/campaigns/{id}/payout/confirm
+    // Confirma que la transferencia manual al creador fue realizada.
+    // Llamado desde el backoffice admin una vez que el admin transfirió el dinero en MP.
+    @PatchMapping("/{id}/payout/confirm")
+    public ResponseEntity<PayoutStatusResponse> confirmPayout(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body,
+            @RequestHeader("X-Service-Key") String incomingKey) {
+
+        validateServiceKey(incomingKey);
+
+        String mpTransferReference = body != null ? body.get("mpTransferReference") : null;
+        PayoutStatusResponse response = payoutService.confirmManualPayout(id, mpTransferReference);
+        return ResponseEntity.ok(response);
+    }
+
+    // POST /api/payments/campaigns/{id}/retry-failed-refunds
+    // Reintenta los refunds que quedaron en FAILED para una campaña.
+    // Llamado por el scheduler cuando money_status = REFUND_PARTIAL.
+    @PostMapping("/{id}/retry-failed-refunds")
+    public ResponseEntity<RefundSummaryResponse> retryFailedRefunds(
+            @PathVariable Long id,
+            @RequestHeader("X-Service-Key") String incomingKey) {
+
+        validateServiceKey(incomingKey);
+
+        RefundSummaryResponse response = refundService.retryFailedRefunds(id);
+        return ResponseEntity.ok(response);
+    }
+
     private void validateServiceKey(String incomingKey) {
         if (!serviceKey.equals(incomingKey)) {
             throw new SecurityException("X-Service-Key inválida");

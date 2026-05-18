@@ -12,11 +12,14 @@ import com.hornero.dto.RegisterRequest;
 import com.hornero.dto.ResetPasswordRequest;
 import com.hornero.dto.UpdateProfileRequest;
 import com.hornero.model.Campaign;
+import com.hornero.model.CreatorBankInfo;
 import com.hornero.model.RefreshToken;
 import com.hornero.model.User;
 import com.hornero.model.UserConnection;
+import com.hornero.repository.CreatorBankInfoRepository;
 import com.hornero.repository.UserConnectionRepository;
 import com.hornero.service.CampaignService;
+import com.hornero.service.EncryptionService;
 import com.hornero.service.EmailVerificationService;
 import com.hornero.service.EmailChangeService;
 import com.hornero.service.PasswordResetService;
@@ -68,7 +71,16 @@ public class UserController {
 
     @Autowired
     private UserConnectionRepository userConnectionRepository;
-    
+
+    @Autowired
+    private CreatorBankInfoRepository creatorBankInfoRepository;
+
+    @Autowired
+    private EncryptionService encryptionService;
+
+    @Value("${app.service-key:internal-secret-dev}")
+    private String serviceKey;
+
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
 
@@ -648,6 +660,31 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Error al obtener conexiones", HttpStatus.INTERNAL_SERVER_ERROR.value()));
         }
+    }
+
+    // GET /api/users/{userId}/payout-info
+    // Llamado internamente por el payments service para obtener el CBU del creador antes de un payout.
+    @GetMapping("/{userId}/payout-info")
+    public ResponseEntity<?> getPayoutInfo(
+            @PathVariable Long userId,
+            @RequestHeader("X-Service-Key") String incomingKey) {
+
+        if (!serviceKey.equals(incomingKey)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return creatorBankInfoRepository.findByUserId(userId)
+                .map(info -> {
+                    String decryptedCbu = encryptionService.decrypt(info.getAccountNumber());
+                    Map<String, String> response = new HashMap<>();
+                    response.put("cbu", decryptedCbu);
+                    response.put("accountType", info.getAccountType().name());
+                    response.put("alias", info.getAccountAlias());
+                    response.put("bankOrWalletName", info.getBankOrWalletName());
+                    response.put("accountHolderName", info.getAccountHolderName());
+                    return ResponseEntity.ok(response);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/me/connections/{provider}")
