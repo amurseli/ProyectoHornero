@@ -1,0 +1,21 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: hornero-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env.frontend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - hornero-network
+
+networks:
+  hornero-network:
+    external: true
