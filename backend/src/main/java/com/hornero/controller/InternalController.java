@@ -60,7 +60,13 @@ public class InternalController {
                 logger.info("Campaña {} finalizada con status={}", campaign.getId(), campaign.getStatus());
 
                 if ("SUCCESSFUL".equals(campaign.getStatus())) {
-                    paymentsServiceClient.triggerPayout(campaign.getId());
+                    Long creatorId = campaign.getOwner() != null ? campaign.getOwner().getId() : null;
+                    if (creatorId == null) {
+                        errors++;
+                        logger.error("Campaña {} no tiene owner, no se puede disparar payout", campaign.getId());
+                        continue;
+                    }
+                    paymentsServiceClient.triggerPayout(campaign.getId(), creatorId);
                 } else {
                     paymentsServiceClient.triggerRefundAll(campaign.getId());
                 }
@@ -76,7 +82,13 @@ public class InternalController {
 
         for (Campaign campaign : pendingPayouts) {
             try {
-                paymentsServiceClient.triggerPayout(campaign.getId());
+                Long creatorId = campaign.getOwner() != null ? campaign.getOwner().getId() : null;
+                if (creatorId == null) {
+                    errors++;
+                    logger.error("Campaña {} no tiene owner, no se puede reintentar payout", campaign.getId());
+                    continue;
+                }
+                paymentsServiceClient.triggerPayout(campaign.getId(), creatorId);
                 payoutRetried++;
                 logger.info("Payout reintentado para campaña {}", campaign.getId());
             } catch (Exception e) {

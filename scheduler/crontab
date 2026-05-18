@@ -1,0 +1,1 @@
+0 0 * * * /finalize-campaigns.sh >> /var/log/scheduler.log 2>&1

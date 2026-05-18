@@ -9,6 +9,8 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
+
 // Cliente HTTP para comunicacion interna con el payments service.
 // Usa X-Service-Key para autenticacion entre servicios.
 @Component
@@ -30,12 +32,13 @@ public class PaymentsServiceClient {
         this.restTemplate = new RestTemplate(factory);
     }
 
-    public void triggerPayout(Long campaignId) {
+    public void triggerPayout(Long campaignId, Long creatorUserId) {
         String url = paymentsUrl + "/api/payments/campaigns/" + campaignId + "/payout";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Service-Key", serviceKey);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        Map<String, Long> body = Map.of("creatorUserId", creatorUserId);
+        HttpEntity<Map<String, Long>> entity = new HttpEntity<>(body, headers);
         try {
             restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
             logger.info("Payout disparado para campaña {}", campaignId);
@@ -46,11 +49,12 @@ public class PaymentsServiceClient {
     }
 
     public void triggerRefundAll(Long campaignId) {
-        String url = paymentsUrl + "/api/payments/campaigns/" + campaignId + "/refund-all?reason=CAMPAIGN_FAILED";
+        String url = paymentsUrl + "/api/payments/campaigns/" + campaignId + "/refund-all";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Service-Key", serviceKey);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        Map<String, String> body = Map.of("reason", "CAMPAIGN_FAILED");
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
         try {
             restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
             logger.info("Refund-all disparado para campaña {}", campaignId);

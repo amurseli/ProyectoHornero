@@ -63,12 +63,12 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "WHERE c.id IN :ids")
     List<Campaign> findAllByIdsWithRelations(@Param("ids") List<Long> ids);
 
-    @Query("SELECT c FROM Campaign c WHERE c.status = 'CROWDFUNDING' AND c.endDate < :today")
+    @Query("SELECT c FROM Campaign c LEFT JOIN FETCH c.owner WHERE c.status = 'CROWDFUNDING' AND c.endDate < :today")
     List<Campaign> findExpiredCrowdfundingCampaigns(@Param("today") LocalDate today);
 
-    @Query("SELECT c FROM Campaign c WHERE c.status = 'SUCCESSFUL' AND c.moneyStatus = 'PAYOUT_PENDING'")
+    @Query("SELECT c FROM Campaign c LEFT JOIN FETCH c.owner WHERE c.status = 'SUCCESSFUL' AND c.moneyStatus = 'PAYOUT_PENDING'")
     List<Campaign> findSuccessfulWithPendingPayout();
 
-    @Query("SELECT c FROM Campaign c WHERE c.status = 'FAILED' AND c.moneyStatus = 'REFUND_PARTIAL'")
+    @Query("SELECT c FROM Campaign c LEFT JOIN FETCH c.owner WHERE c.status = 'FAILED' AND c.moneyStatus = 'REFUND_PARTIAL'")
     List<Campaign> findFailedWithPartialRefund();
 }

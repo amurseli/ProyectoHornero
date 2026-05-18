@@ -66,7 +66,7 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:  
+  redis_data:
   maven_cache:
 
 networks:
