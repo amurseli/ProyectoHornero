@@ -1,0 +1,115 @@
+/* ───────────────────────────────────────────────────────────────────
+   South America map — geographically accurate outlines.
+
+   The map sits on a tinted "ocean" board so the light country fills
+   are clearly visible against the page's white background.
+
+   Disabled countries are non-interactive and washed out.  Enabled
+   countries (Argentina, by default) lift, glow and pulse on hover,
+   and snap into a solid "selected" state on click.
+─────────────────────────────────────────────────────────────────── */
+
+.sam-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 auto 1.5rem;
+  max-width: 380px;
+}
+
+/* Tinted ocean panel — makes the pale land masses pop on white pages */
+.sam-board {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 30% 20%,
+      color-mix(in srgb, var(--color-primary, #D94F30) 10%, #cfe4ef) 0%,
+      #b9d6e6 55%,
+      #a7c9da 100%);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* South America is a tall, narrow continent — size the SVG by height
+   so it stays large and centred without overflowing the card. */
+.sam-svg {
+  height: 420px;
+  width: auto;
+  max-width: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* All paths share the same neutral land look */
+.sam-country {
+  fill: #f3ede4;
+  stroke: #9aa7ad;
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+  transition:
+    fill      0.25s ease,
+    transform 0.2s  ease,
+    filter    0.25s ease,
+    stroke    0.25s ease;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+/* Disabled countries — flat, slightly transparent, no pointer events */
+.sam-country--disabled {
+  pointer-events: none;
+  fill: #e3ddd2;
+  opacity: 0.85;
+}
+
+/* Enabled countries (Argentina) — interactive */
+.sam-country--enabled {
+  cursor: pointer;
+  outline: none;
+  fill: color-mix(in srgb, var(--color-primary, #D94F30) 30%, #f3ede4);
+}
+
+.sam-country--enabled:hover,
+.sam-country--enabled:focus-visible {
+  fill: color-mix(in srgb, var(--color-primary, #D94F30) 60%, white);
+  stroke: var(--color-primary, #D94F30);
+  stroke-width: 1;
+  transform: translateY(-2px) scale(1.03);
+  filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--color-primary, #D94F30) 45%, transparent));
+  animation: sam-pulse 1.7s ease-in-out infinite;
+}
+
+/* Click feedback */
+.sam-country--enabled:active {
+  transform: translateY(-1px) scale(1.01);
+}
+
+/* Selected country — solid fill, persistent glow */
+.sam-country--selected,
+.sam-country--selected:hover {
+  fill: var(--color-primary, #D94F30) !important;
+  stroke: color-mix(in srgb, var(--color-primary, #D94F30) 65%, black);
+  stroke-width: 1;
+  filter: drop-shadow(0 3px 12px color-mix(in srgb, var(--color-primary, #D94F30) 60%, transparent));
+  animation: none;
+  transform: none;
+}
+
+@keyframes sam-pulse {
+  0%, 100% { filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--color-primary, #D94F30) 40%, transparent)); }
+  50%      { filter: drop-shadow(0 7px 18px color-mix(in srgb, var(--color-primary, #D94F30) 65%, transparent)); }
+}
+
+.sam-caption {
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--color-text-muted, #777);
+  margin: 0;
+  line-height: 1.45;
+}
+.sam-caption strong {
+  color: var(--color-primary, #D94F30);
+}
