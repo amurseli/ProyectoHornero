@@ -2,6 +2,7 @@ package com.hornero.service;
 
 import com.hornero.model.Campaign;
 import com.hornero.model.CampaignCategory;
+import com.hornero.model.CampaignMedia;
 import com.hornero.repository.CampaignCategoryRepository;
 import com.hornero.repository.CampaignRepository;
 import com.hornero.service.validator.CampaignPublishValidator;
@@ -73,6 +74,7 @@ public class CampaignService {
         return campaignRepository.findByIdWithRelations(id);
     }
 
+    @Transactional
     public Campaign updateCampaign(Long id, Campaign details) {
         Campaign existing = campaignRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
@@ -86,6 +88,23 @@ public class CampaignService {
         existing.setTargetAmount(details.getTargetAmount());
         existing.setOwner(details.getOwner());
         existing.setCategory(details.getCategory());
+
+        // Replace the media collection when the request supplies one.
+        // The collection is mutated in place (orphanRemoval handles deletions)
+        // and fresh CampaignMedia rows are inserted from the incoming payload.
+        if (details.getMedia() != null) {
+            existing.getMedia().clear();
+            for (CampaignMedia incoming : details.getMedia()) {
+                CampaignMedia m = new CampaignMedia();
+                m.setCampaign(existing);
+                m.setMediaType(incoming.getMediaType());
+                m.setUrl(incoming.getUrl());
+                m.setBase64Data(incoming.getBase64Data());
+                m.setIsPrimary(incoming.getIsPrimary() != null ? incoming.getIsPrimary() : false);
+                m.setDisplayOrder(incoming.getDisplayOrder() != null ? incoming.getDisplayOrder() : 0);
+                existing.getMedia().add(m);
+            }
+        }
 
         return campaignRepository.save(existing);
     }
