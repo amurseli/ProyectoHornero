@@ -18,20 +18,57 @@ function getProgress(current, goal) {
 
 /* ─── Hero: media carousel + stats panel ─── */
 
-function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
-  const [mediaIndex, setMediaIndex] = useState(0)
-  const progress = getProgress(campaign.currentAmount, campaign.goal)
+function toEmbedUrl(url) {
+  if (!url) return null
+  // YouTube short / watch / shorts / embed URLs
+  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/)
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}?autoplay=1`
+  // Vimeo
+  const vm = url.match(/vimeo\.com\/(\d+)/)
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1`
+  return null
+}
 
+function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
+  // ─── Build the media manifest ────────────────────────────────────────
+  // 1. The video (if any) is shown first, with the primary image as poster.
+  // 2. After the video comes a carousel of the *other* images (max 6).
+  // 3. Falls back to a placeholder when there's no media at all.
+
+  const rawMedia = Array.isArray(campaign.media) ? campaign.media : []
+  const sortedMedia = [...rawMedia].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+
+  const videoEntry = sortedMedia.find(m => m.mediaType === 'VIDEO')
+  const videoUrl = videoEntry?.url || campaign.videoUrl || null
+  const embedUrl = toEmbedUrl(videoUrl)
+
+  const allImages = sortedMedia.filter(m => m.mediaType === 'IMAGE')
+  const primary = allImages.find(m => m.isPrimary) || allImages[0]
+  const primaryUrl = primary
+    ? (primary.base64Data ? `data:image/jpeg;base64,${primary.base64Data}` : primary.url)
+    : (campaign.imageUrl || '/crowdfunding-campaign.jpg')
+  const galleryImages = allImages
+    .filter(m => m !== primary)
+    .map(m => (m.base64Data ? `data:image/jpeg;base64,${m.base64Data}` : m.url))
+    .filter(Boolean)
+    .slice(0, 6)
+
+  // mediaItems[0] = video (or primary image if no video), the rest = gallery.
   const mediaItems = []
-  if (campaign.videoUrl) mediaItems.push({ type: 'video', url: campaign.videoUrl })
-  if (campaign.imageUrl) mediaItems.push({ type: 'image', url: campaign.imageUrl })
-  if (campaign.media?.length) {
-    campaign.media.forEach(m => {
-      const url = m.base64Data ? `data:image/jpeg;base64,${m.base64Data}` : m.url
-      if (url && !mediaItems.find(i => i.url === url)) mediaItems.push({ type: m.mediaType === 'VIDEO' ? 'video' : 'image', url })
-    })
+  if (videoUrl) {
+    mediaItems.push({ type: 'video', url: videoUrl, embedUrl, poster: primaryUrl })
+  } else {
+    mediaItems.push({ type: 'image', url: primaryUrl })
   }
-  if (mediaItems.length === 0) mediaItems.push({ type: 'image', url: '/crowdfunding-campaign.jpg' })
+  galleryImages.forEach(url => mediaItems.push({ type: 'image', url }))
+
+  const [mediaIndex, setMediaIndex] = useState(0)
+  const [videoPlaying, setVideoPlaying] = useState(false)
+
+  // Reset video playback when the user navigates away from the video slot
+  useEffect(() => { if (mediaIndex !== 0) setVideoPlaying(false) }, [mediaIndex])
+
+  const progress = getProgress(campaign.currentAmount, campaign.goal)
 
   const prev = () => setMediaIndex(i => (i - 1 + mediaItems.length) % mediaItems.length)
   const next = () => setMediaIndex(i => (i + 1) % mediaItems.length)
@@ -57,9 +94,23 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
         <div className="cp-media">
           {current.type === 'image' ? (
             <img src={current.url} alt={campaign.title} className="cp-media-img" />
+          ) : videoPlaying && current.embedUrl ? (
+            <iframe
+              className="cp-media-iframe"
+              src={current.embedUrl}
+              title={campaign.title}
+              frameBorder="0"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
           ) : (
-            <div className="cp-media-video">
-              <img src={campaign.imageUrl || '/crowdfunding-campaign.jpg'} alt={campaign.title} className="cp-media-img" />
+            <div
+              className="cp-media-video"
+              onClick={() => current.embedUrl ? setVideoPlaying(true) : window.open(current.url, '_blank')}
+              role="button"
+              tabIndex={0}
+            >
+              <img src={current.poster} alt={campaign.title} className="cp-media-img" />
               <div className="cp-play-btn"><Play size={24} /></div>
             </div>
           )}
@@ -68,8 +119,12 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
               <button className="cp-carousel-arrow cp-carousel-arrow--left" onClick={prev}><ChevronLeft size={18} /></button>
               <button className="cp-carousel-arrow cp-carousel-arrow--right" onClick={next}><ChevronRight size={18} /></button>
               <div className="cp-carousel-dots">
-                {mediaItems.map((_, i) => (
-                  <span key={i} className={`cp-dot ${i === mediaIndex ? 'active' : ''}`} onClick={() => setMediaIndex(i)} />
+                {mediaItems.map((m, i) => (
+                  <span
+                    key={i}
+                    className={`cp-dot ${i === mediaIndex ? 'active' : ''} ${m.type === 'video' ? 'cp-dot--video' : ''}`}
+                    onClick={() => setMediaIndex(i)}
+                  />
                 ))}
               </div>
             </>
