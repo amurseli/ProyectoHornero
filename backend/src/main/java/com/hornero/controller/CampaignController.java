@@ -2,6 +2,10 @@ package com.hornero.controller;
 
 import com.hornero.model.Campaign;
 import com.hornero.model.CampaignCategory;
+import com.hornero.model.Country;
+import com.hornero.model.Currency;
+import com.hornero.repository.CountryRepository;
+import com.hornero.repository.CurrencyRepository;
 import com.hornero.service.CampaignService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +28,12 @@ public class CampaignController {
 
     @Autowired
     private CampaignService campaignService;
+
+    @Autowired
+    private CountryRepository countryRepository;
+
+    @Autowired
+    private CurrencyRepository currencyRepository;
 
     @Value("${app.service-key:internal-secret-dev}")
     private String serviceKey;
@@ -50,6 +60,18 @@ public class CampaignController {
     @GetMapping("/categories")
     public List<CampaignCategory> getCategories() {
         return campaignService.getAllCategories();
+    }
+
+    // GET /api/campaigns/countries — lista de países disponibles para crear campañas
+    @GetMapping("/countries")
+    public List<Country> getCountries() {
+        return countryRepository.findAll();
+    }
+
+    // GET /api/campaigns/currencies — lista de monedas soportadas (incluye minor_unit)
+    @GetMapping("/currencies")
+    public List<Currency> getCurrencies() {
+        return currencyRepository.findAll();
     }
 
     // GET /api/campaigns/{id}
