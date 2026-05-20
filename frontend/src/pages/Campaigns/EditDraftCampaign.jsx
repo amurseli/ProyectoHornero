@@ -1,27 +1,33 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronDown, Check, AlertCircle, FileText, Image, Gift, HelpCircle, Users, Send } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Check, AlertCircle, FileText, Image, Film, Gift, HelpCircle, Users, Send, ShieldCheck } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
+import { useUser } from '../../store/useUser'
 import SectionBasicos from './DraftSections/BasicSection'
 import SectionHistoria from './DraftSections/HistoriaSection'
+import SectionMidia from './DraftSections/MidiaSection'
 import SectionRewards from './DraftSections/RewardsSection'
+import SectionTeam from './DraftSections/TeamSection'
 import './EditDraftCampaign.css'
 
 const REQUIRED_SECTIONS = [
   {
     key: 'basicos',
     title: 'Básicos',
-    subtitle: 'Título, imagen, video, categoría, monto objetivo y duración.',
+    subtitle: 'Título, imagen principal, categoría, país, monto objetivo y duración.',
     icon: Image,
-    isComplete: (c) => !!(c.title && c.targetAmount && c.endDate && c.media?.length > 0),
+    isComplete: (c) => !!(
+      c.title && c.shortDescription && c.targetAmount && c.endDate && c.category &&
+      c.media?.some(m => m.mediaType === 'IMAGE')
+    ),
   },
   {
     key: 'historia',
     title: 'Historia',
     subtitle: 'Contá de qué se trata tu proyecto, cómo funciona y cuáles son los riesgos.',
     icon: FileText,
-    isComplete: (c) => !!(c.description && c.description.length > 500),
+    isComplete: (c) => !!(c.description && c.description.trim().length > 0),
   },
   {
     key: 'recompensas',
@@ -35,11 +41,20 @@ const REQUIRED_SECTIONS = [
     title: 'Equipo',
     subtitle: 'Presentá a las personas detrás del proyecto.',
     icon: Users,
-    isComplete: (c) => c.creators?.length > 0,
+    isComplete: (c) => c.team?.length > 0,
   },
 ]
 
 const OPTIONAL_SECTIONS = [
+  {
+    key: 'midia',
+    title: 'Midia',
+    subtitle: 'Video y galería de imágenes (hasta 6, máx. 10 MB cada una).',
+    icon: Film,
+    // Optional section: marked "complete" once a video or gallery image exists.
+    isComplete: (c) => Array.isArray(c.media)
+      && c.media.some(m => m.mediaType === 'VIDEO' || (m.mediaType === 'IMAGE' && !m.isPrimary)),
+  },
   {
     key: 'faq',
     title: 'Preguntas frecuentes',
@@ -68,7 +83,43 @@ function SectionHeader({ section, campaign, isOpen, onToggle }) {
   )
 }
 
-function SectionContent({ sectionKey, campaign, onSaved }) {
+// Subsection of "Secciones obligatorias": confirms the user is a verified
+// creator.  Launching the campaign is gated on this check.
+function CreatorCheck({ isCreator }) {
+  const navigate = useNavigate()
+
+  if (isCreator) {
+    return (
+      <div className="edc-section-content">
+        <div className="edc-creator-ok">
+          <ShieldCheck size={20} />
+          <p>Sos un <strong>creador verificado</strong>. Podés lanzar esta campaña.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="edc-section-content">
+      <div className="edc-creator-block">
+        <AlertCircle size={20} />
+        <div className="edc-creator-block-body">
+          <p><strong>Necesitás ser creador verificado</strong> para lanzar esta campaña.</p>
+          <p>Completá la verificación de creador para poder publicarla.</p>
+        </div>
+        <Button variant="primary" onClick={() => navigate('/become-creator')}>
+          Convertirme en creador
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function SectionContent({ sectionKey, campaign, onSaved, isCreator }) {
+  if (sectionKey === 'creador') {
+    return <CreatorCheck isCreator={isCreator} />
+  }
+
   if (sectionKey === 'basicos') {
     return (
       <div className="edc-section-content">
@@ -93,9 +144,24 @@ function SectionContent({ sectionKey, campaign, onSaved }) {
     )
   }
 
+  if (sectionKey === 'midia') {
+    return (
+      <div className="edc-section-content">
+        <SectionMidia campaign={campaign} onSaved={onSaved} />
+      </div>
+    )
+  }
+
+  if (sectionKey === 'equipo') {
+    return (
+      <div className="edc-section-content">
+        <SectionTeam campaign={campaign} onSaved={onSaved} />
+      </div>
+    )
+  }
+
   const placeholders = {
     faq: 'Acá va el CRUD de preguntas frecuentes.',
-    equipo: 'Acá se muestran y agregan los miembros del equipo.',
   }
 
   return (
@@ -105,7 +171,7 @@ function SectionContent({ sectionKey, campaign, onSaved }) {
   )
 }
 
-function SectionGroup({ title, sections, campaign, openSection, onToggle, onSaved }) {
+function SectionGroup({ title, sections, campaign, openSection, onToggle, onSaved, isCreator }) {
   return (
     <div className="edc-group">
       <h2 className="edc-group-title">{title}</h2>
@@ -119,7 +185,12 @@ function SectionGroup({ title, sections, campaign, openSection, onToggle, onSave
               onToggle={() => onToggle(section.key)}
             />
             {openSection === section.key && (
-              <SectionContent sectionKey={section.key} campaign={campaign} onSaved={onSaved} />
+              <SectionContent
+                sectionKey={section.key}
+                campaign={campaign}
+                onSaved={onSaved}
+                isCreator={isCreator}
+              />
             )}
           </div>
         ))}
@@ -131,25 +202,43 @@ function SectionGroup({ title, sections, campaign, openSection, onToggle, onSave
 export default function EditDraftCampaign() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useUser()
   const [campaign, setCampaign] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [openSection, setOpenSection] = useState(null)
   const [publishing, setPublishing] = useState(false)
 
+  const isCreator = !!user && (user.role === 'CREATOR' || user.role === 'ADMIN')
+
+  // First required subsection: creator verification. Launching the campaign
+  // depends on this — a non-creator can never complete it, so "Lanzar campaña"
+  // stays disabled until the user is a verified creator.
+  const requiredSections = useMemo(() => ([
+    {
+      key: 'creador',
+      title: 'Verificación de creador',
+      subtitle: 'Solo los creadores verificados pueden lanzar campañas.',
+      icon: ShieldCheck,
+      isComplete: () => isCreator,
+    },
+    ...REQUIRED_SECTIONS,
+  ]), [isCreator])
+
   useEffect(() => {
     setLoading(true)
     Promise.all([
       api.get(`/api/campaigns/${id}`),
       api.get(`/api/campaigns/${id}/rewards`),
+      api.get(`/api/campaigns/${id}/team`).catch(() => []),
     ])
-      .then(([data, rewards]) => {
+      .then(([data, rewards, team]) => {
         if (!data) throw new Error('Campaña no encontrada')
         if (data.status !== 'DRAFT') {
           navigate(`/campaigns/${id}`)
           return
         }
-        setCampaign({ ...data, rewards: rewards || [] })
+        setCampaign({ ...data, rewards: rewards || [], team: team || [] })
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
@@ -157,11 +246,12 @@ export default function EditDraftCampaign() {
 
   const refreshCampaign = async () => {
     try {
-      const [data, rewards] = await Promise.all([
+      const [data, rewards, team] = await Promise.all([
         api.get(`/api/campaigns/${id}`),
         api.get(`/api/campaigns/${id}/rewards`),
+        api.get(`/api/campaigns/${id}/team`).catch(() => []),
       ])
-      setCampaign({ ...data, rewards: rewards || [] })
+      setCampaign({ ...data, rewards: rewards || [], team: team || [] })
     } catch (err) {
       console.error('Error refreshing campaign', err)
     }
@@ -172,7 +262,7 @@ export default function EditDraftCampaign() {
   }
 
   const allRequiredComplete = campaign
-    ? REQUIRED_SECTIONS.every(s => s.isComplete(campaign))
+    ? requiredSections.every(s => s.isComplete(campaign))
     : false
 
   const handlePublish = async () => {
@@ -227,11 +317,12 @@ export default function EditDraftCampaign() {
 
         <SectionGroup
           title="Secciones obligatorias"
-          sections={REQUIRED_SECTIONS}
+          sections={requiredSections}
           campaign={campaign}
           openSection={openSection}
           onToggle={toggleSection}
           onSaved={refreshCampaign}
+          isCreator={isCreator}
         />
 
         <SectionGroup

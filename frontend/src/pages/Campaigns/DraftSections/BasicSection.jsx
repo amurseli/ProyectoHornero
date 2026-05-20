@@ -1,111 +1,186 @@
-import { useState, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Save, Upload, X } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
+import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
+import {
+  TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
+  GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
+  sanitizeDuration, formatAmountInput, parseAmount, amountToInput, formatMoney,
+} from '../campaignFormUtils'
 
-const CATEGORIES = [
-  { id: 1, name: 'Arte' },
-  { id: 2, name: 'Cine' },
-  { id: 3, name: 'Diseño' },
-  { id: 4, name: 'Educación' },
-  { id: 5, name: 'Juegos' },
-  { id: 6, name: 'Música' },
-  { id: 7, name: 'Publicaciones' },
-  { id: 8, name: 'Tecnología' },
-  { id: 9, name: 'Otro' },
-]
-
-const COUNTRIES = ['Argentina', 'Brasil', 'Chile', 'Colombia', 'México', 'Perú', 'Uruguay', 'Estados Unidos', 'España', 'Otro']
-
-function getImageUrl(campaign) {
-  const primary = campaign.media?.find(m => m.isPrimary) || campaign.media?.find(m => m.mediaType === 'IMAGE')
-  if (primary?.base64Data) return `data:image/jpeg;base64,${primary.base64Data}`
-  if (primary?.url) return primary.url
-  return null
+function daysBetween(start, end) {
+  const ms = new Date(end).getTime() - new Date(start).getTime()
+  return Math.max(DURATION_MIN, Math.ceil(ms / 86400000))
 }
 
-function getVideoUrl(campaign) {
-  const video = campaign.media?.find(m => m.mediaType === 'VIDEO')
-  return video?.url || ''
+function formatDateAr(d) {
+  return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-export default function SectionBasicos({ campaign, onSaved }) {
-  const [form, setForm] = useState({
-    title: campaign.title || '',
-    shortDescription: campaign.shortDescription || '',
-    categoryId: campaign.category?.id || '',
-    country: campaign.country || '',
-    targetAmount: campaign.targetAmount || '',
-    endDate: campaign.endDate || '',
-    videoUrl: getVideoUrl(campaign),
-  })
-  const [coverPreview, setCoverPreview] = useState(getImageUrl(campaign))
-  const [coverFile, setCoverFile] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const coverRef = useRef()
+function coverSrc(m) {
+  if (!m) return ''
+  if (m.previewUrl) return m.previewUrl
+  if (m.base64Data) return `data:image/jpeg;base64,${m.base64Data}`
+  return m.url || ''
+}
 
-  const onChange = (key, value) => {
-    setForm(prev => ({ ...prev, [key]: value }))
-    setSaved(false)
-  }
-
-  const handleCover = (files) => {
-    const file = files?.[0]
-    if (!file) return
-    setCoverFile(file)
-    setCoverPreview(URL.createObjectURL(file))
-    setSaved(false)
-  }
-
-  const toBase64 = (file) => new Promise((resolve, reject) => {
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result.split(',')[1])
     reader.onerror = reject
     reader.readAsDataURL(file)
   })
+}
+
+export default function SectionBasicos({ campaign, onSaved }) {
+  // ── reference data (fetched once) ──────────────────────────────────────
+  const [categories, setCategories] = useState([])
+  const [countries, setCountries]   = useState([{ code: 'AR', name: 'Argentina' }])
+  const [currency, setCurrency]     = useState({ code: 'ARS', symbol: '$', minorUnit: 100 })
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      api.get('/api/campaigns/categories').catch(() => []),
+      api.get('/api/campaigns/countries').catch(() => [{ code: 'AR', name: 'Argentina' }]),
+      api.get('/api/campaigns/currencies').catch(() => [{ code: 'ARS', symbol: '$', minorUnit: 100 }]),
+    ]).then(([cats, ctrs, ccys]) => {
+      if (cancelled) return
+      setCategories(Array.isArray(cats) ? cats : [])
+      setCountries(Array.isArray(ctrs) && ctrs.length ? ctrs : [{ code: 'AR', name: 'Argentina' }])
+      if (Array.isArray(ccys) && ccys.length) setCurrency(ccys[0])
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  // ── form state ────────────────────────────────────────────────────────
+  const initialDuration = useMemo(() => {
+    if (campaign.startDate && campaign.endDate) {
+      return String(Math.min(DURATION_MAX, Math.max(DURATION_MIN, daysBetween(campaign.startDate, campaign.endDate))))
+    }
+    return '30'
+  }, [campaign.startDate, campaign.endDate])
+
+  const initialCountryName = campaign.country
+    || (countries[0] && countries[0].name)
+    || 'Argentina'
+
+  const [form, setForm] = useState({
+    title: campaign.title || '',
+    shortDescription: campaign.shortDescription || '',
+    categoryId: campaign.category?.id || '',
+    country: initialCountryName,
+    duration: initialDuration,
+    goal: amountToInput(campaign.targetAmount),
+  })
+
+  // Once categories load, make sure a valid one is selected (no empty option).
+  useEffect(() => {
+    if (!categories.length) return
+    setForm(prev => {
+      if (prev.categoryId && categories.some(c => c.id === Number(prev.categoryId))) return prev
+      return { ...prev, categoryId: categories[0].id }
+    })
+  }, [categories])
+
+  // Cover (primary image) — mandatory
+  const existingCover = useMemo(
+    () => (campaign.media || []).find(m => m.mediaType === 'IMAGE' && m.isPrimary)
+       || (campaign.media || []).find(m => m.mediaType === 'IMAGE')
+       || null,
+    [campaign.media],
+  )
+  const [cover, setCover] = useState(existingCover)
+  const [cropSrc, setCropSrc] = useState(null)
+  const coverRef = useRef()
+
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+
+  const onChange = (key, value) => {
+    setForm(prev => ({ ...prev, [key]: value }))
+    setSaved(false)
+    setError('')
+  }
+
+  const pickCover = (files) => {
+    const file = files?.[0]
+    if (!file) return
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError('La imagen principal supera los 10 MB.')
+      return
+    }
+    setError('')
+    setCropSrc(URL.createObjectURL(file))
+  }
+
+  const durationNum = Math.min(DURATION_MAX, Math.max(DURATION_MIN, Number(form.duration) || DURATION_MIN))
+  const previewEndDate = new Date(Date.now() + durationNum * 86400000)
+
+  const goalNum = parseAmount(form.goal)
+  const goalError =
+    form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN || goalNum > GOAL_MAX)
+      ? `La meta debe estar entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}`
+      : ''
+
+  const validate = () => {
+    if (!form.title.trim()) return 'El título es obligatorio.'
+    if (!form.shortDescription.trim()) return 'La descripción corta es obligatoria.'
+    if (!form.categoryId) return 'Seleccioná una categoría.'
+    if (!form.country) return 'Seleccioná un país.'
+    if (!cover) return 'La imagen principal es obligatoria.'
+    const d = Number(form.duration)
+    if (!Number.isFinite(d) || d < DURATION_MIN || d > DURATION_MAX) {
+      return `La duración debe estar entre ${DURATION_MIN} y ${DURATION_MAX} días.`
+    }
+    const g = parseAmount(form.goal)
+    if (!Number.isFinite(g) || g < GOAL_MIN || g > GOAL_MAX) {
+      return `La meta debe estar entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}.`
+    }
+    return ''
+  }
 
   const handleSave = async () => {
+    const v = validate()
+    if (v) { setError(v); return }
+
     setSaving(true)
+    setError('')
     try {
-      const media = [...(campaign.media || []).filter(m => m.mediaType !== 'VIDEO')]
+      // Preserve gallery + video (non-primary media is managed by the Midia section)
+      const rest = (campaign.media || []).filter(m => !(m.mediaType === 'IMAGE' && m.isPrimary))
 
-      if (coverFile) {
-        const base64Data = await toBase64(coverFile)
-        const existingPrimary = media.findIndex(m => m.isPrimary)
-        const coverMedia = {
-          base64Data,
-          mediaType: 'IMAGE',
-          isPrimary: true,
-          displayOrder: 0,
-        }
-        if (existingPrimary >= 0) media[existingPrimary] = coverMedia
-        else media.unshift(coverMedia)
-      }
+      const coverEntry = cover._file
+        ? { base64Data: await fileToBase64(cover._file), mediaType: 'IMAGE', isPrimary: true, displayOrder: 0 }
+        : { base64Data: cover.base64Data || null, url: cover.url || null, mediaType: 'IMAGE', isPrimary: true, displayOrder: 0 }
 
-      if (form.videoUrl) {
-        media.push({ url: form.videoUrl, mediaType: 'VIDEO', isPrimary: false, displayOrder: media.length })
-      }
+      const media = [coverEntry, ...rest]
 
-      const categoryObj = CATEGORIES.find(c => c.id === Number(form.categoryId))
+      const startISO = campaign.startDate || new Date().toISOString().split('T')[0]
+      const startDate = new Date(startISO)
+      const endISO = new Date(startDate.getTime() + durationNum * 86400000).toISOString().split('T')[0]
 
       await api.put(`/api/campaigns/${campaign.id}`, {
-        title: form.title,
-        shortDescription: form.shortDescription,
-        description: campaign.description,
+        title: form.title.trim(),
+        shortDescription: form.shortDescription.trim(),
+        description: campaign.description || '',
         country: form.country,
-        targetAmount: form.targetAmount ? Number(form.targetAmount) : null,
-        endDate: form.endDate || null,
+        targetAmount: parseAmount(form.goal),
+        startDate: startISO,
+        endDate: endISO,
         status: campaign.status,
         owner: { id: campaign.owner?.id },
-        category: categoryObj ? { id: categoryObj.id } : campaign.category,
+        category: { id: Number(form.categoryId) },
         media,
       })
 
       setSaved(true)
       if (onSaved) onSaved()
     } catch (err) {
-      alert('Error al guardar: ' + (err.message || 'Intentá de nuevo'))
+      setError('Error al guardar: ' + (err.message || 'Intentá de nuevo'))
     } finally {
       setSaving(false)
     }
@@ -114,75 +189,113 @@ export default function SectionBasicos({ campaign, onSaved }) {
   return (
     <div className="edc-form">
       <div className="edc-field">
-        <label className="edc-label">Título</label>
-        <input className="edc-input" type="text" placeholder="El nombre de tu proyecto"
+        <label className="edc-label">Título del proyecto</label>
+        <input className="edc-input" type="text" maxLength={TITLE_MAX}
+          placeholder="Ej: Album debut de Los Horneros"
           value={form.title} onChange={e => onChange('title', e.target.value)} />
+        <span className="edc-hint">{form.title.length}/{TITLE_MAX} caracteres</span>
       </div>
 
       <div className="edc-field">
-        <label className="edc-label">Descripción corta</label>
-        <textarea className="edc-textarea" rows={3} placeholder="Una frase que resuma tu proyecto"
-          value={form.shortDescription} onChange={e => onChange('shortDescription', e.target.value)} />
-        <span className="edc-hint">{form.shortDescription.length}/200 caracteres</span>
+        <label className="edc-label">Descripción corta <span className="edc-optional">se muestra en las cards</span></label>
+        <textarea
+          className="edc-textarea"
+          rows={3}
+          maxLength={SHORT_DESC_MAX}
+          placeholder="Una frase que resuma tu proyecto"
+          value={form.shortDescription}
+          onChange={e => onChange('shortDescription', e.target.value)}
+        />
+        <span className="edc-hint">{form.shortDescription.length}/{SHORT_DESC_MAX} caracteres</span>
+      </div>
+
+      {/* Imagen principal — obligatoria, recortada a 16:9 */}
+      <div className="edc-field">
+        <label className="edc-label">Imagen principal <span className="edc-optional">obligatoria · se recorta a 16:9</span></label>
+        <div className="edc-upload" onClick={() => coverRef.current.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); pickCover(e.dataTransfer.files) }}>
+          {cover ? (
+            <div className="edc-upload-preview">
+              <img src={coverSrc(cover)} alt="Portada" />
+              <button className="edc-upload-remove" onClick={e => { e.stopPropagation(); setCover(null); setSaved(false) }}>
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <div className="edc-upload-empty">
+              <Upload size={24} />
+              <span>Hacé clic o arrastrá la imagen principal · PNG/JPG/WEBP · hasta 10 MB</span>
+            </div>
+          )}
+        </div>
+        <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }}
+          onChange={e => { pickCover(e.target.files); e.target.value = '' }} />
       </div>
 
       <div className="edc-row">
         <div className="edc-field">
           <label className="edc-label">Categoría</label>
           <select className="edc-select" value={form.categoryId} onChange={e => onChange('categoryId', e.target.value)}>
-            <option value="">Seleccioná</option>
-            {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          <span className="edc-hint edc-hint--left">
+            La categoría ayuda a que tu campaña llegue a las personas indicadas.
+          </span>
         </div>
         <div className="edc-field">
           <label className="edc-label">País</label>
           <select className="edc-select" value={form.country} onChange={e => onChange('country', e.target.value)}>
-            <option value="">Seleccioná</option>
-            {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {countries.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
           </select>
+          {countries.length === 1 && (
+            <span className="edc-hint edc-hint--left">Por ahora sólo aceptamos campañas desde {countries[0].name}.</span>
+          )}
         </div>
       </div>
 
       <div className="edc-row">
         <div className="edc-field">
-          <label className="edc-label">Monto objetivo (US$)</label>
-          <input className="edc-input" type="number" min="1" placeholder="10000"
-            value={form.targetAmount} onChange={e => onChange('targetAmount', e.target.value)} />
+          <label className="edc-label">Duración <span className="edc-optional">(días · {DURATION_MIN}–{DURATION_MAX})</span></label>
+          <input
+            className="edc-input"
+            type="number"
+            min={DURATION_MIN}
+            max={DURATION_MAX}
+            step={1}
+            value={form.duration}
+            onChange={e => onChange('duration', sanitizeDuration(e.target.value))}
+            onBlur={e => {
+              const n = Number(e.target.value)
+              onChange('duration', String(!n || n < DURATION_MIN ? DURATION_MIN : Math.min(DURATION_MAX, n)))
+            }}
+          />
+          <span className="edc-hint edc-hint--left">
+            Si publicás hoy, finaliza el <strong>{formatDateAr(previewEndDate)}</strong>
+          </span>
         </div>
         <div className="edc-field">
-          <label className="edc-label">Fecha de fin</label>
-          <input className="edc-input" type="date"
-            value={form.endDate} onChange={e => onChange('endDate', e.target.value)} />
+          <label className="edc-label">Meta <span className="edc-optional">(monto objetivo a recaudar)</span></label>
+          <div className="edc-input-prefix">
+            <span className="edc-prefix-symbol">{currency.symbol}</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="100.000"
+              value={form.goal}
+              onChange={e => onChange('goal', formatAmountInput(e.target.value))}
+            />
+          </div>
+          <span className="edc-hint edc-hint--left">
+            En pesos argentinos por el momento · entre {formatMoney(GOAL_MIN, currency.symbol)} y {formatMoney(GOAL_MAX, currency.symbol)}
+          </span>
+          {goalError && <span className="edc-hint edc-hint--left" style={{ color: '#c44' }}>{goalError}</span>}
         </div>
       </div>
 
-      <div className="edc-field">
-        <label className="edc-label">Imagen de portada</label>
-        <div className="edc-upload" onClick={() => coverRef.current.click()}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); handleCover(e.dataTransfer.files) }}>
-          {coverPreview
-            ? <div className="edc-upload-preview">
-                <img src={coverPreview} alt="Portada" />
-                <button className="edc-upload-remove" onClick={e => { e.stopPropagation(); setCoverPreview(null); setCoverFile(null); setSaved(false) }}>
-                  <X size={14} />
-                </button>
-              </div>
-            : <div className="edc-upload-empty">
-                <Upload size={24} />
-                <span>Hacé clic o arrastrá una imagen</span>
-              </div>
-          }
-        </div>
-        <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }}
-          onChange={e => handleCover(e.target.files)} />
-      </div>
-
-      <div className="edc-field">
-        <label className="edc-label">URL de video <span className="edc-optional">opcional</span></label>
-        <input className="edc-input" type="url" placeholder="https://youtube.com/watch?v=..."
-          value={form.videoUrl} onChange={e => onChange('videoUrl', e.target.value)} />
-      </div>
+      {error && (
+        <p className="auth-error" style={{ margin: 0 }}>{error}</p>
+      )}
 
       <div className="edc-save-row">
         <Button variant="primary" size="md" onClick={handleSave} disabled={saving}>
@@ -191,6 +304,20 @@ export default function SectionBasicos({ campaign, onSaved }) {
         </Button>
         {saved && <span className="edc-saved-msg">Guardado correctamente</span>}
       </div>
+
+      {cropSrc && (
+        <ImageCropModal
+          src={cropSrc}
+          aspect={CROP_ASPECT}
+          fileName="portada.jpg"
+          onCancel={() => setCropSrc(null)}
+          onConfirm={({ file, previewUrl }) => {
+            setCover({ _file: file, previewUrl, isPrimary: true, mediaType: 'IMAGE' })
+            setSaved(false)
+            setCropSrc(null)
+          }}
+        />
+      )}
     </div>
   )
 }

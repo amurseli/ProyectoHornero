@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import api from '$utils/api/api'
 
-const MIN_LENGTH = 500
+const MAX_LENGTH = 2000
 const DEBOUNCE_MS = 1500
 
 function SaveStatus({ status }) {
@@ -48,11 +48,13 @@ export default function SectionHistoria({ campaign, onSaved }) {
           description,
           country: campaign.country,
           targetAmount: campaign.targetAmount,
+          startDate: campaign.startDate,
           endDate: campaign.endDate,
           status: campaign.status,
           owner: campaign.owner ? { id: campaign.owner.id } : null,
           category: campaign.category ? { id: campaign.category.id } : null,
-          media: campaign.media || [],
+          // null => leave existing media untouched (this section never edits it)
+          media: null,
         })
         lastSavedRef.current = description
         setStatus('saved')
@@ -67,7 +69,7 @@ export default function SectionHistoria({ campaign, onSaved }) {
     }
   }, [description])
 
-  const tooShort = description.length > 0 && description.length < MIN_LENGTH
+  const tooLong = description.length > MAX_LENGTH
 
   return (
     <div className="edc-form">
@@ -124,13 +126,14 @@ export default function SectionHistoria({ campaign, onSaved }) {
           <textarea
             className="edc-textarea edc-textarea--large"
             rows={20}
+            maxLength={MAX_LENGTH}
             placeholder="# Mi proyecto&#10;&#10;Contá tu historia acá. Podés usar Markdown..."
             value={description}
             onChange={e => setDescription(e.target.value)}
           />
           <span className="edc-hint">
-            {description.length} caracteres
-            {tooShort && ` — mínimo recomendado ${MIN_LENGTH}`}
+            {description.length}/{MAX_LENGTH} caracteres
+            {tooLong && ` — superaste el máximo permitido`}
           </span>
         </div>
       ) : (

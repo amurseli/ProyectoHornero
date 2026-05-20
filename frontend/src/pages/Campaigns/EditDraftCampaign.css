@@ -272,6 +272,54 @@
   text-align: right;
 }
 
+/* Descriptive hints (duration, meta, category, country) read left-to-right */
+.edc-hint--left {
+  text-align: left;
+}
+
+/* Sub-label description shown right under a field label (e.g. "Meta") */
+.edc-subdesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: -0.2rem;
+}
+
+/* Currency-prefixed input */
+.edc-input-prefix {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  overflow: hidden;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.edc-input-prefix:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+.edc-prefix-symbol {
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: var(--color-muted);
+  border-right: 1px solid var(--color-border);
+}
+.edc-input-prefix input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  border: none;
+  outline: none;
+  font-size: var(--font-size-base);
+  font-family: var(--font-sans);
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
 .edc-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -307,7 +355,7 @@
 }
 .edc-upload-preview img {
   width: 100%;
-  max-height: 240px;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
   display: block;
 }
@@ -680,3 +728,281 @@
   color: var(--color-text-secondary, #666);
   background: var(--color-surface-alt, #fafaf8);
 }
+
+/* ─── Midia section ─── */
+.midia-cover-ref {
+  width: 100%;
+  max-width: 280px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-border, #e0e0e0);
+}
+.midia-cover-ref img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.midia-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.midia-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-border, #e0e0e0);
+  background: var(--color-surface-alt, #f4f4f2);
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.midia-thumb:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+.midia-thumb--dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+.midia-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.midia-thumb-order {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.midia-thumb-handle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+.midia-thumb-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  padding: 0.35rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.midia-thumb:hover .midia-thumb-actions { opacity: 1; }
+.midia-thumb-actions button {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-text, #222);
+  border: none;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+.midia-thumb-actions button:hover:not(:disabled) {
+  background: #fff;
+  color: var(--color-primary, #D94F30);
+}
+.midia-thumb-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.midia-thumb-actions .midia-thumb-remove:hover { color: #c44; }
+
+.midia-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  aspect-ratio: 16 / 9;
+  border: 2px dashed var(--color-border, #d0d0d0);
+  border-radius: 10px;
+  background: var(--color-surface-alt, #fafaf8);
+  color: var(--color-text-secondary, #666);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.midia-add:hover {
+  border-color: var(--color-primary, #D94F30);
+  color: var(--color-primary, #D94F30);
+  background: color-mix(in srgb, var(--color-primary, #D94F30) 5%, transparent);
+}
+.midia-add-hint {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--color-text-muted, #999);
+}
+
+@media (max-width: 640px) {
+  .midia-grid { grid-template-columns: repeat(2, 1fr); }
+}
+/* ─── Equipo (team) section ─── */
+.tms-card {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+
+.tms-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt, #f1efea);
+  color: var(--color-text-secondary, #a89f93);
+  border: 2px solid var(--color-border, #e6e0d6);
+}
+.tms-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tms-avatar--lg {
+  width: 96px;
+  height: 96px;
+}
+
+.tms-card-body { min-width: 0; }
+.tms-card-name {
+  margin: 0 0 0.15rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text, #222);
+}
+.tms-card-role {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary, #D94F30);
+}
+.tms-card-bio {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary, #555);
+  white-space: pre-wrap;
+}
+
+/* Photo picker inside the edit form */
+.tms-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.tms-photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.tms-photo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e0e0e0);
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #222);
+  cursor: pointer;
+  width: max-content;
+  transition: all 0.15s ease;
+}
+.tms-photo-btn:hover {
+  border-color: var(--color-primary, #D94F30);
+  color: var(--color-primary, #D94F30);
+}
+.tms-photo-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8rem;
+  color: #c44;
+  cursor: pointer;
+  width: max-content;
+}
+.tms-photo-remove:hover { text-decoration: underline; }
+
+@media (max-width: 540px) {
+  .tms-card { grid-template-columns: 64px 1fr; }
+  .tms-card .rws-card-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .tms-avatar { width: 64px; height: 64px; }
+}
+
+/* ─── Creator verification subsection ─── */
+.edc-creator-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: var(--color-success-light, #e7f6ec);
+  color: var(--color-success, #1f8a4c);
+  font-size: 0.9rem;
+}
+.edc-creator-ok p { margin: 0; }
+.edc-creator-ok strong { color: inherit; }
+
+.edc-creator-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+  background: var(--color-warning-light, #fdf1d8);
+  border: 1px solid color-mix(in srgb, #92400e 25%, transparent);
+  color: #92400e;
+}
+.edc-creator-block > svg { flex-shrink: 0; margin-top: 2px; }
+.edc-creator-block-body { flex: 1; min-width: 200px; }
+.edc-creator-block-body p { margin: 0 0 0.35rem; font-size: 0.9rem; line-height: 1.5; }
+.edc-creator-block-body p:last-child { margin-bottom: 0; }
