@@ -26,9 +26,11 @@ db.sqlite3-journal
 
 # Environment variables
 .env
-.env.*
-!.env.example
-*.env
+backend/.env.backend
+frontend/.env.frontend
+payments/.env.payments
+!backend/.env.backend.example
+!frontend/.env.frontend.example
 
 # IDE
 .vscode/
@@ -45,6 +47,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+# Maven build output
+target/
 
 # Frontend build
 /frontend/dist/

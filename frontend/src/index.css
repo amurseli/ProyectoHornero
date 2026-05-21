@@ -1,72 +1,49 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
+@import "./assets/styles/variables.css";
+@import "./assets/styles/global.css";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme {
+  --color-primary: #EC4899;
+  --color-secondary: #8B5CF6;
+  --color-accent: #38BDF8;
+  --color-background: #FAFAFA;
+  --color-foreground: #111827;
+  --color-muted: #F3F4F6;
+  --color-muted-foreground: #6B7280;
+  --color-border: #E5E7EB;
+  
+  --navbar-height: 64px;
 }
 
-/* Ensure the document root fills the viewport so components using 100vh behave correctly */
 html, body, #root {
   height: 100%;
-}
-
-a {
-  font-weight: 500;
-  color: #16a085;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #2ecc71;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
 }
 
-h1 {
-  font-size: 3.2em;
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #16a085;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@media (min-width: 768px) {
+  .container {
+    padding: 0 2rem;
   }
-  a:hover {
-    color: #2ecc71;
-  }
-  button {
-    background-color: #f9f9f9;
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 3rem;
   }
 }
