@@ -276,6 +276,47 @@
   text-align: right;
 }
 
+.wizard-helper {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+.wizard-helper--error {
+  color: var(--color-danger, #c44);
+}
+
+/* Compact textarea used for short descriptions (200-char limit) */
+.wizard-textarea--short {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Country-step extra hint */
+.wizard-country-hint {
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Sub-label description shown right under a field label (e.g. "Meta") */
+.wizard-field-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: -0.125rem;
+}
+
+/* Cover-image preview inside the upload zone */
+.wizard-cover-preview {
+  position: relative;
+  width: 100%;
+}
+.wizard-cover-preview img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  display: block;
+}
+
 .wizard-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -396,18 +437,35 @@
 .wizard-review-row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 1rem;
   margin-bottom: 0.5rem;
   font-size: var(--font-size-sm);
+  min-width: 0;
 }
 
-.wizard-review-key { color: var(--color-text-muted); flex-shrink: 0; }
-.wizard-review-val { font-weight: 500; text-align: right; color: var(--color-text-primary); }
+.wizard-review-key {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.wizard-review-val {
+  font-weight: 500;
+  text-align: right;
+  color: var(--color-text-primary);
+  min-width: 0;
+  max-width: 65%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
 
 .wizard-review-desc {
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  margin: 0;
 }
 
 /* ── Verification step ── */

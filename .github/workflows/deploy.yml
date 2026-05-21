@@ -7,6 +7,7 @@ on:
       - 'backend/**'
       - 'frontend/**'
       - 'payments/**'
+      - 'backoffice/**'
 
 concurrency:
   group: deploy-main
@@ -34,12 +35,14 @@ jobs:
               - 'frontend/**'
             payments:
               - 'payments/**'
+            backoffice:
+              - 'backoffice/**'
 
-      - name: Decode SSH private key
+      - name: Write SSH private key
         env:
-          SSH_KEY_B64: ${{ secrets.BACKEND_SSH_KEY }}
+          SSH_KEY: ${{ secrets.BACKEND_SSH_KEY }}
         run: |
-          echo "$SSH_KEY_B64" | base64 --decode > /tmp/deploy_key
+          printf "%s" "$SSH_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
 
       - name: Deploy on EC2
@@ -49,6 +52,7 @@ jobs:
           BACKEND_CHANGED: ${{ steps.changes.outputs.backend }}
           FRONTEND_CHANGED: ${{ steps.changes.outputs.frontend }}
           PAYMENTS_CHANGED: ${{ steps.changes.outputs.payments }}
+          BACKOFFICE_CHANGED: ${{ steps.changes.outputs.backoffice }}
         run: |
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no "${EC2_USER}@${BACKEND_HOST}" <<EOF
           set -e
@@ -70,6 +74,11 @@ jobs:
 
           if [ "${FRONTEND_CHANGED}" = "true" ]; then
             cd /home/${EC2_USER}/ProyectoHornero/frontend
+            docker compose up --build -d
+          fi
+
+          if [ "${BACKEND_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/backoffice
             docker compose up --build -d
           fi
           EOF

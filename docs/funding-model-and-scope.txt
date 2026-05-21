@@ -1,0 +1,358 @@
+================================================================================
+  FUNDING MODEL, LEGAL SCOPE AND MERCADOPAGO HANDLING
+  Platform: ProyectoHornero (Argentina only, UBA tesis project)
+================================================================================
+
+Companion document to "creator-money-reception-requirements.txt".
+This file fixes the project's architectural and legal scope so the team can
+defend it in front of the tesis panel and refer back to it during build.
+
+
+================================================================================
+1. CHOSEN FUNDING MODEL: Idea.me-style ("all-or-nothing", platform-held)
+================================================================================
+
+ProyectoHornero implements the "Idea.me-style" crowdfunding model — also used
+by Kickstarter, Verkami, etc. — characterised by:
+
+  - All-or-nothing campaign goals: contributions are only released to the
+    creator if the campaign reaches its declared goal by the deadline.
+  - Platform-side parking: while a campaign is still active (or pending
+    success), donor money sits in the platform's MercadoPago account, not in
+    the creator's account.
+  - Refund on failure: if a campaign ends FAILED or CANCELLED, the platform
+    issues refunds to each donor's original payment method.
+  - Single payout on success: when a campaign ends SUCCESSFUL, the platform
+    deducts its fee and transfers the net amount to the creator's CBU/CVU.
+
+This model is the heavier of the two common Argentine patterns. The lighter
+one (Donacionar-style, donor pays creator directly with no platform custody)
+was evaluated and discarded because it cannot offer donor protection if a
+campaign fails to reach its goal, which is a core value of the platform.
+
+
+================================================================================
+2. END-TO-END FLOW
+================================================================================
+
+  Step 1 — Creator publishes campaign
+    Goal amount, deadline, description, and reward (if any) are declared.
+    Creator must have completed verification (see creator-money-reception
+    -requirements.txt) before publishing.
+
+  Step 2 — Donor decides to contribute
+    Donor selects amount, sees a one-screen form: amount + optional reward
+    selection + email + Terms acceptance. Within tesis scope donors are
+    always consumidor final (see §5), so no CUIT or fiscal data is asked.
+
+  Step 3 — Platform creates Contribution (PENDING) and initiates MP Payment
+    The MP Payment Brick (cards) is loaded in the browser. MP tokenizes the
+    card; the backend calls MP /v1/payments with the platform's access token.
+    Money is charged to the donor's card and credited to the platform's MP
+    account (held balance).
+
+  Step 4 — Contribution becomes APPROVED
+    Platform updates the campaign's current_amount. The campaign progresses
+    toward its goal.
+
+  Step 5a — Campaign ends SUCCESSFUL (goal reached on or before deadline)
+    Platform calculates: gross = sum(APPROVED contributions),
+                         net   = gross - platform_fee - provider_fee
+    Platform calls MP's payout API (or MP Money Out) to send `net` to the
+    creator's CBU/CVU. Status moves to COMPLETED.
+
+  Step 5b — Campaign ends FAILED (goal NOT reached) or CANCELLED
+    Platform iterates over APPROVED contributions and issues a refund per
+    contribution via MP's PaymentRefundClient. Money returns to the donor's
+    original card. Status moves to COMPLETED (refund) or FAILED (manual
+    review needed).
+
+  Step 6 — Notifications
+    The platform emails the donor at every relevant state change
+    (APPROVED, REFUNDED, payout-completed-on-campaign) and the creator at
+    state changes that affect them (new contribution, payout sent).
+    These emails are informational confirmations only — they are NOT
+    AFIP-valid comprobantes (see §7).
+
+
+================================================================================
+3. CUSTODY AND LEGAL FRAMING
+================================================================================
+
+The platform DOES NOT constitute a fideicomiso, neither per-campaign nor as
+an umbrella trust. The legal framing is:
+
+  - MercadoPago is the actual custodian of donor funds (and a PSP supervised
+    by the BCRA). Funds reside in MP's books between donation and payout.
+  - The platform is a technical intermediary that instructs MP when to hold,
+    refund, or release.
+  - This mirrors the Idea.me public model:
+      "Once a project is submitted on Idea.me, the company enables the
+       Idea.me account at MercadoPago to be custodian of the contributions
+       until the campaign is finalized."
+
+Implications:
+
+  - No fideicomiso instrumentation, no fiduciario profesional, no escritura.
+    Argument for the tesis panel: "delegamos la custodia en MercadoPago,
+    PSP supervisado por el BCRA, evitando así constituir fideicomiso o
+    cuenta segregada propia".
+  - The platform is NOT an "oferta pública de valores" → no CNV registration
+    required (the platform only handles donations / rewards, not equity or
+    debt, so Ley 27.349 / Sección IX of the CNV PFC regime does NOT apply).
+  - The platform is NOT a PSAV → no UIF Resolución 49/2024 obligations,
+    because no crypto is handled.
+  - The platform is NOT a PSP → no BCRA registration as PSPCP, because the
+    platform itself never moves money outside MP rails.
+
+Residual obligations the platform STILL has:
+
+  - Ley 25.326 (Data Protection) applies to all personal data of donors and
+    creators. Consent, ARCO rights, reasonable security, deletion on
+    request, privacy policy. See creator-money-reception-requirements.txt
+    §2.6 for the checklist.
+  - Defensa del Consumidor (Ley 24.240) applies because the platform sells
+    a service (intermediation) to consumers. Terms must be clear, accessible
+    and not abusive.
+  - Comercio electrónico best practices: precontractual information,
+    transparency on fees, clear refund policy.
+
+
+================================================================================
+4. STAYING IN COLLEGE-PROJECT SCOPE
+================================================================================
+
+The tesis is academic, not a registered enterprise. To stay defensible:
+
+  IN SCOPE (the platform DOES build):
+    - Campaign creation, publication, browse, search.
+    - Donor contribution flow via MP Payment Brick (cards only at MVP).
+    - Idea.me-style hold-until-goal + payout / refund pipeline.
+    - Creator verification wizard (per existing requirements doc).
+    - Email notifications and on-screen confirmations.
+    - Internal records of every transaction for audit traceability.
+    - Basic admin panel to inspect contributions, payouts, refunds.
+
+  OUT OF SCOPE (explicitly NOT built — document in tesis defense):
+    - AFIP electronic invoice emission (WSFE / ARCA) on behalf of creators.
+    - Acting as agente de retención / percepción for AFIP or ARBA.
+    - Crypto / token contributions (would trigger PSAV regime).
+    - Equity or loan crowdfunding (would trigger CNV PFC regime).
+    - Formal UIF sujeto-obligado program (KYT, SAR reports, oficial de
+      cumplimiento).
+    - Multi-jurisdiction Ingresos Brutos handling.
+    - International donors (would add IVA-servicios-digitales complexity).
+    - Tokens, NFTs, smart contracts, blockchain custody.
+
+  RATIONALE: Each "out of scope" item maps to a regulatory regime that
+  would require a real legal entity, capital mínimo, oficiales designados,
+  and recurring compliance cost. None of that is appropriate for a tesis.
+
+
+================================================================================
+5. DONOR SCOPE: CONSUMIDOR FINAL ONLY
+================================================================================
+
+Within the tesis scope, donors are ALWAYS treated as consumidor final.
+
+  Implications and rationale:
+
+  - The donation form asks for the minimum data: email, amount, optional
+    reward selection, T&C acceptance. No CUIT, no razón social, no
+    fiscal condition selector.
+  - No factura is ever expected by the donor — they receive only an
+    informational confirmation (see §7).
+  - The "Necesito factura" branch described in earlier design notes is
+    DEFERRED out of scope. If we ever wanted to support Monotributistas
+    or RI donors, we would add an opt-in expander that collects CUIT +
+    razón social and produces a voucher for the creator at payout time.
+  - Data retention: donor records are kept for the campaign's lifetime
+    plus a reasonable audit window (recommended 12 months), then deleted
+    or anonymised per Ley 25.326's data-minimisation principle.
+
+  Risk acknowledgment for the tesis defense:
+    A real production platform receiving a donation above ARS 1.5M from a
+    single donor would have UIF-PLD reporting obligations and should
+    capture identifying data. For the academic prototype this threshold
+    is irrelevant: test data only, no real money. Document this limit
+    explicitly in the user-facing T&C: "los aportes están limitados a
+    montos compatibles con el carácter académico del proyecto".
+
+
+================================================================================
+6. CREATOR SCOPE: ANY FISCAL CONDITION (and why it doesn't matter to us)
+================================================================================
+
+Creators can be any of: Consumidor Final, Monotributista, Responsable
+Inscripto, Exento. They self-declare their condition in the verification
+wizard.
+
+  Why it does NOT matter to the platform:
+    - The platform is not a fiscal agent for the creator.
+    - The platform does not emit invoices on behalf of the creator.
+    - The platform does not withhold taxes from the creator's payout.
+    - Each creator handles their own AFIP obligations (Monotributo
+      monthly, Ganancias annual, etc.) using their own systems.
+
+  The two small caveats (still in scope to implement, minimally):
+    1. Store the declared tax_condition on the creator record. This is
+       captured for the creator's benefit (they can later download a
+       payout report to feed their own bookkeeping) and to fulfil
+       AFIP information-regime requests if they ever arrive — not for
+       the platform's own tax computation.
+    2. Make tax_condition mandatory before payout (not before publish).
+       Without it, the platform cannot produce the payout report. It is
+       NOT a blocker for receiving contributions — only for cashing out.
+
+  What the platform DOES emit toward the creator:
+    - At payout: a per-campaign report (PDF or CSV) listing gross,
+      platform_fee, provider_fee, net, and date of transfer. This is an
+      informational comprobante interno — NOT a Factura A/B/C.
+    - The creator is responsible for issuing their own Factura
+      (if applicable to their fiscal condition) through their own ARCA /
+      AFIP Comprobantes en Línea — to the PLATFORM, for the income they
+      received. This is outside the platform's workflow.
+
+  What the platform receives FROM the creator: in production scale the
+  creator would emit a Factura to the platform for the gross amount of
+  donations (since legally the platform "buys" the right to intermediate).
+  This invoice flow is also out of tesis scope. Tesis acknowledges the
+  gap as a "production scaling consideration".
+
+
+================================================================================
+7. NOTIFICATIONS vs COMPROBANTES — what we issue and what we DON'T
+================================================================================
+
+You asked: "what we are giving the donors and creators are notifications
+and confirmation that the transaction was made, no factura, no documento
+contable — am I right?"
+
+Answer: YES for the platform's own emissions. With one nuance about what
+MercadoPago issues separately.
+
+  What the platform issues:
+    [x] On-screen confirmation in the UI after a successful donation
+    [x] Email confirmation to the donor (amount, campaign, date,
+        contribution ID, link to the campaign page)
+    [x] Email notification to the donor on state changes (refund issued
+        if campaign FAILED, payout completed if SUCCESSFUL)
+    [x] Email notification to the creator on contribution APPROVED and
+        payout completed
+    [x] Internal log of every state transition (audit trail, not user-facing)
+
+  What the platform does NOT issue:
+    [ ] Factura A, B, C, M, X (no AFIP electronic invoice emission)
+    [ ] Recibo oficial AFIP / comprobante fiscal
+    [ ] Nota de débito / nota de crédito
+    [ ] Certificado de retención
+    [ ] Any document with CAE (Código de Autorización Electrónico)
+
+  What MercadoPago DOES issue automatically (independent of the platform):
+    - A receipt of the card charge to the donor's email (MP-branded,
+      shows MP as merchant). This is MP's own comprobante, not AFIP-valid
+      for IVA crédito-fiscal purposes from the donor's side.
+    - A statement entry in the platform's MP account showing the credit.
+    - On refund: an MP-side notification to the donor confirming reversal.
+    - On payout / Money Out to the creator's CBU: an MP-side transfer
+      record.
+
+  Important framing for the tesis defense:
+    The platform's confirmations are "comprobantes informativos" or
+    "constancias de transacción" — they have legal weight as evidence
+    that the operation occurred, but they are NOT documentos contables
+    in the AFIP sense (no CAE, no IVA discrimination).
+
+    If a creator or donor needs a true AFIP-valid factura, the emisor
+    is whichever party is acting as vendor in their own fiscal context
+    (typically the creator, if the contribution involved a reward) and
+    they emit it through their own systems.
+
+
+================================================================================
+8. MERCADOPAGO INTEGRATION CHECKLIST
+================================================================================
+
+To keep the implementation tight and within scope:
+
+  Required:
+    [x] MP_ACCESS_TOKEN (server-side, TEST and PROD)
+    [x] MP_PUBLIC_KEY  (client-side, for Payment Brick)
+    [x] Payment Brick on the frontend for card input (no PCI scope)
+    [x] /v1/payments call from backend with platform's access token
+    [x] Webhook endpoint (/api/payments/notifications) for IPN
+    [x] PaymentRefundClient for refund-on-failure flow
+    [x] Payout to creator CBU on campaign success (TO IMPLEMENT — current
+        code has this as TODO)
+    [x] HTTPS everywhere (MP requires it for production credentials)
+    [x] Idempotency keys on every /v1/payments and /v1/payouts call
+
+  Discouraged for tesis scope:
+    [ ] MP Marketplace OAuth (would change the model to Donacionar-style)
+    [ ] Split payments / application_fee (same — different model)
+    [ ] MP Subscriptions (recurring donations — out of scope MVP)
+    [ ] Direct CBU transfers outside MP (would re-introduce custody risk)
+
+  Operational hygiene:
+    - Use a DEDICATED MercadoPago business account for the platform
+      (never a personal account of any team member).
+    - Withdraw the platform's own commission to a separate bank account
+      from the third-party-funds account, to support the accounting
+      separation argument.
+    - Monitor MP dashboard for chargebacks / disputes weekly; build a
+      simple admin endpoint to query MP balance vs sum of APPROVED
+      contributions in non-paid-out campaigns. The numbers should match.
+
+
+================================================================================
+9. TESIS DEFENSE: HOW TO FRAME THE ARCHITECTURE
+================================================================================
+
+When the panel asks about the legal model, the recommended one-liner is:
+
+  "ProyectoHornero implementa el modelo all-or-nothing tipo Idea.me. La
+   plataforma actúa como intermediario técnico, delegando la custodia de
+   fondos en MercadoPago — PSP supervisado por el BCRA — y por lo tanto
+   no constituye fideicomiso ni cuenta segregada propia. No emite
+   comprobantes fiscales: las facturas son responsabilidad del creador
+   conforme su situación frente a AFIP. El alcance académico se limita
+   a donantes consumidores finales sin emisión de factura electrónica,
+   dejando la integración con ARCA/WSFE y el régimen UIF como
+   consideraciones de escalamiento a producción."
+
+Anticipate these likely panel questions:
+
+  Q: ¿Qué pasa con la Ley 25.326?
+  A: Compliance básico implementado: consentimiento informado, política
+     de privacidad accesible, encriptación at rest de datos sensibles
+     (DNI, CUIL/CUIT, CBU), derechos ARCO desde la configuración de
+     cuenta, retención mínima necesaria, eliminación on-request.
+
+  Q: ¿Por qué no se registran en CNV como PFC?
+  A: La Sección IX del régimen CNV (PFC) regula crowdfunding de oferta
+     pública de valores: equity y deuda. Donación / recompensa NO
+     constituye oferta de valores y queda fuera del ámbito CNV.
+     Ley 27.349 art. 22 lo confirma.
+
+  Q: ¿Y el régimen UIF?
+  A: La plataforma no es PSAV (no maneja cripto), no es PSP (delega en
+     MP, que sí lo es), y no es entidad financiera. Por umbral de
+     volumen y por naturaleza académica, no califica como sujeto
+     obligado bajo Resolución UIF 49/2024.
+
+  Q: ¿Quién emite la factura al donante?
+  A: Dentro del alcance del proyecto (donantes consumidores finales,
+     aportes pequeños, sin recompensa contractual obligatoria), no se
+     emite factura. Si la operación incluye contraprestación, la
+     emisión corresponde al creador conforme su condición frente a
+     AFIP. La plataforma facilita los datos del donante en un reporte
+     interno que el creador puede usar para emitir la factura desde
+     sus propios sistemas.
+
+  Q: ¿Y si una campaña fracasa?
+  A: El flujo de refund automático devuelve cada contribución APPROVED
+     a su tarjeta de origen vía PaymentRefundClient de MP. Esto está
+     modelado en la tabla payments.refund y disparado por el cambio
+     de estado de la campaña a FAILED o CANCELLED.
+
+================================================================================

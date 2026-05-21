@@ -110,12 +110,13 @@ public class TestDataSeeder implements ApplicationRunner {
         approveCreatorIfAbsent(creator2, "Juan Pérez",      "20234567890", "20234567890");
         approveCreatorIfAbsent(creator3, "Laura Rodríguez", "20345678901", "20345678901");
 
+        // Mapped to the canonical campaign categories defined in migration V16.
         CampaignCategory tech      = categoryByName(categories, "Tecnología");
-        CampaignCategory education = categoryByName(categories, "Educación");
-        CampaignCategory community = categoryByName(categories, "Comunidad");
-        CampaignCategory health    = categoryByName(categories, "Salud");
-        CampaignCategory art       = categoryByName(categories, "Arte y Cultura");
-        CampaignCategory env       = categoryByName(categories, "Medio Ambiente");
+        CampaignCategory education = categoryByName(categories, "Publicaciones");
+        CampaignCategory community = categoryByName(categories, "Teatro");
+        CampaignCategory health    = categoryByName(categories, "Comida");
+        CampaignCategory art       = categoryByName(categories, "Arte");
+        CampaignCategory env       = categoryByName(categories, "Fotografía");
 
         int videoIdx = 0;
 

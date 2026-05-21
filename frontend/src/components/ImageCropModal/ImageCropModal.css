@@ -1,0 +1,91 @@
+.crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.crop-modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.crop-header {
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+.crop-header h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #222);
+}
+.crop-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #777);
+}
+
+/* The stage IS the 16:9 crop frame — the image pans/zooms behind it. */
+.crop-stage {
+  position: relative;
+  width: 100%;
+  margin-top: 0.75rem;
+  background: #1a1a1a;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.crop-stage:active {
+  cursor: grabbing;
+}
+
+.crop-image {
+  position: absolute;
+  max-width: none;       /* override global img rules */
+  display: block;
+  -webkit-user-drag: none;
+}
+
+/* Rule-of-thirds overlay */
+.crop-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+  background-size: 100% 33.333%, 33.333% 100%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.crop-zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.5rem;
+  color: var(--color-text-muted, #777);
+}
+.crop-zoom input[type="range"] {
+  flex: 1;
+  accent-color: var(--color-primary, #D94F30);
+  cursor: pointer;
+}
+
+.crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.5rem 1.5rem 1.25rem;
+}

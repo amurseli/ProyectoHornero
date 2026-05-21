@@ -71,6 +71,14 @@ public class Campaign {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "campaign"})
     private List<CreatorsCampaign> creators = new ArrayList<>();
 
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "campaign"})
+    private List<Reward> rewards = new ArrayList<>();
+ 
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "campaign"})
+    private List<CampaignFaq> faqs = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -100,6 +108,8 @@ public class Campaign {
     public List<CreatorsCampaign> getCreators() { return creators; }
     public String getCountry() { return country; }
     public String getMoneyStatus() { return moneyStatus; }
+    public List<Reward> getRewards() { return rewards; }
+    public List<CampaignFaq> getFaqs() { return faqs; }
 
 
     // Setters

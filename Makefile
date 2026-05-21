@@ -2,11 +2,12 @@
 # Hornero Project - Makefile
 # ============================================================
 
-BACKEND_DIR   = backend
-FRONTEND_DIR  = frontend
-PAYMENTS_DIR  = payments
-SCHEDULER_DIR = scheduler
-NETWORK       = hornero-network
+BACKEND_DIR    = backend
+FRONTEND_DIR   = frontend
+BACKOFFICE_DIR = backoffice
+PAYMENTS_DIR   = payments
+SCHEDULER_DIR  = scheduler
+NETWORK        = hornero-network
 
 ifeq ($(OS),Windows_NT)
     DEVNULL := NUL
@@ -15,6 +16,8 @@ else
 endif
 
 .PHONY: help network up down build logs dev \
+        up-bo down-bo build-bo logs-bo \
+        up-bo-prod down-bo-prod build-bo-prod \
         up-pay down-pay build-pay logs-pay \
         up-sched down-sched build-sched logs-sched \
         up-all down-all build-all \
@@ -31,6 +34,11 @@ help:
 	@echo "  make build        Reconstruye backend"
 	@echo "  make logs         Logs del backend"
 	@echo ""
+	@echo "  make up-bo        Levanta backoffice (dev, HMR)"
+	@echo "  make down-bo      Detiene backoffice"
+	@echo "  make build-bo     Reconstruye backoffice"
+	@echo "  make logs-bo      Logs del backoffice"
+	@echo ""
 	@echo "  make up-pay       Levanta payments"
 	@echo "  make down-pay     Detiene payments"
 	@echo "  make build-pay    Reconstruye payments"
@@ -41,7 +49,7 @@ help:
 	@echo "  make build-sched  Reconstruye scheduler (rapido, Alpine+curl)"
 	@echo "  make logs-sched   Logs del scheduler"
 	@echo ""
-	@echo "  make up-all       Levanta todo (backend + payments + scheduler)"
+	@echo "  make up-all       Levanta todo (backend + frontend + backoffice + payments + scheduler)"
 	@echo "  make down-all     Detiene todo"
 	@echo "  make build-all    Reconstruye todo"
 	@echo ""
@@ -58,23 +66,66 @@ network:
 		true
 
 # ------------------------------------------------------------
-# Backend
+# Backend + frontend (dev por defecto, con HMR)
 # ------------------------------------------------------------
 up: network
 	cd $(BACKEND_DIR) && docker-compose up -d
-	cd $(FRONTEND_DIR) && docker-compose up -d
+	cd $(FRONTEND_DIR) && docker-compose -f docker-compose.dev.yml up -d
 
 down:
 	cd $(BACKEND_DIR) && docker-compose down || true
+	cd $(FRONTEND_DIR) && docker-compose -f docker-compose.dev.yml down || true
 	cd $(FRONTEND_DIR) && docker-compose down || true
 
 build:
-	cd $(BACKEND_DIR) && docker-compose build 
-	cd $(FRONTEND_DIR) && docker-compose build 
+	cd $(BACKEND_DIR) && docker-compose build
+	cd $(FRONTEND_DIR) && docker-compose -f docker-compose.dev.yml build
 
 logs:
 	cd $(BACKEND_DIR) && docker-compose logs -f
-	cd $(FRONTEND_DIR) && docker-compose logs -f
+
+# ------------------------------------------------------------
+# Frontend modo prod (nginx, build estático) — solo para testear deploy
+# ------------------------------------------------------------
+up-prod: network
+	cd $(BACKEND_DIR) && docker-compose up -d
+	cd $(FRONTEND_DIR) && docker-compose up -d
+
+down-prod:
+	cd $(BACKEND_DIR) && docker-compose down || true
+	cd $(FRONTEND_DIR) && docker-compose down || true
+
+build-prod:
+	cd $(BACKEND_DIR) && docker-compose build
+	cd $(FRONTEND_DIR) && docker-compose build
+
+# ------------------------------------------------------------
+# Backoffice (dev por defecto, con HMR)
+# ------------------------------------------------------------
+up-bo: network
+	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml up -d
+
+down-bo:
+	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml down || true
+	cd $(BACKOFFICE_DIR) && docker-compose down || true
+
+build-bo:
+	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml build
+
+logs-bo:
+	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml logs -f
+
+# ------------------------------------------------------------
+# Backoffice modo prod (nginx, build estático) — puerto 3001
+# ------------------------------------------------------------
+up-bo-prod: network
+	cd $(BACKOFFICE_DIR) && docker-compose up -d
+
+down-bo-prod:
+	cd $(BACKOFFICE_DIR) && docker-compose down || true
+
+build-bo-prod:
+	cd $(BACKOFFICE_DIR) && docker-compose build
 
 # ------------------------------------------------------------
 # Payments
@@ -109,11 +160,11 @@ logs-sched:
 # ------------------------------------------------------------
 # Todo junto (testing local)
 # ------------------------------------------------------------
-up-all: up up-pay up-sched
+up-all: up up-bo up-pay up-sched
 
-down-all: down-sched down-pay down
+down-all: down-sched down-pay down-bo down
 
-build-all: build build-pay build-sched
+build-all: build build-bo build-pay build-sched
 
 # ------------------------------------------------------------
 # Desarrollo (backend Docker, frontend local)

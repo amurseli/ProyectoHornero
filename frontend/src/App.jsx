@@ -21,7 +21,7 @@ import BecomeCreator from '$pages/BecomeCreator/BecomeCreator.jsx';
 import UserConfig from '$pages/UserConfig/UserConfig';
 import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 import CampaignPage from '$pages/CampaignPage/CampaignPage';
-import AdminVerifications from '$pages/AdminVerifications/AdminVerifications';
+import EditDraftCampaign from '$pages/Campaigns/EditDraftCampaign';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -77,8 +77,8 @@ function App() {
           <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
-          <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
-          
+          <Route path="/campaigns/:id/edit" element={<ProtectedRoute><EditDraftCampaign /></ProtectedRoute>} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Footer />

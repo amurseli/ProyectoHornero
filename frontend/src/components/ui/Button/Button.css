@@ -17,7 +17,7 @@
 
 /* Variants */
 .btn-primary {
-  background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+  background: var(--gradient-warm);
   color: white;
 }
 

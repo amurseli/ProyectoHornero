@@ -267,7 +267,7 @@ function MyCampaigns() {
               )
             }
             return (
-              <a key={item.id} href={`/campaigns/${item.id}`} className="mc-mini-card mc-draft-card">
+              <a key={item.id} href={`/campaigns/${item.id}/edit`} className="mc-mini-card mc-draft-card">
                 <div className="mc-mini-image">
                   <img src={item.imageUrl} alt={item.title} />
                   <span className="mc-draft-badge"><Pencil size={12} /> Borrador</span>

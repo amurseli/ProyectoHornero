@@ -41,7 +41,7 @@ function HeroSection({ search }) {
         .hero-title {
           font-size: var(--font-size-3xl);
           font-weight: 700;
-          background: var(--gradient-warm);
+          background: var(--color-primary);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;

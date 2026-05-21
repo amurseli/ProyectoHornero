@@ -1,11 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
-   ADMIN VERIFICATIONS PAGE
+   VERIFICATIONS PAGE
 ═══════════════════════════════════════════════════════════ */
 
-.admin-verifications-page {
-  min-height: calc(100vh - var(--navbar-height));
-  background: var(--color-background);
-  padding: var(--space-xl) var(--space-md);
+.verifications-page {
+  padding: var(--space-xl);
 }
 
 .av-container {
@@ -14,20 +12,7 @@
 }
 
 .av-header {
-  text-align: center;
   margin-bottom: var(--space-xl);
-}
-
-.av-header-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  margin-bottom: var(--space-sm);
 }
 
 .av-header h1 {
@@ -48,7 +33,6 @@
   display: flex;
   gap: var(--space-xs);
   margin-bottom: var(--space-lg);
-  justify-content: center;
   flex-wrap: wrap;
 }
 
@@ -77,9 +61,9 @@
 
 /* ═══════ States ═══════ */
 .av-error {
-  background: var(--color-error-bg, #fef2f2);
-  color: var(--color-error, #dc2626);
-  border: 1px solid var(--color-error-border, #fecaca);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-size-sm);
@@ -303,8 +287,8 @@
 }
 
 .av-action-error {
-  background: var(--color-error-bg, #fef2f2);
-  color: var(--color-error, #dc2626);
+  background: var(--color-error-bg);
+  color: var(--color-error);
   border-radius: var(--radius-md);
   padding: var(--space-xs) var(--space-sm);
   font-size: 0.75rem;
@@ -326,7 +310,7 @@
 
 .av-rejection-input input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
 }
 
 .av-action-buttons {
