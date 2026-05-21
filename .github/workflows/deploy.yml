@@ -7,6 +7,7 @@ on:
       - 'backend/**'
       - 'frontend/**'
       - 'payments/**'
+      - 'backoffice/**'
 
 concurrency:
   group: deploy-main
@@ -34,6 +35,8 @@ jobs:
               - 'frontend/**'
             payments:
               - 'payments/**'
+            backoffice:
+              - 'backoffice/**'
 
       - name: Write SSH private key
         env:
@@ -49,6 +52,7 @@ jobs:
           BACKEND_CHANGED: ${{ steps.changes.outputs.backend }}
           FRONTEND_CHANGED: ${{ steps.changes.outputs.frontend }}
           PAYMENTS_CHANGED: ${{ steps.changes.outputs.payments }}
+          BACKOFFICE_CHANGED: ${{ steps.changes.outputs.backoffice }}
         run: |
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no "${EC2_USER}@${BACKEND_HOST}" <<EOF
           set -e
@@ -70,6 +74,11 @@ jobs:
 
           if [ "${FRONTEND_CHANGED}" = "true" ]; then
             cd /home/${EC2_USER}/ProyectoHornero/frontend
+            docker compose up --build -d
+          fi
+
+          if [ "${BACKEND_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/backoffice
             docker compose up --build -d
           fi
           EOF
