@@ -1,0 +1,12 @@
+services:
+  backoffice:
+    build: .
+    container_name: hornero-backoffice
+    ports:
+      - "3001:80"
+    networks:
+      - hornero-network
+
+networks:
+  hornero-network:
+    driver: bridge

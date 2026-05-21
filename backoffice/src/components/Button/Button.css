@@ -22,13 +22,13 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
   transform: translateY(-1px);
 }
 
 .btn-secondary {
   background: white;
-  color: var(--color-foreground);
+  color: var(--color-text-primary);
   border: 1px solid var(--color-border);
 }
 
@@ -38,7 +38,7 @@
 
 .btn-ghost {
   background: transparent;
-  color: var(--color-foreground);
+  color: var(--color-text-primary);
 }
 
 .btn-ghost:hover:not(:disabled) {
@@ -47,12 +47,12 @@
 }
 
 .btn-danger {
-  background: var(--color-error, #ef4444);
+  background: var(--color-error);
   color: white;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-error, #ef4444) 85%, black);
+  background: color-mix(in srgb, var(--color-error) 85%, black);
   transform: translateY(-1px);
 }
 
