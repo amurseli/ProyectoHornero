@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ShieldCheck, CheckCircle, XCircle, Eye, ChevronDown, ChevronUp, Clock, AlertCircle } from 'lucide-react'
-import { useUser } from '../../store/useUser'
-import { Button } from '../../components/ui'
-import api from '../../utils/api/api'
-import './AdminVerifications.css'
+import { CheckCircle, XCircle, Eye, ChevronDown, ChevronUp, Clock, AlertCircle } from 'lucide-react'
+import { Button } from '../../components'
+import api from '../../utils/api'
+import './Verifications.css'
 
 const STATUS_LABELS = {
   PENDING: 'Pendiente',
@@ -25,9 +23,7 @@ const DOC_LABELS = {
   SELFIE_WITH_DNI: 'Selfie con DNI',
 }
 
-function AdminVerifications() {
-  const navigate = useNavigate()
-  const { user } = useUser()
+function Verifications() {
   const [verifications, setVerifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -39,13 +35,9 @@ function AdminVerifications() {
   const [actionError, setActionError] = useState(null)
 
   useEffect(() => {
-    if (!user) return
-    if (user?.role !== 'ADMIN') {
-      navigate('/')
-      return
-    }
     fetchVerifications()
-  }, [filter, user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter])
 
   const fetchVerifications = async () => {
     setLoading(true)
@@ -111,14 +103,11 @@ function AdminVerifications() {
   }
 
   return (
-    <div className="admin-verifications-page">
+    <div className="verifications-page">
       <div className="av-container">
         <div className="av-header">
-          <div className="av-header-icon">
-            <ShieldCheck size={28} />
-          </div>
           <h1>Verificaciones de Creadores</h1>
-          <p>Revisá las solicitudes de verificación de identidad de los creadores.</p>
+          <p>Revisá las solicitudes de verificación de identidad de los usuarios que quieren convertirse en creadores.</p>
         </div>
 
         {/* Filters */}
@@ -300,4 +289,4 @@ function AdminVerifications() {
   )
 }
 
-export default AdminVerifications
+export default Verifications

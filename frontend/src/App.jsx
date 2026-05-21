@@ -22,7 +22,6 @@ import UserConfig from '$pages/UserConfig/UserConfig';
 import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 import CampaignPage from '$pages/CampaignPage/CampaignPage';
 import EditDraftCampaign from '$pages/Campaigns/EditDraftCampaign';
-import AdminVerifications from '$pages/AdminVerifications/AdminVerifications';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -79,8 +78,7 @@ function App() {
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
           <Route path="/campaigns/:id/edit" element={<ProtectedRoute><EditDraftCampaign /></ProtectedRoute>} />
-          <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
-          
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Footer />
