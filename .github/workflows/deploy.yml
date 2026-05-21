@@ -35,11 +35,11 @@ jobs:
             payments:
               - 'payments/**'
 
-      - name: Decode SSH private key
+      - name: Write SSH private key
         env:
-          SSH_KEY_B64: ${{ secrets.BACKEND_SSH_KEY }}
+          SSH_KEY: ${{ secrets.BACKEND_SSH_KEY }}
         run: |
-          echo "$SSH_KEY_B64" | base64 --decode > /tmp/deploy_key
+          printf "%s" "$SSH_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
 
       - name: Deploy on EC2
