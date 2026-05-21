@@ -15,10 +15,13 @@ public class CorsConfig {
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
 
+    @Value("${BACKOFFICE_URL:http://localhost:5174}")
+    private String backofficeUrl;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontendUrl));
+        configuration.setAllowedOrigins(List.of(frontendUrl, backofficeUrl));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
