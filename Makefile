@@ -2,10 +2,11 @@
 # Hornero Project - Makefile
 # ============================================================
 
-BACKEND_DIR  = backend
-FRONTEND_DIR = frontend
-PAYMENTS_DIR = payments
-NETWORK      = hornero-network
+BACKEND_DIR    = backend
+FRONTEND_DIR   = frontend
+BACKOFFICE_DIR = backoffice
+PAYMENTS_DIR   = payments
+NETWORK        = hornero-network
 
 ifeq ($(OS),Windows_NT)
     DEVNULL := NUL
@@ -14,6 +15,8 @@ else
 endif
 
 .PHONY: help network up down build logs dev \
+        up-bo down-bo build-bo logs-bo \
+        up-bo-prod down-bo-prod build-bo-prod \
         up-pay down-pay build-pay logs-pay \
         up-all down-all build-all \
         ps clean
@@ -29,12 +32,17 @@ help:
 	@echo "  make build        Reconstruye backend"
 	@echo "  make logs         Logs del backend"
 	@echo ""
+	@echo "  make up-bo        Levanta backoffice (dev, HMR)"
+	@echo "  make down-bo      Detiene backoffice"
+	@echo "  make build-bo     Reconstruye backoffice"
+	@echo "  make logs-bo      Logs del backoffice"
+	@echo ""
 	@echo "  make up-pay       Levanta payments"
 	@echo "  make down-pay     Detiene payments"
 	@echo "  make build-pay    Reconstruye payments"
 	@echo "  make logs-pay     Logs de payments"
 	@echo ""
-	@echo "  make up-all       Levanta todo (backend + payments)"
+	@echo "  make up-all       Levanta todo (backend + frontend + backoffice + payments)"
 	@echo "  make down-all     Detiene todo"
 	@echo "  make build-all    Reconstruye todo"
 	@echo ""
@@ -85,6 +93,34 @@ build-prod:
 	cd $(FRONTEND_DIR) && docker-compose build
 
 # ------------------------------------------------------------
+# Backoffice (dev por defecto, con HMR)
+# ------------------------------------------------------------
+up-bo: network
+	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml up -d
+
+down-bo:
+	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml down || true
+	cd $(BACKOFFICE_DIR) && docker-compose down || true
+
+build-bo:
+	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml build
+
+logs-bo:
+	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml logs -f
+
+# ------------------------------------------------------------
+# Backoffice modo prod (nginx, build estático) — puerto 3001
+# ------------------------------------------------------------
+up-bo-prod: network
+	cd $(BACKOFFICE_DIR) && docker-compose up -d
+
+down-bo-prod:
+	cd $(BACKOFFICE_DIR) && docker-compose down || true
+
+build-bo-prod:
+	cd $(BACKOFFICE_DIR) && docker-compose build
+
+# ------------------------------------------------------------
 # Payments
 # ------------------------------------------------------------
 up-pay: network
@@ -102,11 +138,11 @@ logs-pay:
 # ------------------------------------------------------------
 # Todo junto (testing local)
 # ------------------------------------------------------------
-up-all: up up-pay
+up-all: up up-bo up-pay
 
-down-all: down-pay down
+down-all: down-pay down-bo down
 
-build-all: build build-pay
+build-all: build build-bo build-pay
 
 # ------------------------------------------------------------
 # Desarrollo (backend Docker, frontend local)
