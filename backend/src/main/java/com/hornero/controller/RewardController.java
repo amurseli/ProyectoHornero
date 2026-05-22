@@ -4,6 +4,7 @@ import com.hornero.model.Campaign;
 import com.hornero.model.Reward;
 import com.hornero.repository.CampaignRepository;
 import com.hornero.repository.RewardRepository;
+import com.hornero.service.AppImageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +23,14 @@ public class RewardController {
     @Autowired
     private CampaignRepository campaignRepository;
 
+    @Autowired
+    private AppImageService appImageService;
+
     @GetMapping
     public ResponseEntity<List<Reward>> getRewards(@PathVariable Long campaignId) {
-        return ResponseEntity.ok(rewardRepository.findByCampaignIdOrderByDisplayOrderAsc(campaignId));
+        List<Reward> rewards = rewardRepository.findByCampaignIdOrderByDisplayOrderAsc(campaignId);
+        appImageService.hydrateRewards(rewards);
+        return ResponseEntity.ok(rewards);
     }
 
     @PostMapping
@@ -32,24 +38,48 @@ public class RewardController {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
         reward.setCampaign(campaign);
-        return ResponseEntity.status(HttpStatus.CREATED).body(rewardRepository.save(reward));
+        String s3Key = normalizeRewardImage(campaignId, reward.getImageBase64(), reward.getImageS3Key());
+        reward.setImageS3Key(s3Key);
+        reward.setImageBase64(null);
+        Reward saved = rewardRepository.save(reward);
+        appImageService.hydrateReward(saved);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Reward> updateReward(@PathVariable Long campaignId, @PathVariable Long id, @RequestBody Reward details) {
         Reward existing = rewardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reward no encontrada"));
+        String previousKey = existing.getImageS3Key();
         existing.setTitle(details.getTitle());
         existing.setDescription(details.getDescription());
         existing.setPrice(details.getPrice());
         existing.setDisplayOrder(details.getDisplayOrder());
-        existing.setImageBase64(details.getImageBase64());
-        return ResponseEntity.ok(rewardRepository.save(existing));
+        String nextKey = normalizeRewardImage(campaignId, details.getImageBase64(), details.getImageS3Key());
+        existing.setImageS3Key(nextKey);
+        existing.setImageBase64(null);
+        Reward saved = rewardRepository.save(existing);
+        if (previousKey != null && !previousKey.isBlank() && (nextKey == null || !previousKey.equals(nextKey))) {
+            appImageService.deleteImage(previousKey);
+        }
+        appImageService.hydrateReward(saved);
+        return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReward(@PathVariable Long campaignId, @PathVariable Long id) {
+        Reward reward = rewardRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reward no encontrada"));
+        String s3Key = reward.getImageS3Key();
         rewardRepository.deleteById(id);
+        appImageService.deleteImage(s3Key);
         return ResponseEntity.noContent().build();
+    }
+
+    private String normalizeRewardImage(Long campaignId, String imageBase64, String existingKey) {
+        if (imageBase64 != null && !imageBase64.isBlank()) {
+            return appImageService.persistBase64Image("recompensa/campaign-" + campaignId, imageBase64);
+        }
+        return (existingKey != null && !existingKey.isBlank()) ? existingKey : null;
     }
 }

@@ -1,19 +1,159 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { campaignService } from '$utils/campaignService'
+import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
 import { Button } from '$components/ui'
 import ContributionModal from '$components/ContributionModal/ContributionModal'
+import api from '$utils/api/api'
 import { useUser } from '../../store/useUser'
-import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Clock, Users, MapPin, Tag } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Users, Tag, Gift, X } from 'lucide-react'
 import './CampaignPage.css'
 
+const PUBLIC_DESC_LIMIT = 100
+
 function formatCurrency(amount) {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
 }
 
 function getProgress(current, goal) {
   if (!goal || goal <= 0) return 0
   return Math.min(100, Math.round((current / goal) * 100))
+}
+
+function normalizeRewards(rewards) {
+  return [...(Array.isArray(rewards) ? rewards : [])].sort(
+    (a, b) => Number(a.price ?? 0) - Number(b.price ?? 0) || (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+  )
+}
+
+function getDescriptionPreview(text, limit = PUBLIC_DESC_LIMIT) {
+  const normalized = String(text || '').trim()
+  if (!normalized) return { text: '', truncated: false }
+  if (normalized.length <= limit) return { text: normalized, truncated: false }
+  return { text: `${normalized.slice(0, limit).trimEnd()}...`, truncated: true }
+}
+
+function DescriptionPreview({ text }) {
+  const preview = getDescriptionPreview(text)
+  if (!preview.text) return null
+
+  return <p className={`cp-description-text ${preview.truncated ? 'cp-description-text--truncated' : ''}`}>{preview.text}</p>
+}
+
+function DetailOverlay({ item, onClose, onContribute, disabledReason }) {
+  useEffect(() => {
+    if (!item) return undefined
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [item, onClose])
+
+  if (!item) return null
+
+  const imageSrc = getEntityImageSrc(item)
+  const isReward = item.kind === 'reward'
+
+  return (
+    <div className="cp-focus-overlay" onClick={onClose}>
+      <div
+        className={`cp-focus-card ${isReward ? 'cp-focus-card--reward' : ''} ${imageSrc ? '' : 'cp-focus-card--no-media'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button type="button" className="cp-focus-close" onClick={onClose} aria-label="Cerrar detalle">
+          <X size={18} />
+        </button>
+
+        {imageSrc && (
+          <div className="cp-focus-media">
+            <img src={imageSrc} alt={item.title} className="cp-focus-image" />
+          </div>
+        )}
+
+        <div className="cp-focus-body">
+          {isReward ? (
+            <div className="cp-focus-kicker">{formatCurrency(item.price || 0)}</div>
+          ) : (
+            item.role && <div className="cp-focus-kicker">{item.role}</div>
+          )}
+          <h3 className="cp-focus-title">{item.title}</h3>
+          <p className="cp-focus-description">{item.description}</p>
+
+          {isReward && (
+            <>
+              <Button
+                variant="primary"
+                className="cp-focus-action"
+                onClick={() => onContribute(Number(item.price) || 1)}
+                disabled={!!disabledReason}
+                title={disabledReason || undefined}
+              >
+                Elegir {formatCurrency(item.price || 0)}
+              </Button>
+              {disabledReason && <p className="cp-reward-disabled">{disabledReason}</p>}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RewardTierCard({ reward, onContribute, onOpenCard, compact = false, disabledReason = null }) {
+  const imageSrc = getEntityImageSrc(reward)
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onOpenCard?.(reward)
+    }
+  }
+
+  return (
+    <article
+      className={`cp-reward-card ${compact ? 'cp-reward-card--compact' : ''}`}
+      onClick={() => onOpenCard?.(reward)}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+    >
+      {imageSrc && (
+        <div className="cp-reward-image-wrap">
+          <img src={imageSrc} alt={reward.title} className="cp-reward-image" />
+        </div>
+      )}
+      <div className="cp-reward-body">
+        <div className="cp-reward-copy">
+          <div className="cp-reward-price">{formatCurrency(reward.price || 0)}</div>
+          <h3 className="cp-reward-title">{reward.title}</h3>
+          <DescriptionPreview text={reward.description} />
+        </div>
+        <Button
+          variant="primary"
+          size={compact ? 'sm' : 'md'}
+          className="cp-reward-btn"
+          onClick={(event) => {
+            event.stopPropagation()
+            onContribute(Number(reward.price) || 1)
+          }}
+          disabled={!!disabledReason}
+          title={disabledReason || undefined}
+        >
+          Elegir {formatCurrency(reward.price || 0)}
+        </Button>
+        {disabledReason && <p className="cp-reward-disabled">{disabledReason}</p>}
+      </div>
+    </article>
+  )
 }
 
 /* ─── Hero: media carousel + stats panel ─── */
@@ -45,11 +185,11 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
   const allImages = sortedMedia.filter(m => m.mediaType === 'IMAGE')
   const primary = allImages.find(m => m.isPrimary) || allImages[0]
   const primaryUrl = primary
-    ? (primary.base64Data ? `data:image/jpeg;base64,${primary.base64Data}` : primary.url)
+    ? getMediaImageSrc(primary)
     : (campaign.imageUrl || '/crowdfunding-campaign.jpg')
   const galleryImages = allImages
     .filter(m => m !== primary)
-    .map(m => (m.base64Data ? `data:image/jpeg;base64,${m.base64Data}` : m.url))
+    .map(getMediaImageSrc)
     .filter(Boolean)
     .slice(0, 6)
 
@@ -185,16 +325,16 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
 const TABS = [
   { key: 'campaign', label: 'Campaña' },
   { key: 'rewards', label: 'Recompensas' },
-  { key: 'creator', label: 'Creador' },
+  { key: 'team', label: 'Equipo' },
   { key: 'faq', label: 'FAQ' },
   { key: 'updates', label: 'Actualizaciones' },
   { key: 'comments', label: 'Comentarios' },
 ]
 
-function CampaignTabs({ active, onChange }) {
+function CampaignTabs({ active, onChange, tabs }) {
   return (
     <nav className="cp-tabs">
-      {TABS.map(tab => (
+      {tabs.map(tab => (
         <button
           key={tab.key}
           className={`cp-tab ${active === tab.key ? 'active' : ''}`}
@@ -216,42 +356,165 @@ const TOC_ITEMS = [
   'Riesgos y desafíos',
 ]
 
-function CampaignContent({ campaign, activeTab, onContribute, contributeDisabledReason }) {
+function TeamMemberCard({ member }) {
+  const imageSrc = getEntityImageSrc(member)
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      member.onOpenCard?.(member)
+    }
+  }
+
+  return (
+    <article
+      className="cp-team-card"
+      onClick={() => member.onOpenCard?.(member)}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+    >
+      <div className="cp-team-avatar-wrap">
+        {imageSrc ? (
+          <img src={imageSrc} alt={member.name} className="cp-team-avatar" />
+        ) : (
+          <div className="cp-team-avatar cp-team-avatar--placeholder">
+            {(member.name || '?')[0]}
+          </div>
+        )}
+      </div>
+      <div className="cp-team-body">
+        <h3 className="cp-team-name">{member.name}</h3>
+        {member.role && <p className="cp-team-role">{member.role}</p>}
+        <DescriptionPreview text={member.bio} />
+      </div>
+    </article>
+  )
+}
+
+function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribute, contributeDisabledReason }) {
   const [activeToc, setActiveToc] = useState(0)
   const [sidebarAmount, setSidebarAmount] = useState(1)
+  const [expandedItem, setExpandedItem] = useState(null)
+  const leadMember = team[0] || null
+
+  const openRewardDescription = (reward) => {
+    setExpandedItem({
+      kind: 'reward',
+      title: reward.title,
+      description: reward.description,
+      imageBase64: reward.imageBase64,
+      imageS3Key: reward.imageS3Key,
+      imageUrl: reward.imageUrl,
+      price: reward.price,
+    })
+  }
+
+  const openTeamDescription = (member) => {
+    if (!member) return
+    setExpandedItem({
+      kind: 'team',
+      title: member.name,
+      role: member.role,
+      description: member.bio,
+      imageBase64: member.imageBase64,
+      imageS3Key: member.imageS3Key,
+      imageUrl: member.imageUrl,
+    })
+  }
 
   if (activeTab === 'rewards') {
     return (
-      <div className="cp-content-grid">
-        <div className="cp-main cp-main--full">
-          <h2>Recompensas disponibles</h2>
-          <p className="cp-placeholder-text">Las recompensas de esta campaña se mostrarán aquí.</p>
+      <>
+        <div className="cp-content-grid">
+          <div className="cp-main cp-main--full">
+            <h2>Recompensas disponibles</h2>
+            {rewards.length > 0 ? (
+              <>
+                <p className="cp-reward-intro">
+                  Cada tier representa un compromiso del creador: si aportás ese monto o más, recibís esa recompensa
+                  una vez finalizado el proyecto.
+                </p>
+                <div className="cp-rewards-grid">
+                  {rewards.map((reward) => (
+                    <RewardTierCard
+                      key={reward.id}
+                      reward={reward}
+                      onContribute={onContribute}
+                      onOpenCard={openRewardDescription}
+                      disabledReason={contributeDisabledReason}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="cp-placeholder-text">Esta campaña todavía no publicó recompensas.</p>
+            )}
+          </div>
         </div>
-      </div>
+        <DetailOverlay
+          item={expandedItem}
+          onClose={() => setExpandedItem(null)}
+          onContribute={onContribute}
+          disabledReason={contributeDisabledReason}
+        />
+      </>
     )
   }
 
-  if (activeTab === 'creator') {
+  if (activeTab === 'team') {
+    return (
+      <>
+        <div className="cp-content-grid">
+          <div className="cp-main cp-main--full">
+            <h2>Equipo del proyecto</h2>
+            {team.length > 0 ? (
+              <div className="cp-team-grid">
+                {team.map((member) => (
+                  <TeamMemberCard
+                    key={member.id}
+                    member={{ ...member, onOpenCard: openTeamDescription }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="cp-placeholder-text">Esta campaña todavía no publicó integrantes del equipo.</p>
+            )}
+          </div>
+        </div>
+        <DetailOverlay
+          item={expandedItem}
+          onClose={() => setExpandedItem(null)}
+          onContribute={onContribute}
+          disabledReason={contributeDisabledReason}
+        />
+      </>
+    )
+  }
+
+  if (activeTab === 'faq') {
     return (
       <div className="cp-content-grid">
         <div className="cp-main cp-main--full">
-          <h2>Sobre el creador</h2>
-          <div className="cp-creator-detail">
-            {campaign.creator?.avatar && (
-              <img src={campaign.creator.avatar} alt="" className="cp-creator-avatar-lg" />
-            )}
-            <div>
-              <h3>{campaign.creator?.name || 'Creador'}</h3>
-              <p className="cp-placeholder-text">Información del creador de esta campaña.</p>
-            </div>
+          <h2>Preguntas frecuentes</h2>
+          <div className="cp-faq-list">
+            {faqs.map((faq, index) => (
+              <article key={faq.id} className="cp-faq-card">
+                <div className="cp-faq-index">{String(index + 1).padStart(2, '0')}</div>
+                <div className="cp-faq-body">
+                  <h3 className="cp-faq-question">{faq.question}</h3>
+                  <p className="cp-faq-answer">{faq.answer}</p>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </div>
     )
   }
 
-  if (['faq', 'updates', 'comments'].includes(activeTab)) {
-    const labels = { faq: 'Preguntas frecuentes', updates: 'Actualizaciones', comments: 'Comentarios' }
+  if (['updates', 'comments'].includes(activeTab)) {
+    const labels = { updates: 'Actualizaciones', comments: 'Comentarios' }
     return (
       <div className="cp-content-grid">
         <div className="cp-main cp-main--full">
@@ -264,79 +527,126 @@ function CampaignContent({ campaign, activeTab, onContribute, contributeDisabled
 
   // Tab "campaign" (default)
   return (
-    <div className="cp-content-grid">
-      {/* TOC */}
-      <aside className="cp-toc">
-        <span className="cp-toc-title">Contenido</span>
-        {TOC_ITEMS.map((item, i) => (
-          <button
-            key={i}
-            className={`cp-toc-link ${activeToc === i ? 'active' : ''}`}
-            onClick={() => setActiveToc(i)}
-          >
-            {item}
-          </button>
-        ))}
-      </aside>
+    <>
+      <div className="cp-content-grid">
+        {/* TOC */}
+        <aside className="cp-toc">
+          <span className="cp-toc-title">Contenido</span>
+          {TOC_ITEMS.map((item, i) => (
+            <button
+              key={i}
+              className={`cp-toc-link ${activeToc === i ? 'active' : ''}`}
+              onClick={() => setActiveToc(i)}
+            >
+              {item}
+            </button>
+          ))}
+        </aside>
 
-      {/* Main content */}
-      <div className="cp-main">
-        <h2>Historia del proyecto</h2>
-        <div className="cp-content-image">
-          {campaign.imageUrl && <img src={campaign.imageUrl} alt="" />}
+        {/* Main content */}
+        <div className="cp-main">
+          <h2>Historia del proyecto</h2>
+          <div className="cp-content-image">
+            {campaign.imageUrl && <img src={campaign.imageUrl} alt="" />}
+          </div>
+          <p>{campaign.description || 'Descripción detallada de la campaña.'}</p>
+
+          <h2>Stretch Goals</h2>
+          <p className="cp-placeholder-text">Los stretch goals se irán desbloqueando a medida que se alcancen las metas.</p>
+
+          <h2>Cómo funciona</h2>
+          <p className="cp-placeholder-text">Información sobre el funcionamiento del proyecto y su desarrollo.</p>
+
+          <h2>Riesgos y desafíos</h2>
+          <p className="cp-placeholder-text">Transparencia sobre los riesgos identificados y las estrategias de mitigación.</p>
         </div>
-        <p>{campaign.description || 'Descripción detallada de la campaña.'}</p>
 
-        <h2>Stretch Goals</h2>
-        <p className="cp-placeholder-text">Los stretch goals se irán desbloqueando a medida que se alcancen las metas.</p>
+        {/* Sidebar */}
+        <aside className="cp-sidebar">
+          <div
+            className={`cp-creator-card ${leadMember ? 'cp-creator-card--clickable' : ''}`}
+            onClick={() => leadMember && openTeamDescription(leadMember)}
+            onKeyDown={(event) => {
+              if (!leadMember) return
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                openTeamDescription(leadMember)
+              }
+            }}
+            role={leadMember ? 'button' : undefined}
+            tabIndex={leadMember ? 0 : undefined}
+          >
+            {getEntityImageSrc(leadMember) ? (
+              <img src={getEntityImageSrc(leadMember)} alt="" className="cp-creator-avatar" />
+            ) : campaign.creator?.avatar ? (
+              <img src={campaign.creator.avatar} alt="" className="cp-creator-avatar" />
+            ) : (
+              <div className="cp-creator-avatar cp-creator-avatar--placeholder">
+                {(leadMember?.name || campaign.creator?.name || 'C')[0]}
+              </div>
+            )}
+            {leadMember && <span className="cp-creator-badge">Líder del proyecto</span>}
+            <span className="cp-creator-name">{leadMember?.name || campaign.creator?.name || 'Creador'}</span>
+            <span className="cp-creator-meta">{leadMember?.role || 'Creador del proyecto'}</span>
+          </div>
 
-        <h2>Cómo funciona</h2>
-        <p className="cp-placeholder-text">Información sobre el funcionamiento del proyecto y su desarrollo.</p>
+          <div className="cp-contribute-card">
+            <span className="cp-contribute-title">Contribuir sin recompensa</span>
+            <p className="cp-contribute-desc">Apoyá el proyecto simplemente porque te parece interesante.</p>
+            <div className="cp-amount-input">
+              <span className="cp-amount-prefix">ARS $</span>
+              <input
+                type="number"
+                value={sidebarAmount}
+                onChange={(e) => setSidebarAmount(Number(e.target.value))}
+                min={1}
+                className="cp-amount-field"
+              />
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              className="cp-contribute-btn"
+              onClick={() => onContribute(sidebarAmount)}
+              disabled={!!contributeDisabledReason}
+              title={contributeDisabledReason || undefined}
+            >
+              Aportar
+            </Button>
+          </div>
 
-        <h2>Riesgos y desafíos</h2>
-        <p className="cp-placeholder-text">Transparencia sobre los riesgos identificados y las estrategias de mitigación.</p>
-      </div>
-
-      {/* Sidebar */}
-      <aside className="cp-sidebar">
-        <div className="cp-creator-card">
-          {campaign.creator?.avatar ? (
-            <img src={campaign.creator.avatar} alt="" className="cp-creator-avatar" />
-          ) : (
-            <div className="cp-creator-avatar cp-creator-avatar--placeholder">
-              {(campaign.creator?.name || 'C')[0]}
+          {rewards.length > 0 && (
+            <div className="cp-reward-sidebar">
+              <div className="cp-reward-sidebar-header">
+                <Gift size={16} />
+                <span>Elegí una recompensa</span>
+              </div>
+              <p className="cp-reward-sidebar-copy">
+                Si aportás el monto indicado o uno mayor, el creador se compromete a entregarte esta recompensa.
+              </p>
+              <div className="cp-reward-sidebar-list">
+                {rewards.map((reward) => (
+                  <RewardTierCard
+                    key={reward.id}
+                    reward={reward}
+                    onContribute={onContribute}
+                    onOpenCard={openRewardDescription}
+                    compact
+                    disabledReason={contributeDisabledReason}
+                  />
+                ))}
+              </div>
             </div>
           )}
-          <span className="cp-creator-name">{campaign.creator?.name || 'Creador'}</span>
-          <span className="cp-creator-meta">Creador del proyecto</span>
-        </div>
-
-        <div className="cp-contribute-card">
-          <span className="cp-contribute-title">Contribuir sin recompensa</span>
-          <p className="cp-contribute-desc">Apoyá el proyecto simplemente porque te parece interesante.</p>
-          <div className="cp-amount-input">
-            <span className="cp-amount-prefix">ARS $</span>
-            <input
-              type="number"
-              value={sidebarAmount}
-              onChange={(e) => setSidebarAmount(Number(e.target.value))}
-              min={1}
-              className="cp-amount-field"
-            />
-          </div>
-          <Button
-            variant="primary"
-            size="sm"
-            className="cp-contribute-btn"
-            onClick={() => onContribute(sidebarAmount)}
-            disabled={!!contributeDisabledReason}
-            title={contributeDisabledReason || undefined}
-          >
-            Aportar
-          </Button>
-        </div>
-      </aside>
-    </div>
+        </aside>
+      </div>
+      <DetailOverlay
+        item={expandedItem}
+        onClose={() => setExpandedItem(null)}
+        onContribute={onContribute}
+        disabledReason={contributeDisabledReason}
+      />
+    </>
   )
 }
 
@@ -347,11 +657,19 @@ export default function CampaignPage() {
   const navigate = useNavigate()
   const { user } = useUser()
   const [campaign, setCampaign] = useState(null)
+  const [rewards, setRewards] = useState([])
+  const [team, setTeam] = useState([])
+  const [faqs, setFaqs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('campaign')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalAmount, setModalAmount] = useState(1)
+
+  const tabs = TABS.filter(tab => {
+    if (tab.key === 'faq') return faqs.length > 0
+    return true
+  })
 
   function openModal(amount = 1) {
     setModalAmount(amount)
@@ -368,14 +686,32 @@ export default function CampaignPage() {
   useEffect(() => {
     setLoading(true)
     setError(null)
-    campaignService.getCampaignById(id)
-      .then(data => {
+    Promise.all([
+      campaignService.getCampaignById(id),
+      api.get(`/api/campaigns/${id}/rewards`).catch(() => []),
+      api.get(`/api/campaigns/${id}/team`).catch(() => []),
+      api.get(`/api/campaigns/${id}/faqs`).catch(() => []),
+    ])
+      .then(([data, rewardsData, teamData, faqsData]) => {
         if (!data) throw new Error('Campaña no encontrada')
         setCampaign(data)
+        setRewards(normalizeRewards(rewardsData))
+        setTeam([...(Array.isArray(teamData) ? teamData : [])].sort(
+          (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+        ))
+        setFaqs([...(Array.isArray(faqsData) ? faqsData : [])].sort(
+          (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+        ))
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    if (activeTab === 'faq' && faqs.length === 0) {
+      setActiveTab('campaign')
+    }
+  }, [activeTab, faqs.length])
 
   if (loading) {
     return (
@@ -418,9 +754,12 @@ export default function CampaignPage() {
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
               />
-              <CampaignTabs active={activeTab} onChange={setActiveTab} />
+              <CampaignTabs active={activeTab} onChange={setActiveTab} tabs={tabs} />
               <CampaignContent
                 campaign={campaign}
+                rewards={rewards}
+                team={team}
+                faqs={faqs}
                 activeTab={activeTab}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}

@@ -3,6 +3,7 @@ import { Save, Upload, X, GripVertical, ArrowLeft, ArrowRight, Image as ImageIco
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
+import { getMediaImageSrc } from '$utils/imageSources'
 import { MAX_IMAGE_BYTES, CROP_ASPECT } from '../campaignFormUtils'
 
 // Gallery cap — 6 images, on top of the mandatory cover (managed in Básicos)
@@ -15,12 +16,6 @@ function fileToBase64(file) {
     reader.onerror = reject
     reader.readAsDataURL(file)
   })
-}
-
-function mediaSrc(m) {
-  if (m.previewUrl) return m.previewUrl
-  if (m.base64Data) return `data:image/jpeg;base64,${m.base64Data}`
-  return m.url || ''
 }
 
 /**
@@ -188,6 +183,7 @@ export default function SectionMidia({ campaign, onSaved }) {
       <p className="edc-historia-intro" style={{ marginBottom: 0 }}>
         Sumá un <strong>video</strong> de YouTube/Vimeo y hasta{' '}
         <strong>{MAX_GALLERY} imágenes</strong> de galería (máx. 10 MB c/u, se recortan a 16:9).
+        Estas imágenes aparecerán en el <strong>carrusel de fotos</strong> de la campaña.
         El orden se respeta tal cual se ve abajo — arrastrá las tarjetas para reordenarlas.
       </p>
 
@@ -218,7 +214,7 @@ export default function SectionMidia({ campaign, onSaved }) {
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(idx)}
             >
-              <img src={mediaSrc(g)} alt={`Imagen ${idx + 1}`} />
+              <img src={getMediaImageSrc(g)} alt={`Imagen ${idx + 1}`} />
               <span className="midia-thumb-order">{idx + 1}</span>
               <button className="midia-thumb-handle" title="Arrastrá para reordenar" type="button">
                 <GripVertical size={14} />
@@ -267,6 +263,7 @@ export default function SectionMidia({ campaign, onSaved }) {
 
       {cropQueue.length > 0 && (
         <ImageCropModal
+          key={cropQueue[0]}
           src={cropQueue[0]}
           aspect={CROP_ASPECT}
           fileName="galeria.jpg"

@@ -36,6 +36,12 @@ public class Reward {
     @Column(name = "image_base64", columnDefinition = "TEXT")
     private String imageBase64;
 
+    @Column(name = "image_s3_key", length = 500)
+    private String imageS3Key;
+
+    @Transient
+    private String imageUrl;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -49,6 +55,8 @@ public class Reward {
     public Integer getDisplayOrder() { return displayOrder; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public String getImageBase64() { return imageBase64; }
+    public String getImageS3Key() { return imageS3Key; }
+    public String getImageUrl() { return imageUrl; }
 
     public void setCampaign(Campaign campaign) { this.campaign = campaign; }
     public void setTitle(String title) { this.title = title; }
@@ -56,5 +64,7 @@ public class Reward {
     public void setPrice(BigDecimal price) { this.price = price; }
     public void setDisplayOrder(Integer displayOrder) { this.displayOrder = displayOrder; }
     public void setImageBase64(String imageBase64) { this.imageBase64 = imageBase64; }
+    public void setImageS3Key(String imageS3Key) { this.imageS3Key = imageS3Key; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
 }

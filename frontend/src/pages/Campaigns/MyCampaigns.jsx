@@ -4,12 +4,13 @@ import { Plus, ChevronLeft, ChevronRight, Clock, Users, TrendingUp, Rocket, Penc
 import { Button } from '$components/ui'
 import { useUser } from '../../store/useUser'
 import api from '$utils/api/api'
+import { getMediaImageSrc } from '$utils/imageSources'
 
 function normalizeCampaign(c) {
   const primary = c.media?.find(m => m.isPrimary) || c.media?.[0]
   let imageUrl = '/crowdfunding-campaign.jpg'
-  if (primary?.base64Data) imageUrl = `data:image/jpeg;base64,${primary.base64Data}`
-  else if (primary?.url) imageUrl = primary.url
+  const primaryImage = getMediaImageSrc(primary)
+  if (primaryImage) imageUrl = primaryImage
   else if (c.imageUrl) imageUrl = c.imageUrl
 
   return {
@@ -209,7 +210,7 @@ function MyCampaigns() {
 
       {active && (
         <section className="container mc-featured-section">
-          <a href={`/campaigns/${active.id}`} className="mc-featured">
+          <a href={`/campaigns/${active.id}/edit`} className="mc-featured">
             <div className="mc-featured-image">
               <img src={active.imageUrl} alt={active.title} />
               <span className="mc-featured-status">
@@ -300,7 +301,7 @@ function MyCampaigns() {
             renderItem={(c) => {
               const p = c.goal > 0 ? Math.min((c.raised / c.goal) * 100, 100) : 0
               return (
-                <a key={c.id} href={`/campaigns/${c.id}`} className="mc-mini-card">
+                <a key={c.id} href={`/campaigns/${c.id}/edit`} className="mc-mini-card">
                   <div className="mc-mini-image">
                     <img src={c.imageUrl} alt={c.title} />
                   </div>
