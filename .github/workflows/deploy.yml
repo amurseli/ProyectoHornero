@@ -57,7 +57,14 @@ jobs:
 
       - name: Write frontend env file
         if: needs.detect.outputs[matrix.service] == 'true' && matrix.service == 'frontend'
-        run: echo "${{ secrets.FRONTEND_ENV }}" > ./frontend/.env.frontend
+        env:
+          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
+        run: |
+          printf '%s\n' "$FRONTEND_ENV" > ./frontend/.env.frontend
+          echo "--- .env.frontend size and line count ---"
+          wc -lc ./frontend/.env.frontend
+          echo "--- variable names only (no values) ---"
+          grep -oE '^[A-Z_]+' ./frontend/.env.frontend || echo "EMPTY FILE"
       
       - uses: docker/build-push-action@v5
         if: needs.detect.outputs[matrix.service] == 'true'
