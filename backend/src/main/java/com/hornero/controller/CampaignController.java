@@ -101,12 +101,21 @@ public class CampaignController {
 
     // PUT /api/campaigns/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<Campaign> updateCampaign(@PathVariable Long id, @RequestBody Campaign campaignDetails) {
+    public ResponseEntity<?> updateCampaign(@PathVariable Long id, @RequestBody Campaign campaignDetails, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        String userRole = (String) request.getAttribute("userRole");
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         try {
-            Campaign updated = campaignService.updateCampaign(id, campaignDetails);
+            Campaign updated = campaignService.updateCampaign(id, campaignDetails, userId, userRole);
             return ResponseEntity.ok(updated);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         }
     }
 

@@ -75,19 +75,31 @@ public class CampaignService {
     }
 
     @Transactional
-    public Campaign updateCampaign(Long id, Campaign details) {
+    public Campaign updateCampaign(Long id, Campaign details, Long requestingUserId, String requestingUserRole) {
         Campaign existing = campaignRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
+
+        boolean isAdmin = "ADMIN".equals(requestingUserRole);
+        boolean isOwner = requestingUserId != null
+                && existing.getOwner() != null
+                && existing.getOwner().getId().equals(requestingUserId);
+        if (!isAdmin && !isOwner) {
+            throw new SecurityException("No tenés permiso para editar esta campaña");
+        }
+
+        boolean draftCampaign = "DRAFT".equals(existing.getStatus());
 
         existing.setTitle(details.getTitle());
         existing.setDescription(details.getDescription());
         existing.setShortDescription(details.getShortDescription());
-        existing.setStatus(details.getStatus());
-        existing.setStartDate(details.getStartDate());
-        existing.setEndDate(details.getEndDate());
-        existing.setTargetAmount(details.getTargetAmount());
-        existing.setOwner(details.getOwner());
         existing.setCategory(details.getCategory());
+        existing.setCountry(details.getCountry());
+
+        if (draftCampaign) {
+            existing.setStartDate(details.getStartDate());
+            existing.setEndDate(details.getEndDate());
+            existing.setTargetAmount(details.getTargetAmount());
+        }
 
         // Replace the media collection when the request supplies one.
         // The collection is mutated in place (orphanRemoval handles deletions)

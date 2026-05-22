@@ -34,7 +34,7 @@ function fileToBase64(file) {
   })
 }
 
-export default function SectionBasicos({ campaign, onSaved }) {
+export default function SectionBasicos({ campaign, onSaved, disableImmutableFields = false }) {
   // ── reference data (fetched once) ──────────────────────────────────────
   const [categories, setCategories] = useState([])
   const [countries, setCountries]   = useState([{ code: 'AR', name: 'Argentina' }])
@@ -119,6 +119,7 @@ export default function SectionBasicos({ campaign, onSaved }) {
 
   const durationNum = Math.min(DURATION_MAX, Math.max(DURATION_MIN, Number(form.duration) || DURATION_MIN))
   const previewEndDate = new Date(Date.now() + durationNum * 86400000)
+  const immutableFieldsLocked = disableImmutableFields && campaign.status !== 'DRAFT'
 
   const goalNum = parseAmount(form.goal)
   const goalError =
@@ -161,14 +162,16 @@ export default function SectionBasicos({ campaign, onSaved }) {
 
       const startISO = campaign.startDate || new Date().toISOString().split('T')[0]
       const startDate = new Date(startISO)
-      const endISO = new Date(startDate.getTime() + durationNum * 86400000).toISOString().split('T')[0]
+      const endISO = immutableFieldsLocked
+        ? campaign.endDate
+        : new Date(startDate.getTime() + durationNum * 86400000).toISOString().split('T')[0]
 
       await api.put(`/api/campaigns/${campaign.id}`, {
         title: form.title.trim(),
         shortDescription: form.shortDescription.trim(),
         description: campaign.description || '',
         country: form.country,
-        targetAmount: parseAmount(form.goal),
+        targetAmount: immutableFieldsLocked ? campaign.targetAmount : parseAmount(form.goal),
         startDate: startISO,
         endDate: endISO,
         status: campaign.status,
@@ -264,6 +267,7 @@ export default function SectionBasicos({ campaign, onSaved }) {
             max={DURATION_MAX}
             step={1}
             value={form.duration}
+            disabled={immutableFieldsLocked}
             onChange={e => onChange('duration', sanitizeDuration(e.target.value))}
             onBlur={e => {
               const n = Number(e.target.value)
@@ -271,23 +275,28 @@ export default function SectionBasicos({ campaign, onSaved }) {
             }}
           />
           <span className="edc-hint edc-hint--left">
-            Si publicás hoy, finaliza el <strong>{formatDateAr(previewEndDate)}</strong>
+            {immutableFieldsLocked
+              ? <>La duración queda fija después de publicar la campaña. Finaliza el <strong>{formatDateAr(campaign.endDate)}</strong></>
+              : <>Si publicás hoy, finaliza el <strong>{formatDateAr(previewEndDate)}</strong></>}
           </span>
         </div>
         <div className="edc-field">
           <label className="edc-label">Meta <span className="edc-optional">(monto objetivo a recaudar)</span></label>
-          <div className="edc-input-prefix">
+          <div className={`edc-input-prefix ${immutableFieldsLocked ? 'edc-input-prefix--disabled' : ''}`}>
             <span className="edc-prefix-symbol">{currency.symbol}</span>
             <input
               type="text"
               inputMode="decimal"
               placeholder="100.000"
               value={form.goal}
+              disabled={immutableFieldsLocked}
               onChange={e => onChange('goal', formatAmountInput(e.target.value))}
             />
           </div>
           <span className="edc-hint edc-hint--left">
-            En pesos argentinos por el momento · entre {formatMoney(GOAL_MIN, currency.symbol)} y {formatMoney(GOAL_MAX, currency.symbol)}
+            {immutableFieldsLocked
+              ? 'La meta no se puede modificar una vez publicada la campaña.'
+              : `En pesos argentinos por el momento · entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}`}
           </span>
           {goalError && <span className="edc-hint edc-hint--left" style={{ color: '#c44' }}>{goalError}</span>}
         </div>

@@ -123,7 +123,7 @@ function SectionContent({ sectionKey, campaign, onSaved, isCreator }) {
   if (sectionKey === 'basicos') {
     return (
       <div className="edc-section-content">
-        <SectionBasicos campaign={campaign} onSaved={onSaved} />
+        <SectionBasicos campaign={campaign} onSaved={onSaved} disableImmutableFields={campaign.status !== 'DRAFT'} />
       </div>
     )
   }
@@ -234,15 +234,11 @@ export default function EditDraftCampaign() {
     ])
       .then(([data, rewards, team]) => {
         if (!data) throw new Error('Campaña no encontrada')
-        if (data.status !== 'DRAFT') {
-          navigate(`/campaigns/${id}`)
-          return
-        }
         setCampaign({ ...data, rewards: rewards || [], team: team || [] })
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, [id, navigate])
+  }, [id])
 
   const refreshCampaign = async () => {
     try {
@@ -283,7 +279,7 @@ export default function EditDraftCampaign() {
       <div className="edc-page">
         <div className="edc-loading">
           <div className="edc-spinner" />
-          <p>Cargando borrador...</p>
+          <p>Cargando campaña...</p>
         </div>
       </div>
     )
@@ -293,7 +289,7 @@ export default function EditDraftCampaign() {
     return (
       <div className="edc-page">
         <div className="edc-error">
-          <h2>No se pudo cargar el borrador</h2>
+          <h2>No se pudo cargar la campaña</h2>
           <p>{error || 'La campaña no existe o fue eliminada.'}</p>
           <Button variant="secondary" onClick={() => navigate('/campaigns')}>
             <ArrowLeft size={16} /> Volver a campañas
@@ -312,7 +308,9 @@ export default function EditDraftCampaign() {
 
         <div className="edc-header">
           <h1 className="edc-title">{campaign.title || 'Campaña sin título'}</h1>
-          <span className="edc-badge">Borrador</span>
+          <span className="edc-badge">
+            {campaign.status === 'DRAFT' ? 'Borrador' : 'Edición'}
+          </span>
         </div>
 
         <SectionGroup
@@ -334,20 +332,22 @@ export default function EditDraftCampaign() {
           onSaved={refreshCampaign}
         />
 
-        <div className="edc-publish">
-          <Button
-            variant="primary"
-            size="lg"
-            disabled={!allRequiredComplete || publishing}
-            onClick={handlePublish}
-          >
-            <Send size={16} />
-            {publishing ? 'Publicando...' : 'Lanzar campaña'}
-          </Button>
-          {!allRequiredComplete && (
-            <p className="edc-publish-hint">Completá todas las secciones obligatorias para poder publicar.</p>
-          )}
-        </div>
+        {campaign.status === 'DRAFT' && (
+          <div className="edc-publish">
+            <Button
+              variant="primary"
+              size="lg"
+              disabled={!allRequiredComplete || publishing}
+              onClick={handlePublish}
+            >
+              <Send size={16} />
+              {publishing ? 'Publicando...' : 'Lanzar campaña'}
+            </Button>
+            {!allRequiredComplete && (
+              <p className="edc-publish-hint">Completá todas las secciones obligatorias para poder publicar.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
