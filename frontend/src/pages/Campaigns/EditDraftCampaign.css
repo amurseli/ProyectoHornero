@@ -909,6 +909,22 @@
   padding: 1rem 1.25rem;
 }
 
+.tms-drop-target {
+  position: relative;
+}
+
+.tms-drop-target::before {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  top: -0.45rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(217, 79, 48, 0.7), rgba(244, 188, 163, 0.9));
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.9);
+}
+
 .tms-avatar {
   width: 88px;
   height: 88px;
@@ -934,6 +950,18 @@
 }
 
 .tms-card-body { min-width: 0; }
+.tms-leader-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  margin-bottom: 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary, #D94F30) 10%, white);
+  color: var(--color-primary, #D94F30);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
 .tms-card-name {
   margin: 0 0 0.15rem;
   font-size: 1.05rem;

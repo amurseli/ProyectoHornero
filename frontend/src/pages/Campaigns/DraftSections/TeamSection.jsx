@@ -161,7 +161,7 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
   )
 }
 
-function MemberCard({ member, index, total, onEdit, onDelete, onMoveUp, onMoveDown, disabled }) {
+function MemberCard({ member, index, total, onEdit, onDelete, onMoveUp, onMoveDown, disabled, isLeader = false }) {
   const imgSrc = member.imageBase64 ? `data:image/jpeg;base64,${member.imageBase64}` : null
 
   return (
@@ -170,6 +170,7 @@ function MemberCard({ member, index, total, onEdit, onDelete, onMoveUp, onMoveDo
         {imgSrc ? <img src={imgSrc} alt={member.name} /> : <User size={26} />}
       </div>
       <div className="tms-card-body">
+        {isLeader && <span className="tms-leader-tag">Líder del proyecto</span>}
         <h4 className="tms-card-name">{member.name}</h4>
         {member.role && <p className="tms-card-role">{member.role}</p>}
         {member.bio && <p className="tms-card-bio">{member.bio}</p>}
@@ -306,7 +307,8 @@ export default function SectionTeam({ campaign, onSaved }) {
           llevarlo adelante.
         </p>
         <p>
-          Agregá al menos a la persona responsable. Para cada integrante podés indicar su
+          El <strong>primer integrante</strong> se toma como la persona líder o creadora principal del proyecto.
+          Ese perfil se destacará públicamente en la campaña. Para cada integrante podés indicar su
           <strong> nombre</strong>, su <strong>rol</strong> y una breve <strong>biografía</strong>.
         </p>
       </div>
@@ -338,6 +340,7 @@ export default function SectionTeam({ campaign, onSaved }) {
                   member={member}
                   index={i}
                   total={team.length}
+                  isLeader={i === 0}
                   onEdit={() => setEditingId(member.id)}
                   onDelete={() => handleDelete(member)}
                   onMoveUp={() => handleSwap(i, i - 1)}

@@ -7,7 +7,7 @@ import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
 import { MAX_IMAGE_BYTES, CROP_ASPECT } from '../campaignFormUtils'
 
 const TITLE_MAX = 200
-const DESC_SOFT_LIMIT = 500
+const DESC_MAX = 600
 
 const priceFormatter = new Intl.NumberFormat('es-AR', {
   style: 'currency', currency: 'ARS', maximumFractionDigits: 0,
@@ -35,6 +35,7 @@ function validate(form) {
   if (form.price === '' || form.price === null || form.price === undefined) errors.price = 'El precio es obligatorio'
   else if (Number.isNaN(Number(form.price))) errors.price = 'Precio inválido'
   else if (Number(form.price) <= 0) errors.price = 'El precio debe ser mayor a cero'
+  if (form.description && form.description.length > DESC_MAX) errors.description = `Máximo ${DESC_MAX} caracteres`
   return errors
 }
 
@@ -154,15 +155,16 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
       <div className="edc-field">
         <label className="edc-label">Descripción</label>
         <textarea
-          className="edc-textarea"
+          className={`edc-textarea ${errors.description ? 'edc-input--error' : ''}`}
           rows={4}
+          maxLength={DESC_MAX}
           placeholder="Detallá qué incluye esta recompensa, fechas estimadas de entrega, etc."
           value={form.description}
           onChange={e => onChange('description', e.target.value)}
         />
+        {errors.description && <span className="edc-error"><AlertCircle size={12} /> {errors.description}</span>}
         <span className="edc-hint">
-          {form.description.length} caracteres
-          {form.description.length > DESC_SOFT_LIMIT && ` — considerá acortar`}
+          {form.description.length}/{DESC_MAX} caracteres
         </span>
       </div>
 
