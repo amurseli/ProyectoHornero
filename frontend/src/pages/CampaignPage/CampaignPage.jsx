@@ -3,17 +3,54 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { campaignService } from '$utils/campaignService'
 import { Button } from '$components/ui'
 import ContributionModal from '$components/ContributionModal/ContributionModal'
+import api from '$utils/api/api'
 import { useUser } from '../../store/useUser'
-import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Clock, Users, MapPin, Tag } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Users, Tag, Gift } from 'lucide-react'
 import './CampaignPage.css'
 
 function formatCurrency(amount) {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
 }
 
 function getProgress(current, goal) {
   if (!goal || goal <= 0) return 0
   return Math.min(100, Math.round((current / goal) * 100))
+}
+
+function normalizeRewards(rewards) {
+  return [...(Array.isArray(rewards) ? rewards : [])].sort(
+    (a, b) => Number(a.price ?? 0) - Number(b.price ?? 0) || (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+  )
+}
+
+function RewardTierCard({ reward, onContribute, compact = false, disabledReason = null }) {
+  const imageSrc = reward.imageBase64 ? `data:image/jpeg;base64,${reward.imageBase64}` : null
+
+  return (
+    <article className={`cp-reward-card ${compact ? 'cp-reward-card--compact' : ''}`}>
+      {imageSrc && (
+        <div className="cp-reward-image-wrap">
+          <img src={imageSrc} alt={reward.title} className="cp-reward-image" />
+        </div>
+      )}
+      <div className="cp-reward-body">
+        <div className="cp-reward-price">{formatCurrency(reward.price || 0)}</div>
+        <h3 className="cp-reward-title">{reward.title}</h3>
+        {reward.description && <p className="cp-reward-description">{reward.description}</p>}
+        <Button
+          variant="primary"
+          size={compact ? 'sm' : 'md'}
+          className="cp-reward-btn"
+          onClick={() => onContribute(Number(reward.price) || 1)}
+          disabled={!!disabledReason}
+          title={disabledReason || undefined}
+        >
+          Elegir {formatCurrency(reward.price || 0)}
+        </Button>
+        {disabledReason && <p className="cp-reward-disabled">{disabledReason}</p>}
+      </div>
+    </article>
+  )
 }
 
 /* ─── Hero: media carousel + stats panel ─── */
@@ -216,7 +253,7 @@ const TOC_ITEMS = [
   'Riesgos y desafíos',
 ]
 
-function CampaignContent({ campaign, activeTab, onContribute, contributeDisabledReason }) {
+function CampaignContent({ campaign, rewards, activeTab, onContribute, contributeDisabledReason }) {
   const [activeToc, setActiveToc] = useState(0)
   const [sidebarAmount, setSidebarAmount] = useState(1)
 
@@ -225,7 +262,26 @@ function CampaignContent({ campaign, activeTab, onContribute, contributeDisabled
       <div className="cp-content-grid">
         <div className="cp-main cp-main--full">
           <h2>Recompensas disponibles</h2>
-          <p className="cp-placeholder-text">Las recompensas de esta campaña se mostrarán aquí.</p>
+          {rewards.length > 0 ? (
+            <>
+              <p className="cp-reward-intro">
+                Cada tier representa un compromiso del creador: si aportás ese monto o más, recibís esa recompensa
+                una vez finalizado el proyecto.
+              </p>
+              <div className="cp-rewards-grid">
+                {rewards.map((reward) => (
+                  <RewardTierCard
+                    key={reward.id}
+                    reward={reward}
+                    onContribute={onContribute}
+                    disabledReason={contributeDisabledReason}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="cp-placeholder-text">Esta campaña todavía no publicó recompensas.</p>
+          )}
         </div>
       </div>
     )
@@ -335,6 +391,29 @@ function CampaignContent({ campaign, activeTab, onContribute, contributeDisabled
             Aportar
           </Button>
         </div>
+
+        {rewards.length > 0 && (
+          <div className="cp-reward-sidebar">
+            <div className="cp-reward-sidebar-header">
+              <Gift size={16} />
+              <span>Elegí una recompensa</span>
+            </div>
+            <p className="cp-reward-sidebar-copy">
+              Si aportás el monto indicado o uno mayor, el creador se compromete a entregarte esta recompensa.
+            </p>
+            <div className="cp-reward-sidebar-list">
+              {rewards.map((reward) => (
+                <RewardTierCard
+                  key={reward.id}
+                  reward={reward}
+                  onContribute={onContribute}
+                  compact
+                  disabledReason={contributeDisabledReason}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </aside>
     </div>
   )
@@ -347,6 +426,7 @@ export default function CampaignPage() {
   const navigate = useNavigate()
   const { user } = useUser()
   const [campaign, setCampaign] = useState(null)
+  const [rewards, setRewards] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('campaign')
@@ -368,10 +448,14 @@ export default function CampaignPage() {
   useEffect(() => {
     setLoading(true)
     setError(null)
-    campaignService.getCampaignById(id)
-      .then(data => {
+    Promise.all([
+      campaignService.getCampaignById(id),
+      api.get(`/api/campaigns/${id}/rewards`).catch(() => []),
+    ])
+      .then(([data, rewardsData]) => {
         if (!data) throw new Error('Campaña no encontrada')
         setCampaign(data)
+        setRewards(normalizeRewards(rewardsData))
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
@@ -421,6 +505,7 @@ export default function CampaignPage() {
               <CampaignTabs active={activeTab} onChange={setActiveTab} />
               <CampaignContent
                 campaign={campaign}
+                rewards={rewards}
                 activeTab={activeTab}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}

@@ -377,6 +377,96 @@
   font-style: italic;
 }
 
+.cp-reward-intro {
+  max-width: 760px;
+}
+
+.cp-rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 360px));
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+  justify-content: start;
+}
+
+.cp-reward-card {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.04);
+}
+
+.cp-reward-card--compact {
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.cp-reward-image-wrap {
+  aspect-ratio: 16 / 9;
+  background: var(--color-muted);
+}
+
+.cp-reward-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cp-reward-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: var(--space-lg);
+}
+
+.cp-reward-card--compact .cp-reward-body {
+  padding: var(--space-md);
+}
+
+.cp-reward-price {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.cp-reward-title {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.cp-reward-description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.cp-reward-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.cp-reward-btn {
+  width: 100%;
+  margin-top: auto;
+}
+
+.cp-reward-disabled {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 /* ── Sidebar ── */
 
 .cp-sidebar {
@@ -488,6 +578,36 @@
   margin-top: 0.5rem;
 }
 
+.cp-reward-sidebar {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+.cp-reward-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.cp-reward-sidebar-copy {
+  margin: 0.5rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.cp-reward-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
 /* ── Loading / Error ── */
 
 .cp-loading,
@@ -538,8 +658,14 @@
   .cp-content-grid {
     grid-template-columns: 1fr;
   }
+  .cp-rewards-grid {
+    grid-template-columns: 1fr;
+  }
   .cp-sidebar {
     position: static;
+  }
+  .cp-main--full {
+    grid-column: auto;
   }
   .cp-title { font-size: var(--font-size-2xl); }
 }
