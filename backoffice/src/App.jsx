@@ -7,6 +7,7 @@ import Verifications from './pages/Verifications/Verifications.jsx'
 function App() {
   return (
     <UserProvider>
+      <BrowserRouter basename="/backoffice"></BrowserRouter>
       <Router>
         <Routes>
           {/* Public */}
