@@ -309,7 +309,7 @@ function StepRevision({ form, currency }) {
         <div className="wizard-review-section-title">Pasos siguientes</div>
         <p className="wizard-review-desc">
           Después de guardar el borrador vas a poder completar la <strong>historia</strong>,
-          la <strong>galería y el video</strong> (sección "Midia"), las recompensas y el
+          la <strong>galería y el video</strong> (sección "Media"), las recompensas y el
           resto del contenido desde la página de edición.
         </p>
       </div>

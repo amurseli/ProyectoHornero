@@ -4,12 +4,13 @@ import { Plus, ChevronLeft, ChevronRight, Clock, Users, TrendingUp, Rocket, Penc
 import { Button } from '$components/ui'
 import { useUser } from '../../store/useUser'
 import api from '$utils/api/api'
+import { getMediaImageSrc } from '$utils/imageSources'
 
 function normalizeCampaign(c) {
   const primary = c.media?.find(m => m.isPrimary) || c.media?.[0]
   let imageUrl = '/crowdfunding-campaign.jpg'
-  if (primary?.base64Data) imageUrl = `data:image/jpeg;base64,${primary.base64Data}`
-  else if (primary?.url) imageUrl = primary.url
+  const primaryImage = getMediaImageSrc(primary)
+  if (primaryImage) imageUrl = primaryImage
   else if (c.imageUrl) imageUrl = c.imageUrl
 
   return {

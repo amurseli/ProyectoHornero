@@ -1,3 +1,5 @@
+import { getMediaImageSrc } from './imageSources'
+
 const API_URL = import.meta.env.VITE_API_URL || ""
 
 function normalizeCampaign(campaign) {
@@ -5,8 +7,8 @@ function normalizeCampaign(campaign) {
     ...campaign,
     imageUrl: (() => {
       const primary = campaign.media?.find(m => m.isPrimary) || campaign.media?.[0]
-      if (primary?.base64Data) return `data:image/jpeg;base64,${primary.base64Data}`
-      if (primary?.url) return primary.url
+      const imageSrc = getMediaImageSrc(primary)
+      if (imageSrc) return imageSrc
       return campaign.imageUrl || "/crowdfunding-campaign.jpg"
     })(),
     goal: campaign.targetAmount || campaign.goal || 0,

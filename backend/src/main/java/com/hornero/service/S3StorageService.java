@@ -12,8 +12,10 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import jakarta.annotation.PostConstruct;
+import java.net.InetAddress;
 import java.net.URL;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -31,8 +33,18 @@ public class S3StorageService {
     @Value("${aws.s3.secret-key}")
     private String secretKey;
 
+    @Value("${aws.s3.root-prefix:}")
+    private String configuredRootPrefix;
+
+    @Value("${app.environment:local}")
+    private String appEnvironment;
+
+    @Value("${app.instance-id:}")
+    private String appInstanceId;
+
     private S3Client s3Client;
     private S3Presigner s3Presigner;
+    private String rootPrefix;
 
     @PostConstruct
     public void init() {
@@ -48,6 +60,8 @@ public class S3StorageService {
                 .region(Region.of(region))
                 .credentialsProvider(credentialsProvider)
                 .build();
+
+        rootPrefix = resolveRootPrefix();
     }
 
     /**
@@ -56,8 +70,24 @@ public class S3StorageService {
      */
     public String uploadIdentityDocument(Long userId, String documentType, byte[] fileContent, String contentType) {
         String extension = getExtensionFromContentType(contentType);
-        String key = String.format("identity-docs/%d/%s-%s.%s",
-                userId, documentType, UUID.randomUUID().toString(), extension);
+        String key = prefixedKey(String.format("identity-docs/%d/%s-%s.%s",
+                userId, documentType, UUID.randomUUID().toString(), extension));
+
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .contentType(contentType)
+                .serverSideEncryption(ServerSideEncryption.AES256)
+                .build();
+
+        s3Client.putObject(putRequest, RequestBody.fromBytes(fileContent));
+        return key;
+    }
+
+    public String uploadAppImage(String folder, byte[] fileContent, String contentType) {
+        String extension = getExtensionFromContentType(contentType);
+        String safeFolder = (folder == null || folder.isBlank()) ? "media" : folder.replaceAll("^/+", "").replaceAll("/+$", "");
+        String key = prefixedKey(String.format("%s/%s.%s", safeFolder, UUID.randomUUID(), extension));
 
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
@@ -107,5 +137,50 @@ public class S3StorageService {
             case "image/webp" -> "webp";
             default -> "bin";
         };
+    }
+
+    private String prefixedKey(String key) {
+        if (rootPrefix == null || rootPrefix.isBlank()) return key;
+        return rootPrefix + "/" + key;
+    }
+
+    private String resolveRootPrefix() {
+        String explicit = sanitizePathSegment(configuredRootPrefix);
+        if (explicit != null && !explicit.isBlank()) return explicit;
+
+        String environment = appEnvironment == null ? "local" : appEnvironment.trim().toLowerCase(Locale.ROOT);
+        if (environment.equals("prod") || environment.equals("production")) {
+            return "production";
+        }
+
+        String instance = sanitizePathSegment(appInstanceId);
+        if (instance != null && !instance.isBlank()) {
+            return "test-" + instance;
+        }
+
+        String hostName = resolveHostName();
+        return "test-" + sanitizePathSegment(hostName);
+    }
+
+    private String resolveHostName() {
+        try {
+            String host = InetAddress.getLocalHost().getHostName();
+            if (host != null && !host.isBlank()) return host;
+        } catch (Exception ignored) {
+        }
+        String envHost = System.getenv("HOSTNAME");
+        if (envHost != null && !envHost.isBlank()) return envHost;
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private String sanitizePathSegment(String value) {
+        if (value == null) return null;
+        String sanitized = value.trim()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("^/+", "")
+                .replaceAll("/+$", "")
+                .replaceAll("[^a-z0-9._/-]+", "-")
+                .replaceAll("-{2,}", "-");
+        return sanitized.isBlank() ? null : sanitized;
     }
 }

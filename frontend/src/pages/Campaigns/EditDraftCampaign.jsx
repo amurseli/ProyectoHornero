@@ -49,7 +49,7 @@ const REQUIRED_SECTIONS = [
 const OPTIONAL_SECTIONS = [
   {
     key: 'midia',
-    title: 'Midia',
+    title: 'Media',
     subtitle: 'Video y galería de imágenes (hasta 6, máx. 10 MB cada una).',
     icon: Film,
     // Optional section: marked "complete" once a video or gallery image exists.

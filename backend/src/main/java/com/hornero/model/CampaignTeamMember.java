@@ -29,11 +29,17 @@ public class CampaignTeamMember {
     @Column(name = "image_base64", columnDefinition = "TEXT")
     private String imageBase64;
 
+    @Column(name = "image_s3_key", length = 500)
+    private String imageS3Key;
+
     @Column(name = "display_order")
     private Integer displayOrder = 0;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Transient
+    private String imageUrl;
 
     @PrePersist
     protected void onCreate() {
@@ -46,13 +52,17 @@ public class CampaignTeamMember {
     public String getRole() { return role; }
     public String getBio() { return bio; }
     public String getImageBase64() { return imageBase64; }
+    public String getImageS3Key() { return imageS3Key; }
     public Integer getDisplayOrder() { return displayOrder; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getImageUrl() { return imageUrl; }
 
     public void setCampaign(Campaign campaign) { this.campaign = campaign; }
     public void setName(String name) { this.name = name; }
     public void setRole(String role) { this.role = role; }
     public void setBio(String bio) { this.bio = bio; }
     public void setImageBase64(String imageBase64) { this.imageBase64 = imageBase64; }
+    public void setImageS3Key(String imageS3Key) { this.imageS3Key = imageS3Key; }
     public void setDisplayOrder(Integer displayOrder) { this.displayOrder = displayOrder; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }

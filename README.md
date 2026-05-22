@@ -66,3 +66,29 @@ Y agregás un servidor nuevo
 | **Password**             | `hornero123` |
 
 Prueba deploy
+
+## S3 namespace por entorno
+
+Para evitar mezclar uploads entre producción y bases locales de distintos desarrolladores, todas las claves S3 se guardan bajo un prefijo raíz.
+
+Variables relevantes en `backend/.env.backend`:
+
+| Variable | Ejemplo | Uso |
+| --- | --- | --- |
+| `AWS_S3_ROOT_PREFIX` | `production` o `test-mateo` | Prefijo raíz explícito dentro del bucket |
+| `APP_ENVIRONMENT` | `production` o `local` | Si no definís prefijo explícito, `production` genera `production/` |
+| `APP_INSTANCE_ID` | `mateo-mac` | En local genera `test-mateo-mac/` |
+
+Recomendación:
+
+- Producción: `AWS_S3_ROOT_PREFIX=production`
+- Cada entorno local: `AWS_S3_ROOT_PREFIX=test-tu-nombre` o `APP_INSTANCE_ID=tu-nombre`
+
+Ejemplo de estructura resultante:
+
+```text
+production/media/campaign-12/....
+production/identity-docs/34/....
+test-mateo/recompensa/campaign-7/....
+test-ana/equipo/campaign-7/....
+```

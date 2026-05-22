@@ -3,6 +3,7 @@ import { Save, Upload, X } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
+import { getMediaImageSrc } from '$utils/imageSources'
 import {
   TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
   GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
@@ -16,13 +17,6 @@ function daysBetween(start, end) {
 
 function formatDateAr(d) {
   return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
-}
-
-function coverSrc(m) {
-  if (!m) return ''
-  if (m.previewUrl) return m.previewUrl
-  if (m.base64Data) return `data:image/jpeg;base64,${m.base64Data}`
-  return m.url || ''
 }
 
 function fileToBase64(file) {
@@ -156,7 +150,13 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
 
       const coverEntry = cover._file
         ? { base64Data: await fileToBase64(cover._file), mediaType: 'IMAGE', isPrimary: true, displayOrder: 0 }
-        : { base64Data: cover.base64Data || null, url: cover.url || null, mediaType: 'IMAGE', isPrimary: true, displayOrder: 0 }
+        : {
+            base64Data: cover.base64Data || null,
+            url: cover.url || null,
+            mediaType: 'IMAGE',
+            isPrimary: true,
+            displayOrder: 0,
+          }
 
       const media = [coverEntry, ...rest]
 
@@ -220,7 +220,7 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
           onDrop={e => { e.preventDefault(); pickCover(e.dataTransfer.files) }}>
           {cover ? (
             <div className="edc-upload-preview">
-              <img src={coverSrc(cover)} alt="Portada" />
+              <img src={getMediaImageSrc(cover)} alt="Portada" />
               <button className="edc-upload-remove" onClick={e => { e.stopPropagation(); setCover(null); setSaved(false) }}>
                 <X size={14} />
               </button>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { campaignService } from '$utils/campaignService'
+import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
 import { Button } from '$components/ui'
 import ContributionModal from '$components/ContributionModal/ContributionModal'
 import api from '$utils/api/api'
@@ -59,7 +60,7 @@ function DetailOverlay({ item, onClose, onContribute, disabledReason }) {
 
   if (!item) return null
 
-  const imageSrc = item.imageBase64 ? `data:image/jpeg;base64,${item.imageBase64}` : null
+  const imageSrc = getEntityImageSrc(item)
   const isReward = item.kind === 'reward'
 
   return (
@@ -108,7 +109,7 @@ function DetailOverlay({ item, onClose, onContribute, disabledReason }) {
 }
 
 function RewardTierCard({ reward, onContribute, onOpenCard, compact = false, disabledReason = null }) {
-  const imageSrc = reward.imageBase64 ? `data:image/jpeg;base64,${reward.imageBase64}` : null
+  const imageSrc = getEntityImageSrc(reward)
 
   const handleKeyDown = (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -184,11 +185,11 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
   const allImages = sortedMedia.filter(m => m.mediaType === 'IMAGE')
   const primary = allImages.find(m => m.isPrimary) || allImages[0]
   const primaryUrl = primary
-    ? (primary.base64Data ? `data:image/jpeg;base64,${primary.base64Data}` : primary.url)
+    ? getMediaImageSrc(primary)
     : (campaign.imageUrl || '/crowdfunding-campaign.jpg')
   const galleryImages = allImages
     .filter(m => m !== primary)
-    .map(m => (m.base64Data ? `data:image/jpeg;base64,${m.base64Data}` : m.url))
+    .map(getMediaImageSrc)
     .filter(Boolean)
     .slice(0, 6)
 
@@ -356,7 +357,7 @@ const TOC_ITEMS = [
 ]
 
 function TeamMemberCard({ member }) {
-  const imageSrc = member.imageBase64 ? `data:image/jpeg;base64,${member.imageBase64}` : null
+  const imageSrc = getEntityImageSrc(member)
 
   const handleKeyDown = (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -403,6 +404,8 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
       title: reward.title,
       description: reward.description,
       imageBase64: reward.imageBase64,
+      imageS3Key: reward.imageS3Key,
+      imageUrl: reward.imageUrl,
       price: reward.price,
     })
   }
@@ -415,6 +418,8 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
       role: member.role,
       description: member.bio,
       imageBase64: member.imageBase64,
+      imageS3Key: member.imageS3Key,
+      imageUrl: member.imageUrl,
     })
   }
 
@@ -571,8 +576,8 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
             role={leadMember ? 'button' : undefined}
             tabIndex={leadMember ? 0 : undefined}
           >
-            {leadMember?.imageBase64 ? (
-              <img src={`data:image/jpeg;base64,${leadMember.imageBase64}`} alt="" className="cp-creator-avatar" />
+            {getEntityImageSrc(leadMember) ? (
+              <img src={getEntityImageSrc(leadMember)} alt="" className="cp-creator-avatar" />
             ) : campaign.creator?.avatar ? (
               <img src={campaign.creator.avatar} alt="" className="cp-creator-avatar" />
             ) : (
@@ -661,7 +666,10 @@ export default function CampaignPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalAmount, setModalAmount] = useState(1)
 
-  const tabs = TABS.filter(tab => tab.key !== 'faq' || faqs.length > 0)
+  const tabs = TABS.filter(tab => {
+    if (tab.key === 'faq') return faqs.length > 0
+    return true
+  })
 
   function openModal(amount = 1) {
     setModalAmount(amount)

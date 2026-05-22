@@ -4,6 +4,7 @@ import Swal from 'sweetalert2'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
+import { getEntityImageSrc } from '$utils/imageSources'
 import { MAX_IMAGE_BYTES, CROP_ASPECT } from '../campaignFormUtils'
 
 const TITLE_MAX = 200
@@ -45,6 +46,8 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
     description: initial?.description || '',
     price: initial?.price ?? '',
     imageBase64: initial?.imageBase64 || null,
+    imageS3Key: initial?.imageS3Key || null,
+    imageUrl: initial?.imageUrl || null,
   })
   const [errors, setErrors] = useState({})
   const fileRef = useRef()
@@ -80,10 +83,11 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
       description: form.description.trim() || null,
       price: Number(form.price),
       imageBase64: form.imageBase64,
+      imageS3Key: form.imageS3Key,
     })
   }
 
-  const imgSrc = form.imageBase64 ? `data:image/jpeg;base64,${form.imageBase64}` : null
+  const imgSrc = getEntityImageSrc(form)
 
   return (
     <div className="rws-edit">
@@ -108,7 +112,12 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
               <button
                 type="button"
                 className="rws-image-remove"
-                onClick={e => { e.stopPropagation(); onChange('imageBase64', null) }}
+                onClick={e => {
+                  e.stopPropagation()
+                  onChange('imageBase64', null)
+                  onChange('imageS3Key', null)
+                  onChange('imageUrl', null)
+                }}
                 title="Quitar imagen"
               >
                 <X size={14} />
@@ -186,6 +195,8 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
           onConfirm={async ({ file }) => {
             const b64 = await fileToBase64(file)
             onChange('imageBase64', b64)
+            onChange('imageS3Key', null)
+            onChange('imageUrl', null)
             setCropSrc(null)
           }}
         />
@@ -195,7 +206,7 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
 }
 
 function RewardCard({ reward, onEdit, onDelete, disabled }) {
-  const imgSrc = reward.imageBase64 ? `data:image/jpeg;base64,${reward.imageBase64}` : null
+  const imgSrc = getEntityImageSrc(reward)
 
   return (
     <div className="rws-card">
