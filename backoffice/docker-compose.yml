@@ -1,6 +1,6 @@
 services:
   backoffice:
-    build: .
+    image: ghcr.io/amurseli/hornero-backoffice:latest
     container_name: hornero-backoffice
     ports:
       - "3001:80"

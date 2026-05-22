@@ -1,8 +1,6 @@
 services:
   payments:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/amurseli/hornero-payments:latest
     container_name: hornero-payments
     ports:
       - "8081:8081"

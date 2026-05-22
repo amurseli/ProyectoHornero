@@ -1,88 +1,83 @@
-name: Deploy To EC2
+name: Build and Deploy
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'payments/**'
-      - 'backoffice/**'
 
 concurrency:
   group: deploy-main
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Deploy changed services
+  detect:
     runs-on: ubuntu-latest
-
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      payments: ${{ steps.changes.outputs.payments }}
+      backoffice: ${{ steps.changes.outputs.backoffice }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Detect changed services
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
         id: changes
-        uses: dorny/paths-filter@v3
         with:
           filters: |
-            backend:
-              - 'backend/**'
-            frontend:
-              - 'frontend/**'
-            payments:
-              - 'payments/**'
-            backoffice:
-              - 'backoffice/**'
+            backend: 'backend/**'
+            frontend: 'frontend/**'
+            payments: 'payments/**'
+            backoffice: 'backoffice/**'
 
-      - name: Write SSH private key
+  build:
+    needs: detect
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend, payments, backoffice]
+    steps:
+      - name: Skip if unchanged
+        if: needs.detect.outputs[matrix.service] != 'true'
+        run: echo "No changes" && exit 0
+
+      - uses: actions/checkout@v4
+        if: needs.detect.outputs[matrix.service] == 'true'
+
+      - uses: docker/login-action@v3
+        if: needs.detect.outputs[matrix.service] == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        if: needs.detect.outputs[matrix.service] == 'true'
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/hornero-${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [detect, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and pull
         env:
           SSH_KEY: ${{ secrets.BACKEND_SSH_KEY }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          BACKEND_HOST: ${{ secrets.BACKEND_HOST }}
         run: |
           printf "%s" "$SSH_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
-
-      - name: Deploy on EC2
-        env:
-          EC2_USER: ${{ secrets.EC2_USER }}
-          BACKEND_HOST: ${{ secrets.BACKEND_HOST }}
-          BACKEND_CHANGED: ${{ steps.changes.outputs.backend }}
-          FRONTEND_CHANGED: ${{ steps.changes.outputs.frontend }}
-          PAYMENTS_CHANGED: ${{ steps.changes.outputs.payments }}
-          BACKOFFICE_CHANGED: ${{ steps.changes.outputs.backoffice }}
-        run: |
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no "${EC2_USER}@${BACKEND_HOST}" <<EOF
           set -e
           cd /home/${EC2_USER}/ProyectoHornero
-
           git pull --ff-only origin main
-
-          docker network inspect hornero-network >/dev/null 2>&1 || docker network create hornero-network
-
-          if [ "${BACKEND_CHANGED}" = "true" ]; then
-            cd /home/${EC2_USER}/ProyectoHornero/backend
-            docker compose up --build -d
-          fi
-
-          if [ "${PAYMENTS_CHANGED}" = "true" ]; then
-            cd /home/${EC2_USER}/ProyectoHornero/payments
-            docker compose up --build -d
-          fi
-
-          if [ "${FRONTEND_CHANGED}" = "true" ]; then
-            cd /home/${EC2_USER}/ProyectoHornero/frontend
-            docker compose up --build -d
-          fi
-
-          if [ "${BACKEND_CHANGED}" = "true" ]; then
-            cd /home/${EC2_USER}/ProyectoHornero/backoffice
-            docker compose up --build -d
-          fi
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          for svc in backend frontend payments backoffice; do
+            cd /home/${EC2_USER}/ProyectoHornero/\$svc
+            docker compose pull
+            docker compose up -d
+          done
           EOF
-
-      - name: Remove SSH key
-        if: always()
-        run: rm -f /tmp/deploy_key
+          rm -f /tmp/deploy_key
