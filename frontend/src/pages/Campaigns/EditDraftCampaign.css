@@ -621,6 +621,24 @@
   display: flex; align-items: center; justify-content: center;
   color: var(--color-text-secondary, #aaa);
 }
+.rws-card-image--faq-index {
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fqs-card-index {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-primary, #D94F30) 10%, white);
+  color: var(--color-primary, #D94F30);
+  font-size: 1rem;
+  font-weight: 700;
+}
 .rws-card-body { min-width: 0; }
 .rws-card-price {
   font-size: 1.3rem; font-weight: 700;

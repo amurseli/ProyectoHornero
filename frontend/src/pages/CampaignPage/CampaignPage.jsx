@@ -330,10 +330,10 @@ const TABS = [
   { key: 'comments', label: 'Comentarios' },
 ]
 
-function CampaignTabs({ active, onChange }) {
+function CampaignTabs({ active, onChange, tabs }) {
   return (
     <nav className="cp-tabs">
-      {TABS.map(tab => (
+      {tabs.map(tab => (
         <button
           key={tab.key}
           className={`cp-tab ${active === tab.key ? 'active' : ''}`}
@@ -391,7 +391,7 @@ function TeamMemberCard({ member }) {
   )
 }
 
-function CampaignContent({ campaign, rewards, team, activeTab, onContribute, contributeDisabledReason }) {
+function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribute, contributeDisabledReason }) {
   const [activeToc, setActiveToc] = useState(0)
   const [sidebarAmount, setSidebarAmount] = useState(1)
   const [expandedItem, setExpandedItem] = useState(null)
@@ -487,8 +487,29 @@ function CampaignContent({ campaign, rewards, team, activeTab, onContribute, con
     )
   }
 
-  if (['faq', 'updates', 'comments'].includes(activeTab)) {
-    const labels = { faq: 'Preguntas frecuentes', updates: 'Actualizaciones', comments: 'Comentarios' }
+  if (activeTab === 'faq') {
+    return (
+      <div className="cp-content-grid">
+        <div className="cp-main cp-main--full">
+          <h2>Preguntas frecuentes</h2>
+          <div className="cp-faq-list">
+            {faqs.map((faq, index) => (
+              <article key={faq.id} className="cp-faq-card">
+                <div className="cp-faq-index">{String(index + 1).padStart(2, '0')}</div>
+                <div className="cp-faq-body">
+                  <h3 className="cp-faq-question">{faq.question}</h3>
+                  <p className="cp-faq-answer">{faq.answer}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (['updates', 'comments'].includes(activeTab)) {
+    const labels = { updates: 'Actualizaciones', comments: 'Comentarios' }
     return (
       <div className="cp-content-grid">
         <div className="cp-main cp-main--full">
@@ -633,11 +654,14 @@ export default function CampaignPage() {
   const [campaign, setCampaign] = useState(null)
   const [rewards, setRewards] = useState([])
   const [team, setTeam] = useState([])
+  const [faqs, setFaqs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('campaign')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalAmount, setModalAmount] = useState(1)
+
+  const tabs = TABS.filter(tab => tab.key !== 'faq' || faqs.length > 0)
 
   function openModal(amount = 1) {
     setModalAmount(amount)
@@ -658,18 +682,28 @@ export default function CampaignPage() {
       campaignService.getCampaignById(id),
       api.get(`/api/campaigns/${id}/rewards`).catch(() => []),
       api.get(`/api/campaigns/${id}/team`).catch(() => []),
+      api.get(`/api/campaigns/${id}/faqs`).catch(() => []),
     ])
-      .then(([data, rewardsData, teamData]) => {
+      .then(([data, rewardsData, teamData, faqsData]) => {
         if (!data) throw new Error('Campaña no encontrada')
         setCampaign(data)
         setRewards(normalizeRewards(rewardsData))
         setTeam([...(Array.isArray(teamData) ? teamData : [])].sort(
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
         ))
+        setFaqs([...(Array.isArray(faqsData) ? faqsData : [])].sort(
+          (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+        ))
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    if (activeTab === 'faq' && faqs.length === 0) {
+      setActiveTab('campaign')
+    }
+  }, [activeTab, faqs.length])
 
   if (loading) {
     return (
@@ -712,11 +746,12 @@ export default function CampaignPage() {
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
               />
-              <CampaignTabs active={activeTab} onChange={setActiveTab} />
+              <CampaignTabs active={activeTab} onChange={setActiveTab} tabs={tabs} />
               <CampaignContent
                 campaign={campaign}
                 rewards={rewards}
                 team={team}
+                faqs={faqs}
                 activeTab={activeTab}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
