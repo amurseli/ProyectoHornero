@@ -51,6 +51,10 @@ jobs:
       - uses: docker/setup-buildx-action@v3
         if: needs.detect.outputs[matrix.service] == 'true'
 
+      - name: Write frontend env file
+        if: needs.detect.outputs[matrix.service] == 'true' && matrix.service == 'frontend'
+        run: echo "${{ secrets.FRONTEND_ENV }}" > ./frontend/.env.frontend
+      
       - uses: docker/build-push-action@v5
         if: needs.detect.outputs[matrix.service] == 'true'
         with:
