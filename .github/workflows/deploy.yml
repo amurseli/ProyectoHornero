@@ -3,6 +3,12 @@ name: Build and Deploy
 on:
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'payments/**'
+      - 'backoffice/**'
+      - '.github/workflows/deploy.yml'
 
 concurrency:
   group: deploy-main
@@ -20,8 +26,10 @@ jobs:
       frontend: ${{ steps.changes.outputs.frontend }}
       payments: ${{ steps.changes.outputs.payments }}
       backoffice: ${{ steps.changes.outputs.backoffice }}
+      namespace: ${{ steps.namespace.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: dorny/paths-filter@v3
         id: changes
         with:
@@ -42,6 +50,23 @@ jobs:
         if: needs.detect.outputs[matrix.service] != 'true'
         run: echo "No changes" && exit 0
 
+      - name: Normalize GHCR namespace
+        id: namespace
+        run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: detect
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend, payments, backoffice]
+
+    steps:
+      - name: Skip unchanged service
+        if: needs.detect.outputs[matrix.service] != 'true'
+        run: echo "No changes for ${{ matrix.service }}"
+
       - uses: actions/checkout@v4
         if: needs.detect.outputs[matrix.service] == 'true'
 
@@ -57,6 +82,32 @@ jobs:
 
       - name: Write frontend env file
         if: needs.detect.outputs[matrix.service] == 'true' && matrix.service == 'frontend'
+        env:
+          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
+        run: printf '%s\n' "$FRONTEND_ENV" > ./frontend/.env.frontend
+
+      - name: Write backoffice env file
+        if: needs.detect.outputs[matrix.service] == 'true' && matrix.service == 'backoffice'
+        env:
+          BACKOFFICE_ENV: ${{ secrets.BACKOFFICE_ENV }}
+        run: printf '%s\n' "$BACKOFFICE_ENV" > ./backoffice/.env.backoffice
+
+      - name: Build and push image
+        if: needs.detect.outputs[matrix.service] == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ghcr.io/${{ needs.detect.outputs.namespace }}/hornero-${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [detect, build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Write SSH private key
         env:
           FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
         run: |
@@ -84,6 +135,13 @@ jobs:
           SSH_KEY: ${{ secrets.BACKEND_SSH_KEY }}
           EC2_USER: ${{ secrets.EC2_USER }}
           BACKEND_HOST: ${{ secrets.BACKEND_HOST }}
+          GHCR_NAMESPACE: ${{ needs.detect.outputs.namespace }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BACKEND_CHANGED: ${{ needs.detect.outputs.backend }}
+          FRONTEND_CHANGED: ${{ needs.detect.outputs.frontend }}
+          PAYMENTS_CHANGED: ${{ needs.detect.outputs.payments }}
+          BACKOFFICE_CHANGED: ${{ needs.detect.outputs.backoffice }}
         run: |
           printf "%s" "$SSH_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
@@ -91,11 +149,32 @@ jobs:
           set -e
           cd /home/${EC2_USER}/ProyectoHornero
           git pull --ff-only origin main
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          for svc in backend frontend payments backoffice; do
-            cd /home/${EC2_USER}/ProyectoHornero/\$svc
-            docker compose pull
-            docker compose up -d
-          done
+          docker network inspect hornero-network >/dev/null 2>&1 || docker network create hornero-network
+          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+          export GHCR_NAMESPACE="${GHCR_NAMESPACE}"
+
+          if [ "${BACKEND_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/backend
+            docker compose pull backend
+            docker compose up -d backend
+          fi
+
+          if [ "${PAYMENTS_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/payments
+            docker compose pull payments
+            docker compose up -d payments
+          fi
+
+          if [ "${FRONTEND_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/frontend
+            docker compose pull frontend
+            docker compose up -d frontend
+          fi
+
+          if [ "${BACKOFFICE_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/backoffice
+            docker compose pull backoffice
+            docker compose up -d backoffice
+          fi
           EOF
           rm -f /tmp/deploy_key

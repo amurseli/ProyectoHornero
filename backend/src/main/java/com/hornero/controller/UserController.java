@@ -88,8 +88,6 @@ public class UserController {
             // User info is already extracted by JwtAuthenticationFilter
             Long userId = (Long) request.getAttribute("userId");
             String email = (String) request.getAttribute("userEmail");
-            String role = (String) request.getAttribute("userRole");
-
             if (userId == null || email == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
@@ -98,6 +96,7 @@ public class UserController {
             // Get full user details from database
             User user = userService.getUserById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
+            String roleName = user.getRole() != null ? user.getRole().getName() : "USER";
 
             // Create response with user info
             AuthResponse authResponse = new AuthResponse(
@@ -106,7 +105,7 @@ public class UserController {
                 user.getEmail(),
                 user.getUsername(),
                 user.getFirstName(),
-                role
+                roleName
             );
 
             return ResponseEntity.ok(authResponse);

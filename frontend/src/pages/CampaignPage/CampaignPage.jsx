@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { campaignService } from '$utils/campaignService'
 import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
@@ -6,10 +6,54 @@ import { Button } from '$components/ui'
 import ContributionModal from '$components/ContributionModal/ContributionModal'
 import api from '$utils/api/api'
 import { useUser } from '../../store/useUser'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Users, Tag, Gift, X } from 'lucide-react'
 import './CampaignPage.css'
 
 const PUBLIC_DESC_LIMIT = 100
+
+function slugifyHeading(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+}
+
+function extractMarkdownHeadings(markdown) {
+  const lines = String(markdown || '').split('\n')
+  const seen = new Map()
+
+  return lines.reduce((acc, line) => {
+    const match = line.match(/^(#{1,6})\s+(.+?)\s*$/)
+    if (!match) return acc
+
+    const text = match[2].trim()
+    if (!text) return acc
+
+    const baseId = slugifyHeading(text) || 'historia'
+    const index = seen.get(baseId) ?? 0
+    seen.set(baseId, index + 1)
+
+    acc.push({
+      id: index === 0 ? baseId : `${baseId}-${index + 1}`,
+      text,
+      level: match[1].length,
+    })
+    return acc
+  }, [])
+}
+
+function flattenNodeText(node) {
+  if (typeof node === 'string') return node
+  if (typeof node === 'number') return String(node)
+  if (!node || !node.props?.children) return ''
+  const children = Array.isArray(node.props.children) ? node.props.children : [node.props.children]
+  return children.map(flattenNodeText).join('')
+}
 
 function formatCurrency(amount) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
@@ -323,7 +367,7 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
 /* ─── Tabs ─── */
 
 const TABS = [
-  { key: 'campaign', label: 'Campaña' },
+  { key: 'history', label: 'Historia' },
   { key: 'rewards', label: 'Recompensas' },
   { key: 'team', label: 'Equipo' },
   { key: 'faq', label: 'FAQ' },
@@ -348,13 +392,6 @@ function CampaignTabs({ active, onChange, tabs }) {
 }
 
 /* ─── Content: TOC + main + sidebar ─── */
-
-const TOC_ITEMS = [
-  'Historia del proyecto',
-  'Stretch Goals',
-  'Cómo funciona',
-  'Riesgos y desafíos',
-]
 
 function TeamMemberCard({ member }) {
   const imageSrc = getEntityImageSrc(member)
@@ -393,10 +430,97 @@ function TeamMemberCard({ member }) {
 }
 
 function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribute, contributeDisabledReason }) {
-  const [activeToc, setActiveToc] = useState(0)
+  const storyHeadings = useMemo(() => extractMarkdownHeadings(campaign.description), [campaign.description])
+  const tocItems = useMemo(() => (
+    storyHeadings.length > 0
+      ? storyHeadings
+      : [{ id: 'historia', text: 'Historia', level: 1 }]
+  ), [storyHeadings])
+  const [activeToc, setActiveToc] = useState(tocItems[0]?.id || 'historia')
   const [sidebarAmount, setSidebarAmount] = useState(1)
   const [expandedItem, setExpandedItem] = useState(null)
   const leadMember = team[0] || null
+  const storyRef = useRef(null)
+
+  useEffect(() => {
+    setActiveToc(tocItems[0]?.id || 'historia')
+  }, [tocItems])
+
+  useEffect(() => {
+    if (activeTab !== 'history') return undefined
+
+    const root = storyRef.current
+    if (!root) return undefined
+
+    const headingElements = tocItems
+      .map(item => document.getElementById(item.id))
+      .filter(Boolean)
+
+    if (headingElements.length === 0) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+
+        if (visible.length > 0) {
+          setActiveToc(visible[0].target.id)
+        }
+      },
+      {
+        rootMargin: '-25% 0px -55% 0px',
+        threshold: [0, 0.2, 0.6, 1],
+      }
+    )
+
+    headingElements.forEach(element => observer.observe(element))
+    return () => observer.disconnect()
+  }, [activeTab, tocItems])
+
+  const scrollToHeading = (id) => {
+    const element = document.getElementById(id)
+    if (!element) return
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setActiveToc(id)
+  }
+
+  const markdownComponents = useMemo(() => {
+    const headingIndex = tocItems.reduce((acc, item) => {
+      const key = `${item.level}:${item.text}`
+      const ids = acc.get(key) || []
+      ids.push(item.id)
+      acc.set(key, ids)
+      return acc
+    }, new Map())
+    const headingUsage = new Map()
+
+    const buildHeading = (Tag) => ({ children, ...props }) => {
+      const text = flattenNodeText({ props: { children } }).trim()
+      const level = Number(Tag.slice(1))
+      const key = `${level}:${text}`
+      const used = headingUsage.get(key) ?? 0
+      const ids = headingIndex.get(key) || []
+      const id = ids[used] || slugifyHeading(text) || 'historia'
+      headingUsage.set(key, used + 1)
+      return <Tag id={id} className="cp-story-heading" {...props}>{children}</Tag>
+    }
+
+    return {
+      h1: buildHeading('h1'),
+      h2: buildHeading('h2'),
+      h3: buildHeading('h3'),
+      h4: buildHeading('h4'),
+      h5: buildHeading('h5'),
+      h6: buildHeading('h6'),
+      img: ({ src, alt }) => <img src={src} alt={alt || ''} className="cp-story-image" />,
+      a: ({ href, children }) => (
+        <a href={href} target="_blank" rel="noreferrer">
+          {children}
+        </a>
+      ),
+    }
+  }, [tocItems])
 
   const openRewardDescription = (reward) => {
     setExpandedItem({
@@ -525,40 +649,42 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
     )
   }
 
-  // Tab "campaign" (default)
+  // Tab "history" (default)
   return (
     <>
       <div className="cp-content-grid">
         {/* TOC */}
         <aside className="cp-toc">
           <span className="cp-toc-title">Contenido</span>
-          {TOC_ITEMS.map((item, i) => (
+          {tocItems.map((item) => (
             <button
-              key={i}
-              className={`cp-toc-link ${activeToc === i ? 'active' : ''}`}
-              onClick={() => setActiveToc(i)}
+              key={item.id}
+              className={`cp-toc-link cp-toc-link--level-${Math.min(item.level, 3)} ${activeToc === item.id ? 'active' : ''}`}
+              onClick={() => scrollToHeading(item.id)}
             >
-              {item}
+              {item.text}
             </button>
           ))}
         </aside>
 
         {/* Main content */}
-        <div className="cp-main">
-          <h2>Historia del proyecto</h2>
-          <div className="cp-content-image">
-            {campaign.imageUrl && <img src={campaign.imageUrl} alt="" />}
-          </div>
-          <p>{campaign.description || 'Descripción detallada de la campaña.'}</p>
+        <div className="cp-main cp-story" ref={storyRef}>
+          {campaign.imageUrl && (
+            <div className="cp-content-image">
+              <img src={campaign.imageUrl} alt="" />
+            </div>
+          )}
 
-          <h2>Stretch Goals</h2>
-          <p className="cp-placeholder-text">Los stretch goals se irán desbloqueando a medida que se alcancen las metas.</p>
-
-          <h2>Cómo funciona</h2>
-          <p className="cp-placeholder-text">Información sobre el funcionamiento del proyecto y su desarrollo.</p>
-
-          <h2>Riesgos y desafíos</h2>
-          <p className="cp-placeholder-text">Transparencia sobre los riesgos identificados y las estrategias de mitigación.</p>
+          {campaign.description?.trim() ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {campaign.description}
+            </ReactMarkdown>
+          ) : (
+            <>
+              <h2 id="historia" className="cp-story-heading">Historia</h2>
+              <p className="cp-placeholder-text">Esta campaña todavía no tiene historia publicada.</p>
+            </>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -662,7 +788,7 @@ export default function CampaignPage() {
   const [faqs, setFaqs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [activeTab, setActiveTab] = useState('campaign')
+  const [activeTab, setActiveTab] = useState('history')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalAmount, setModalAmount] = useState(1)
 
@@ -709,7 +835,7 @@ export default function CampaignPage() {
 
   useEffect(() => {
     if (activeTab === 'faq' && faqs.length === 0) {
-      setActiveTab('campaign')
+      setActiveTab('history')
     }
   }, [activeTab, faqs.length])
 

@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import api from '$utils/api/api'
 
-const MAX_LENGTH = 2000
+const MAX_LENGTH = 6000
 const DEBOUNCE_MS = 1500
 
 function SaveStatus({ status }) {

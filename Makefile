@@ -16,6 +16,7 @@ endif
 
 .PHONY: help network up down build logs dev \
         up-bo down-bo build-bo logs-bo \
+        up-backoffice down-backoffice build-backoffice logs-backoffice \
         up-bo-prod down-bo-prod build-bo-prod \
         up-pay down-pay build-pay logs-pay \
         up-all down-all build-all \
@@ -33,9 +34,13 @@ help:
 	@echo "  make logs         Logs del backend"
 	@echo ""
 	@echo "  make up-bo        Levanta backoffice (dev, HMR)"
+	@echo "  make up-backoffice Alias de up-bo"
 	@echo "  make down-bo      Detiene backoffice"
+	@echo "  make down-backoffice Alias de down-bo"
 	@echo "  make build-bo     Reconstruye backoffice"
+	@echo "  make build-backoffice Alias de build-bo"
 	@echo "  make logs-bo      Logs del backoffice"
+	@echo "  make logs-backoffice Alias de logs-bo"
 	@echo ""
 	@echo "  make up-pay       Levanta payments"
 	@echo "  make down-pay     Detiene payments"
@@ -62,7 +67,7 @@ network:
 # Backend + frontend (dev por defecto, con HMR)
 # ------------------------------------------------------------
 up: network
-	cd $(BACKEND_DIR) && docker-compose up -d
+	cd $(BACKEND_DIR) && docker-compose up -d --build
 	cd $(FRONTEND_DIR) && docker-compose -f docker-compose.dev.yml up -d
 
 down:
@@ -81,7 +86,7 @@ logs:
 # Frontend modo prod (nginx, build estático) — solo para testear deploy
 # ------------------------------------------------------------
 up-prod: network
-	cd $(BACKEND_DIR) && docker-compose up -d
+	cd $(BACKEND_DIR) && docker-compose up -d --build
 	cd $(FRONTEND_DIR) && docker-compose up -d
 
 down-prod:
@@ -98,15 +103,23 @@ build-prod:
 up-bo: network
 	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml up -d
 
+up-backoffice: up-bo
+
 down-bo:
 	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml down || true
 	cd $(BACKOFFICE_DIR) && docker-compose down || true
 
+down-backoffice: down-bo
+
 build-bo:
 	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml build
 
+build-backoffice: build-bo
+
 logs-bo:
 	cd $(BACKOFFICE_DIR) && docker-compose -f docker-compose.dev.yml logs -f
+
+logs-backoffice: logs-bo
 
 # ------------------------------------------------------------
 # Backoffice modo prod (nginx, build estático) — puerto 3001
@@ -124,7 +137,7 @@ build-bo-prod:
 # Payments
 # ------------------------------------------------------------
 up-pay: network
-	cd $(PAYMENTS_DIR) && docker-compose up -d
+	cd $(PAYMENTS_DIR) && docker-compose up -d --build
 
 down-pay:
 	cd $(PAYMENTS_DIR) && docker-compose down || true

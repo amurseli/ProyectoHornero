@@ -1,6 +1,9 @@
 services:
   payments:
-    image: ghcr.io/amurseli/hornero-payments:latest
+    image: ghcr.io/${GHCR_NAMESPACE:-proyectohornero}/hornero-payments:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: hornero-payments
     ports:
       - "8081:8081"
