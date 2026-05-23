@@ -1,0 +1,1 @@
+ALTER TABLE campaign ADD COLUMN IF NOT EXISTS money_status VARCHAR(30) NULL;

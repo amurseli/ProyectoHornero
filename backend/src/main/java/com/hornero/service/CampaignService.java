@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -198,6 +199,45 @@ public class CampaignService {
                 .orElseThrow(() -> new RuntimeException("Campaña no encontrada: " + campaignId));
         campaign.setCurrentAmount(campaign.getCurrentAmount().add(amount));
         campaignRepository.save(campaign);
+    }
+
+    @Transactional
+    public void updateMoneyStatus(Long campaignId, String moneyStatus) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campaña no encontrada: " + campaignId));
+        campaign.setMoneyStatus(moneyStatus);
+        campaignRepository.save(campaign);
+    }
+
+    // Finaliza una campaña vencida: cambia su status según si alcanzó la meta.
+    // Idempotente: si ya no está en CROWDFUNDING, no hace nada.
+    @Transactional
+    public boolean finalizeCampaign(Campaign campaign) {
+        if (!"CROWDFUNDING".equals(campaign.getStatus())) {
+            return false;
+        }
+        boolean reachedGoal = campaign.getCurrentAmount().compareTo(campaign.getTargetAmount()) >= 0;
+        if (reachedGoal) {
+            campaign.setStatus("SUCCESSFUL");
+            campaign.setMoneyStatus("PAYOUT_PENDING");
+        } else {
+            campaign.setStatus("FAILED");
+            campaign.setMoneyStatus("REFUND_PENDING");
+        }
+        campaignRepository.save(campaign);
+        return true;
+    }
+
+    public List<Campaign> findExpiredCrowdfundingCampaigns() {
+        return campaignRepository.findExpiredCrowdfundingCampaigns(LocalDate.now());
+    }
+
+    public List<Campaign> findSuccessfulWithPendingPayout() {
+        return campaignRepository.findSuccessfulWithPendingPayout();
+    }
+
+    public List<Campaign> findFailedWithPartialRefund() {
+        return campaignRepository.findFailedWithPartialRefund();
     }
 
     private Set<String> normalizeCampaignMedia(Campaign campaign, List<CampaignMedia> incomingMedia) {

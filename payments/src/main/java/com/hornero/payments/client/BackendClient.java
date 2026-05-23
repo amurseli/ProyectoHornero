@@ -139,6 +139,26 @@ public class BackendClient {
         }
     }
 
+    // Informa al backend el estado financiero final de una campaña (ej. PAYOUT_COMPLETED, REFUND_COMPLETED).
+    public void updateCampaignMoneyStatus(Long campaignId, String moneyStatus) {
+        String url = backendUrl + "/api/campaigns/" + campaignId + "/money-status";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Service-Key", serviceKey);
+
+        Map<String, String> body = Map.of("moneyStatus", moneyStatus);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            restTemplate.exchange(url, HttpMethod.PATCH, entity, Void.class);
+            logger.info("Money status de campaña {} actualizado a {}", campaignId, moneyStatus);
+        } catch (Exception e) {
+            logger.error("Error al actualizar money status de campaña {}: {}", campaignId, e.getMessage());
+            throw new RuntimeException("Error al actualizar money status en el backend", e);
+        }
+    }
+
     // Suma el monto al current_amount de la campana en el backend.
     public void updateCampaignAmount(Long campaignId, BigDecimal amount) {
         String url = backendUrl + "/api/campaigns/" + campaignId + "/current-amount";

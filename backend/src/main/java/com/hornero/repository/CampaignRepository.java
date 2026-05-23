@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,4 +62,13 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "LEFT JOIN FETCH c.owner " +
            "WHERE c.id IN :ids")
     List<Campaign> findAllByIdsWithRelations(@Param("ids") List<Long> ids);
+
+    @Query("SELECT c FROM Campaign c LEFT JOIN FETCH c.owner WHERE c.status = 'CROWDFUNDING' AND c.endDate < :today")
+    List<Campaign> findExpiredCrowdfundingCampaigns(@Param("today") LocalDate today);
+
+    @Query("SELECT c FROM Campaign c LEFT JOIN FETCH c.owner WHERE c.status = 'SUCCESSFUL' AND c.moneyStatus = 'PAYOUT_PENDING'")
+    List<Campaign> findSuccessfulWithPendingPayout();
+
+    @Query("SELECT c FROM Campaign c LEFT JOIN FETCH c.owner WHERE c.status = 'FAILED' AND c.moneyStatus = 'REFUND_PARTIAL'")
+    List<Campaign> findFailedWithPartialRefund();
 }

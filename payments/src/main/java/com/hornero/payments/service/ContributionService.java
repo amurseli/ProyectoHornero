@@ -31,6 +31,7 @@ public class ContributionService {
     private final TransactionRepository transactionRepository;
     private final BackendClient backendClient;
     private final MercadoPagoGateway mercadoPagoGateway;
+    private final PaymentEventLogService eventLog;
 
     @Value("${mercadopago.public-key}")
     private String mpPublicKey;
@@ -38,11 +39,13 @@ public class ContributionService {
     public ContributionService(ContributionRepository contributionRepository,
                                TransactionRepository transactionRepository,
                                BackendClient backendClient,
-                               MercadoPagoGateway mercadoPagoGateway) {
+                               MercadoPagoGateway mercadoPagoGateway,
+                               PaymentEventLogService eventLog) {
         this.contributionRepository = contributionRepository;
         this.transactionRepository = transactionRepository;
         this.backendClient = backendClient;
         this.mercadoPagoGateway = mercadoPagoGateway;
+        this.eventLog = eventLog;
     }
 
     // Crea el registro PENDING y devuelve la publicKey para que el frontend inicialice el Payment Brick
@@ -60,6 +63,7 @@ public class ContributionService {
         contributionRepository.save(contribution);
 
         logger.info("Contribucion {} iniciada: user={} campaign={} amount={}", contribution.getId(), userId, campaignId, amount);
+        eventLog.logContributionInitiated(contribution.getId(), userId, campaignId, amount);
 
         return new InitiateContributionResponse(contribution.getId(), mpPublicKey, amount, "ARS");
     }
@@ -86,7 +90,6 @@ public class ContributionService {
         transaction.setContribution(contribution);
         transaction.setAmount(contribution.getAmount());
         transaction.setTransactionMethod("CARD");
-        // TODO: loguear estado PENDING en transaction_logs
 
         try {
             // Llamar a MercadoPago
@@ -106,14 +109,12 @@ public class ContributionService {
             transaction.setPaymentProvider("MERCADO_PAGO");
             transactionRepository.save(transaction);
 
-            // TODO: loguear estado recibido de MP en transaction_logs
-
-            // Mapear status de MercadoPago a nuestro status
             String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
             contribution.setStatus(newStatus);
             contributionRepository.save(contribution);
 
             logger.info("Contribucion {} procesada. Status MP: {} -> Status local: {}", contributionId, mpPayment.getStatus(), newStatus);
+            eventLog.logPaymentProcessed(contributionId, "PENDING", newStatus, String.valueOf(mpPayment.getId()));
 
             // Si fue aprobado, notificar al backend para actualizar current_amount
             if ("APPROVED".equals(newStatus)) {
@@ -152,12 +153,11 @@ public class ContributionService {
                 Contribution contribution = transaction.getContribution();
                 String previousStatus = contribution.getStatus();
 
-                // TODO: loguear estado actualizado en transaction_logs
-
                 if (!newStatus.equals(previousStatus)) {
                     contribution.setStatus(newStatus);
                     contributionRepository.save(contribution);
                     logger.info("Contribucion {} actualizada via webhook: {} -> {}", contribution.getId(), previousStatus, newStatus);
+                    eventLog.logWebhookUpdate(contribution.getId(), previousStatus, newStatus, String.valueOf(paymentId));
 
                     if ("APPROVED".equals(newStatus) && !"APPROVED".equals(previousStatus)) {
                         backendClient.updateCampaignAmount(contribution.getIdCampaign(), contribution.getAmount());

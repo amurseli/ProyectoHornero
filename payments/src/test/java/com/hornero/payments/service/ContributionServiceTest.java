@@ -35,6 +35,7 @@ class ContributionServiceTest {
     @Mock TransactionRepository transactionRepository;
     @Mock BackendClient backendClient;
     @Mock MercadoPagoGateway mercadoPagoGateway;
+    @Mock PaymentEventLogService paymentEventLogService;
 
     @InjectMocks ContributionService service;
 

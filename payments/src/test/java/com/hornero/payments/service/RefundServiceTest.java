@@ -1,5 +1,6 @@
 package com.hornero.payments.service;
 
+import com.hornero.payments.client.BackendClient;
 import com.hornero.payments.dto.RefundSummaryResponse;
 import com.hornero.payments.gateway.MercadoPagoGateway;
 import com.hornero.payments.model.Contribution;
@@ -30,6 +31,8 @@ class RefundServiceTest {
     @Mock RefundRepository refundRepository;
     @Mock ContributionRepository contributionRepository;
     @Mock MercadoPagoGateway mercadoPagoGateway;
+    @Mock BackendClient backendClient;
+    @Mock PaymentEventLogService paymentEventLogService;
 
     @InjectMocks RefundService service;
 
