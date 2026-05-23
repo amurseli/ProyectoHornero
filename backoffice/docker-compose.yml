@@ -1,5 +1,6 @@
 services:
   backoffice:
+    image: ghcr.io/${GHCR_NAMESPACE:-proyectohornero}/hornero-backoffice:latest
     build: .
     container_name: hornero-backoffice
     ports:

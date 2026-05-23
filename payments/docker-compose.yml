@@ -1,5 +1,6 @@
 services:
   payments:
+    image: ghcr.io/${GHCR_NAMESPACE:-proyectohornero}/hornero-payments:latest
     build:
       context: .
       dockerfile: Dockerfile
