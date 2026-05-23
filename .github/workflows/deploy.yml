@@ -77,7 +77,7 @@ jobs:
             docker compose up --build -d
           fi
 
-          if [ "${BACKEND_CHANGED}" = "true" ]; then
+          if [ "${BACKOFFICE_CHANGED}" = "true" ]; then
             cd /home/${EC2_USER}/ProyectoHornero/backoffice
             docker compose up --build -d
           fi
