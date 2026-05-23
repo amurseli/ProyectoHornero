@@ -30,6 +30,8 @@ class RefundServiceTest {
     @Mock RefundRepository refundRepository;
     @Mock ContributionRepository contributionRepository;
     @Mock MercadoPagoGateway mercadoPagoGateway;
+    @Mock BackendClient backendClient;
+    @Mock PaymentEventLogService paymentEventLogService;
 
     @InjectMocks RefundService service;
 

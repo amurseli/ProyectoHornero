@@ -25,6 +25,7 @@ public class PayoutService {
     private final PayoutRepository payoutRepository;
     private final ContributionRepository contributionRepository;
     private final BackendClient backendClient;
+    private final PaymentEventLogService eventLog;
 
     @Value("${app.fees.platform-rate}")
     private BigDecimal platformRate;
@@ -34,10 +35,12 @@ public class PayoutService {
 
     public PayoutService(PayoutRepository payoutRepository,
                          ContributionRepository contributionRepository,
-                         BackendClient backendClient) {
+                         BackendClient backendClient,
+                         PaymentEventLogService eventLog) {
         this.payoutRepository = payoutRepository;
         this.contributionRepository = contributionRepository;
         this.backendClient = backendClient;
+        this.eventLog = eventLog;
     }
 
     // Ejecuta el payout al creador para una campaña SUCCESSFUL.
@@ -84,6 +87,7 @@ public class PayoutService {
 
         logger.info("Payout registrado para campaña {} — transferencia manual pendiente: gross={} net={} CBU={}",
                 campaignId, grossAmount, netAmount, creatorCbu);
+        eventLog.logPayoutRegistered(payout.getId(), campaignId, netAmount);
 
         return buildResponse(payout);
     }
@@ -107,6 +111,7 @@ public class PayoutService {
         }
 
         logger.info("Payout de campaña {} confirmado manualmente. Referencia MP: {}", campaignId, mpTransferReference);
+        eventLog.logPayoutConfirmed(payout.getId(), mpTransferReference);
         return buildResponse(payout);
     }
 

@@ -37,8 +37,6 @@ public class Transaction {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // TODO: agregar relacion con TransactionLog cuando se implemente
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

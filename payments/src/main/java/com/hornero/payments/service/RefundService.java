@@ -29,15 +29,18 @@ public class RefundService {
     private final ContributionRepository contributionRepository;
     private final MercadoPagoGateway mercadoPagoGateway;
     private final BackendClient backendClient;
+    private final PaymentEventLogService eventLog;
 
     public RefundService(RefundRepository refundRepository,
                          ContributionRepository contributionRepository,
                          MercadoPagoGateway mercadoPagoGateway,
-                         BackendClient backendClient) {
+                         BackendClient backendClient,
+                         PaymentEventLogService eventLog) {
         this.refundRepository = refundRepository;
         this.contributionRepository = contributionRepository;
         this.mercadoPagoGateway = mercadoPagoGateway;
         this.backendClient = backendClient;
+        this.eventLog = eventLog;
     }
 
     // Reembolsa todas las contributions APPROVED de una campaña.
@@ -134,8 +137,11 @@ public class RefundService {
             refund.setStatus("FAILED");
             refundRepository.save(refund);
             logger.warn("Contribution {} sin transacción registrada, refund marcado como FAILED", contribution.getId());
+            eventLog.logRefundFailed(refund.getId(), "Sin transacción registrada para contribution " + contribution.getId());
             return;
         }
+
+        eventLog.logRefundInitiated(refund.getId(), contribution.getId(), refund.getReason());
 
         try {
             PaymentRefund providerRefund = mercadoPagoGateway.refund(Long.valueOf(transactionId));
@@ -146,15 +152,18 @@ public class RefundService {
             contribution.setStatus("CANCELLED");
             contributionRepository.save(contribution);
             logger.info("Refund completado para contribution {}: refundId={}", contribution.getId(), providerRefund.getId());
+            eventLog.logRefundCompleted(refund.getId(), String.valueOf(providerRefund.getId()));
         } catch (MPApiException e) {
             refund.setStatus("FAILED");
             refundRepository.save(refund);
             logger.error("Error de API MP al reembolsar contribution {}: {} - {}",
                     contribution.getId(), e.getStatusCode(), e.getApiResponse().getContent());
+            eventLog.logRefundFailed(refund.getId(), "MP API error " + e.getStatusCode() + ": " + e.getMessage());
         } catch (MPException e) {
             refund.setStatus("FAILED");
             refundRepository.save(refund);
             logger.error("Error de SDK MP al reembolsar contribution {}: {}", contribution.getId(), e.getMessage());
+            eventLog.logRefundFailed(refund.getId(), "MP SDK error: " + e.getMessage());
         }
     }
 

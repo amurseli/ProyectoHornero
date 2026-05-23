@@ -27,6 +27,7 @@ class PayoutServiceTest {
     @Mock PayoutRepository payoutRepository;
     @Mock ContributionRepository contributionRepository;
     @Mock BackendClient backendClient;
+    @Mock PaymentEventLogService paymentEventLogService;
 
     @InjectMocks PayoutService service;
 
