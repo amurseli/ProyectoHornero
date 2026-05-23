@@ -9,6 +9,7 @@ import SectionHistoria from './DraftSections/HistoriaSection'
 import SectionMidia from './DraftSections/MidiaSection'
 import SectionRewards from './DraftSections/RewardsSection'
 import SectionTeam from './DraftSections/TeamSection'
+import SectionFaq from './DraftSections/FaqSection'
 import './EditDraftCampaign.css'
 
 const REQUIRED_SECTIONS = [
@@ -48,7 +49,7 @@ const REQUIRED_SECTIONS = [
 const OPTIONAL_SECTIONS = [
   {
     key: 'midia',
-    title: 'Midia',
+    title: 'Media',
     subtitle: 'Video y galería de imágenes (hasta 6, máx. 10 MB cada una).',
     icon: Film,
     // Optional section: marked "complete" once a video or gallery image exists.
@@ -60,7 +61,7 @@ const OPTIONAL_SECTIONS = [
     title: 'Preguntas frecuentes',
     subtitle: 'Anticipá las dudas más comunes de los contribuidores.',
     icon: HelpCircle,
-    isComplete: () => true,
+    isComplete: (c) => c.faqs?.length > 0,
   },
 ]
 
@@ -123,7 +124,7 @@ function SectionContent({ sectionKey, campaign, onSaved, isCreator }) {
   if (sectionKey === 'basicos') {
     return (
       <div className="edc-section-content">
-        <SectionBasicos campaign={campaign} onSaved={onSaved} />
+        <SectionBasicos campaign={campaign} onSaved={onSaved} disableImmutableFields={campaign.status !== 'DRAFT'} />
       </div>
     )
   }
@@ -160,15 +161,15 @@ function SectionContent({ sectionKey, campaign, onSaved, isCreator }) {
     )
   }
 
-  const placeholders = {
-    faq: 'Acá va el CRUD de preguntas frecuentes.',
+  if (sectionKey === 'faq') {
+    return (
+      <div className="edc-section-content">
+        <SectionFaq campaign={campaign} onSaved={onSaved} />
+      </div>
+    )
   }
 
-  return (
-    <div className="edc-section-content">
-      <p className="edc-placeholder">{placeholders[sectionKey]}</p>
-    </div>
-  )
+  return null
 }
 
 function SectionGroup({ title, sections, campaign, openSection, onToggle, onSaved, isCreator }) {
@@ -231,27 +232,25 @@ export default function EditDraftCampaign() {
       api.get(`/api/campaigns/${id}`),
       api.get(`/api/campaigns/${id}/rewards`),
       api.get(`/api/campaigns/${id}/team`).catch(() => []),
+      api.get(`/api/campaigns/${id}/faqs`).catch(() => []),
     ])
-      .then(([data, rewards, team]) => {
+      .then(([data, rewards, team, faqs]) => {
         if (!data) throw new Error('Campaña no encontrada')
-        if (data.status !== 'DRAFT') {
-          navigate(`/campaigns/${id}`)
-          return
-        }
-        setCampaign({ ...data, rewards: rewards || [], team: team || [] })
+        setCampaign({ ...data, rewards: rewards || [], team: team || [], faqs: faqs || [] })
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, [id, navigate])
+  }, [id])
 
   const refreshCampaign = async () => {
     try {
-      const [data, rewards, team] = await Promise.all([
+      const [data, rewards, team, faqs] = await Promise.all([
         api.get(`/api/campaigns/${id}`),
         api.get(`/api/campaigns/${id}/rewards`),
         api.get(`/api/campaigns/${id}/team`).catch(() => []),
+        api.get(`/api/campaigns/${id}/faqs`).catch(() => []),
       ])
-      setCampaign({ ...data, rewards: rewards || [], team: team || [] })
+      setCampaign({ ...data, rewards: rewards || [], team: team || [], faqs: faqs || [] })
     } catch (err) {
       console.error('Error refreshing campaign', err)
     }
@@ -283,7 +282,7 @@ export default function EditDraftCampaign() {
       <div className="edc-page">
         <div className="edc-loading">
           <div className="edc-spinner" />
-          <p>Cargando borrador...</p>
+          <p>Cargando campaña...</p>
         </div>
       </div>
     )
@@ -293,7 +292,7 @@ export default function EditDraftCampaign() {
     return (
       <div className="edc-page">
         <div className="edc-error">
-          <h2>No se pudo cargar el borrador</h2>
+          <h2>No se pudo cargar la campaña</h2>
           <p>{error || 'La campaña no existe o fue eliminada.'}</p>
           <Button variant="secondary" onClick={() => navigate('/campaigns')}>
             <ArrowLeft size={16} /> Volver a campañas
@@ -312,7 +311,9 @@ export default function EditDraftCampaign() {
 
         <div className="edc-header">
           <h1 className="edc-title">{campaign.title || 'Campaña sin título'}</h1>
-          <span className="edc-badge">Borrador</span>
+          <span className="edc-badge">
+            {campaign.status === 'DRAFT' ? 'Borrador' : 'Edición'}
+          </span>
         </div>
 
         <SectionGroup
@@ -334,20 +335,22 @@ export default function EditDraftCampaign() {
           onSaved={refreshCampaign}
         />
 
-        <div className="edc-publish">
-          <Button
-            variant="primary"
-            size="lg"
-            disabled={!allRequiredComplete || publishing}
-            onClick={handlePublish}
-          >
-            <Send size={16} />
-            {publishing ? 'Publicando...' : 'Lanzar campaña'}
-          </Button>
-          {!allRequiredComplete && (
-            <p className="edc-publish-hint">Completá todas las secciones obligatorias para poder publicar.</p>
-          )}
-        </div>
+        {campaign.status === 'DRAFT' && (
+          <div className="edc-publish">
+            <Button
+              variant="primary"
+              size="lg"
+              disabled={!allRequiredComplete || publishing}
+              onClick={handlePublish}
+            >
+              <Send size={16} />
+              {publishing ? 'Publicando...' : 'Lanzar campaña'}
+            </Button>
+            {!allRequiredComplete && (
+              <p className="edc-publish-hint">Completá todas las secciones obligatorias para poder publicar.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import com.hornero.model.CreatorVerification.TaxCondition;
 import com.hornero.model.CreatorVerification.VerificationStatus;
 import com.hornero.repository.*;
 import com.hornero.service.EncryptionService;
+import com.hornero.service.CampaignService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +75,7 @@ public class TestDataSeeder implements ApplicationRunner {
     @Autowired private CreatorsCampaignRepository creatorsCampaignRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private EncryptionService encryptionService;
+    @Autowired private CampaignService campaignService;
 
     @Override
     @Transactional
@@ -307,7 +309,7 @@ public class TestDataSeeder implements ApplicationRunner {
         // Video — url field, mediaType=VIDEO
         addVideo(c, videoUrl, 3);
 
-        Campaign saved = campaignRepository.save(c);
+        Campaign saved = campaignService.createCampaign(c);
 
         // Link owner in creators_campaign
         CreatorsCampaign link = new CreatorsCampaign();

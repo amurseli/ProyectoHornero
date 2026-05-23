@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Save, X, Gift, AlertCircle, Upload, ImageIcon } from 'lucide-react'
+import { Plus, Pencil, Trash2, Save, X, Gift, AlertCircle, Upload, ImageIcon } from 'lucide-react'
 import Swal from 'sweetalert2'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
+import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
+import { getEntityImageSrc } from '$utils/imageSources'
+import { MAX_IMAGE_BYTES, CROP_ASPECT } from '../campaignFormUtils'
 
 const TITLE_MAX = 200
-const DESC_SOFT_LIMIT = 500
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024
+const DESC_MAX = 600
 
 const priceFormatter = new Intl.NumberFormat('es-AR', {
   style: 'currency', currency: 'ARS', maximumFractionDigits: 0,
@@ -34,6 +36,7 @@ function validate(form) {
   if (form.price === '' || form.price === null || form.price === undefined) errors.price = 'El precio es obligatorio'
   else if (Number.isNaN(Number(form.price))) errors.price = 'Precio inválido'
   else if (Number(form.price) <= 0) errors.price = 'El precio debe ser mayor a cero'
+  if (form.description && form.description.length > DESC_MAX) errors.description = `Máximo ${DESC_MAX} caracteres`
   return errors
 }
 
@@ -43,16 +46,19 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
     description: initial?.description || '',
     price: initial?.price ?? '',
     imageBase64: initial?.imageBase64 || null,
+    imageS3Key: initial?.imageS3Key || null,
+    imageUrl: initial?.imageUrl || null,
   })
   const [errors, setErrors] = useState({})
   const fileRef = useRef()
+  const [cropSrc, setCropSrc] = useState(null)
 
   const onChange = (key, value) => {
     setForm(prev => ({ ...prev, [key]: value }))
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }))
   }
 
-  const handleImage = async (files) => {
+  const handleImage = (files) => {
     const file = files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) {
@@ -60,11 +66,10 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
       return
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      Swal.fire('Imagen demasiado grande', 'El máximo permitido es 2 MB.', 'error')
+      Swal.fire('Imagen demasiado grande', 'El máximo permitido es 10 MB.', 'error')
       return
     }
-    const b64 = await fileToBase64(file)
-    onChange('imageBase64', b64)
+    setCropSrc(URL.createObjectURL(file))
   }
 
   const handleSubmit = () => {
@@ -78,10 +83,11 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
       description: form.description.trim() || null,
       price: Number(form.price),
       imageBase64: form.imageBase64,
+      imageS3Key: form.imageS3Key,
     })
   }
 
-  const imgSrc = form.imageBase64 ? `data:image/jpeg;base64,${form.imageBase64}` : null
+  const imgSrc = getEntityImageSrc(form)
 
   return (
     <div className="rws-edit">
@@ -92,7 +98,7 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
           type="file"
           accept="image/*"
           style={{ display: 'none' }}
-          onChange={e => handleImage(e.target.files)}
+          onChange={e => { handleImage(e.target.files); e.target.value = '' }}
         />
         <div
           className="rws-image-upload"
@@ -106,7 +112,12 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
               <button
                 type="button"
                 className="rws-image-remove"
-                onClick={e => { e.stopPropagation(); onChange('imageBase64', null) }}
+                onClick={e => {
+                  e.stopPropagation()
+                  onChange('imageBase64', null)
+                  onChange('imageS3Key', null)
+                  onChange('imageUrl', null)
+                }}
                 title="Quitar imagen"
               >
                 <X size={14} />
@@ -115,10 +126,11 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
           ) : (
             <div className="rws-image-empty">
               <Upload size={20} />
-              <span>Subí o arrastrá una imagen (máx 2 MB)</span>
+              <span>Subí o arrastrá una imagen (máx 10 MB)</span>
             </div>
           )}
         </div>
+        <span className="edc-hint edc-hint--left">Se recorta a 16:9 para mantener consistencia visual.</span>
       </div>
 
       <div className="edc-field">
@@ -152,15 +164,16 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
       <div className="edc-field">
         <label className="edc-label">Descripción</label>
         <textarea
-          className="edc-textarea"
+          className={`edc-textarea ${errors.description ? 'edc-input--error' : ''}`}
           rows={4}
+          maxLength={DESC_MAX}
           placeholder="Detallá qué incluye esta recompensa, fechas estimadas de entrega, etc."
           value={form.description}
           onChange={e => onChange('description', e.target.value)}
         />
+        {errors.description && <span className="edc-error"><AlertCircle size={12} /> {errors.description}</span>}
         <span className="edc-hint">
-          {form.description.length} caracteres
-          {form.description.length > DESC_SOFT_LIMIT && ` — considerá acortar`}
+          {form.description.length}/{DESC_MAX} caracteres
         </span>
       </div>
 
@@ -172,12 +185,28 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
           <X size={16} /> Cancelar
         </Button>
       </div>
+
+      {cropSrc && (
+        <ImageCropModal
+          src={cropSrc}
+          aspect={CROP_ASPECT}
+          fileName="recompensa.jpg"
+          onCancel={() => setCropSrc(null)}
+          onConfirm={async ({ file }) => {
+            const b64 = await fileToBase64(file)
+            onChange('imageBase64', b64)
+            onChange('imageS3Key', null)
+            onChange('imageUrl', null)
+            setCropSrc(null)
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function RewardCard({ reward, index, total, onEdit, onDelete, onMoveUp, onMoveDown, disabled }) {
-  const imgSrc = reward.imageBase64 ? `data:image/jpeg;base64,${reward.imageBase64}` : null
+function RewardCard({ reward, onEdit, onDelete, disabled }) {
+  const imgSrc = getEntityImageSrc(reward)
 
   return (
     <div className="rws-card">
@@ -196,12 +225,6 @@ function RewardCard({ reward, index, total, onEdit, onDelete, onMoveUp, onMoveDo
         {reward.description && <p className="rws-card-desc">{reward.description}</p>}
       </div>
       <div className="rws-card-actions">
-        <button className="rws-icon-btn" onClick={onMoveUp} disabled={disabled || index === 0} title="Subir">
-          <ChevronUp size={16} />
-        </button>
-        <button className="rws-icon-btn" onClick={onMoveDown} disabled={disabled || index === total - 1} title="Bajar">
-          <ChevronDown size={16} />
-        </button>
         <button className="rws-icon-btn" onClick={onEdit} disabled={disabled} title="Editar">
           <Pencil size={16} />
         </button>
@@ -226,7 +249,7 @@ export default function SectionRewards({ campaign, onSaved }) {
     try {
       const data = await api.get(baseUrl)
       const sorted = [...(data || [])].sort(
-        (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+        (a, b) => Number(a.price ?? 0) - Number(b.price ?? 0) || (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
       )
       setRewards(sorted)
     } catch (err) {
@@ -297,31 +320,6 @@ export default function SectionRewards({ campaign, onSaved }) {
     }
   }
 
-  const handleSwap = async (i, j) => {
-    if (i < 0 || j < 0 || i >= rewards.length || j >= rewards.length) return
-    const a = rewards[i]
-    const b = rewards[j]
-    setBusy(true)
-    try {
-      await Promise.all([
-        api.put(`${baseUrl}/${a.id}`, {
-          title: a.title, description: a.description, price: a.price,
-          imageBase64: a.imageBase64, displayOrder: j,
-        }),
-        api.put(`${baseUrl}/${b.id}`, {
-          title: b.title, description: b.description, price: b.price,
-          imageBase64: b.imageBase64, displayOrder: i,
-        }),
-      ])
-      await fetchRewards()
-      notifyParent()
-    } catch (err) {
-      Swal.fire('Error', 'No se pudo reordenar. Intentá de nuevo.', 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="edc-form">
@@ -342,6 +340,9 @@ export default function SectionRewards({ campaign, onSaved }) {
           recompensas tangibles (productos, ediciones especiales) y simbólicas (agradecimientos,
           acceso anticipado, etc).
         </p>
+        <p>
+          Las recompensas se muestran automáticamente de <strong>menor a mayor precio</strong>.
+        </p>
       </div>
 
       {rewards.length === 0 && !creating && (
@@ -357,7 +358,7 @@ export default function SectionRewards({ campaign, onSaved }) {
 
       {rewards.length > 0 && (
         <div className="rws-list">
-          {rewards.map((reward, i) => (
+          {rewards.map((reward) => (
             <div key={reward.id} className="rws-item">
               {editingId === reward.id ? (
                 <RewardEditForm
@@ -369,12 +370,8 @@ export default function SectionRewards({ campaign, onSaved }) {
               ) : (
                 <RewardCard
                   reward={reward}
-                  index={i}
-                  total={rewards.length}
                   onEdit={() => setEditingId(reward.id)}
                   onDelete={() => handleDelete(reward)}
-                  onMoveUp={() => handleSwap(i, i - 1)}
-                  onMoveDown={() => handleSwap(i, i + 1)}
                   disabled={busy || editingId !== null || creating}
                 />
               )}

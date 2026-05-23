@@ -4,6 +4,7 @@ import Swal from 'sweetalert2'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
+import { getEntityImageSrc } from '$utils/imageSources'
 
 const NAME_MAX = 200
 const ROLE_MAX = 200
@@ -33,6 +34,8 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
     role: initial?.role || '',
     bio: initial?.bio || '',
     imageBase64: initial?.imageBase64 || null,
+    imageS3Key: initial?.imageS3Key || null,
+    imageUrl: initial?.imageUrl || null,
   })
   const [errors, setErrors] = useState({})
   const [cropSrc, setCropSrc] = useState(null)
@@ -67,10 +70,11 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
       role: form.role.trim() || null,
       bio: form.bio.trim() || null,
       imageBase64: form.imageBase64,
+      imageS3Key: form.imageS3Key,
     })
   }
 
-  const imgSrc = form.imageBase64 ? `data:image/jpeg;base64,${form.imageBase64}` : null
+  const imgSrc = getEntityImageSrc(form)
 
   return (
     <div className="rws-edit">
@@ -87,7 +91,15 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
                 onChange={e => { pickImage(e.target.files); e.target.value = '' }} />
             </label>
             {imgSrc && (
-              <button type="button" className="tms-photo-remove" onClick={() => onChange('imageBase64', null)}>
+              <button
+                type="button"
+                className="tms-photo-remove"
+                onClick={() => {
+                  onChange('imageBase64', null)
+                  onChange('imageS3Key', null)
+                  onChange('imageUrl', null)
+                }}
+              >
                 <X size={14} /> Quitar
               </button>
             )}
@@ -153,6 +165,8 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
           onConfirm={async ({ file }) => {
             const b64 = await fileToBase64(file)
             onChange('imageBase64', b64)
+            onChange('imageS3Key', null)
+            onChange('imageUrl', null)
             setCropSrc(null)
           }}
         />
@@ -161,8 +175,8 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
   )
 }
 
-function MemberCard({ member, index, total, onEdit, onDelete, onMoveUp, onMoveDown, disabled }) {
-  const imgSrc = member.imageBase64 ? `data:image/jpeg;base64,${member.imageBase64}` : null
+function MemberCard({ member, index, total, onEdit, onDelete, onMoveUp, onMoveDown, disabled, isLeader = false }) {
+  const imgSrc = getEntityImageSrc(member)
 
   return (
     <div className="tms-card">
@@ -170,6 +184,7 @@ function MemberCard({ member, index, total, onEdit, onDelete, onMoveUp, onMoveDo
         {imgSrc ? <img src={imgSrc} alt={member.name} /> : <User size={26} />}
       </div>
       <div className="tms-card-body">
+        {isLeader && <span className="tms-leader-tag">Líder del proyecto</span>}
         <h4 className="tms-card-name">{member.name}</h4>
         {member.role && <p className="tms-card-role">{member.role}</p>}
         {member.bio && <p className="tms-card-bio">{member.bio}</p>}
@@ -277,8 +292,22 @@ export default function SectionTeam({ campaign, onSaved }) {
     setBusy(true)
     try {
       await Promise.all([
-        api.put(`${baseUrl}/${a.id}`, { name: a.name, role: a.role, bio: a.bio, imageBase64: a.imageBase64, displayOrder: j }),
-        api.put(`${baseUrl}/${b.id}`, { name: b.name, role: b.role, bio: b.bio, imageBase64: b.imageBase64, displayOrder: i }),
+        api.put(`${baseUrl}/${a.id}`, {
+          name: a.name,
+          role: a.role,
+          bio: a.bio,
+          imageBase64: a.imageBase64,
+          imageS3Key: a.imageS3Key,
+          displayOrder: j,
+        }),
+        api.put(`${baseUrl}/${b.id}`, {
+          name: b.name,
+          role: b.role,
+          bio: b.bio,
+          imageBase64: b.imageBase64,
+          imageS3Key: b.imageS3Key,
+          displayOrder: i,
+        }),
       ])
       await fetchTeam()
       notifyParent()
@@ -306,7 +335,8 @@ export default function SectionTeam({ campaign, onSaved }) {
           llevarlo adelante.
         </p>
         <p>
-          Agregá al menos a la persona responsable. Para cada integrante podés indicar su
+          El <strong>primer integrante</strong> se toma como la persona líder o creadora principal del proyecto.
+          Ese perfil se destacará públicamente en la campaña. Para cada integrante podés indicar su
           <strong> nombre</strong>, su <strong>rol</strong> y una breve <strong>biografía</strong>.
         </p>
       </div>
@@ -338,6 +368,7 @@ export default function SectionTeam({ campaign, onSaved }) {
                   member={member}
                   index={i}
                   total={team.length}
+                  isLeader={i === 0}
                   onEdit={() => setEditingId(member.id)}
                   onDelete={() => handleDelete(member)}
                   onMoveUp={() => handleSwap(i, i - 1)}

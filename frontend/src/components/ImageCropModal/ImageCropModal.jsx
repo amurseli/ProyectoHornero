@@ -139,6 +139,10 @@ export default function ImageCropModal({
       ctx.drawImage(imgRef.current, sx, sy, sw, sh, 0, 0, outW, outH)
 
       canvas.toBlob((blob) => {
+        if (!blob) {
+          setBusy(false)
+          return
+        }
         const file = new File([blob], fileName, { type: 'image/jpeg' })
         onConfirm({ file, previewUrl: URL.createObjectURL(blob) })
       }, 'image/jpeg', 0.9)
