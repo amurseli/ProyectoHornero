@@ -1,5 +1,7 @@
 package com.hornero.config;
 
+import com.hornero.model.User;
+import com.hornero.repository.UserRepository;
 import com.hornero.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,6 +24,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -31,25 +36,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = getJwtFromCookie(request);
             
             if (jwt != null && jwtUtil.validateToken(jwt)) {
-                // Extract user information from token
-                String email = jwtUtil.extractEmail(jwt);
                 Long userId = jwtUtil.extractUserId(jwt);
-                String role = jwtUtil.extractRole(jwt);
+                User user = userRepository.findById(userId).orElse(null);
+
+                if (user != null && Boolean.TRUE.equals(user.getEnabled())) {
+                    String email = user.getEmail();
+                    String role = user.getRole() != null ? user.getRole().getName() : "USER";
                 
-                // Create authentication token
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    email, 
-                    null, 
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
-                );
+                    // Create authentication token
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        email,
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
+                    );
                 
-                // Set authentication in security context
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // Set authentication in security context
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 
-                // Add user info to request attributes for easy access
-                request.setAttribute("userId", userId);
-                request.setAttribute("userEmail", email);
-                request.setAttribute("userRole", role);
+                    // Add user info to request attributes for easy access
+                    request.setAttribute("userId", userId);
+                    request.setAttribute("userEmail", email);
+                    request.setAttribute("userRole", role);
+                }
             }
         } catch (Exception e) {
             logger.error("Cannot set user authentication: {}", e);
