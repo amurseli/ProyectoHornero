@@ -34,14 +34,21 @@ jobs:
         id: changes
         with:
           filters: |
-            backend:
-              - 'backend/**'
-            frontend:
-              - 'frontend/**'
-            payments:
-              - 'payments/**'
-            backoffice:
-              - 'backoffice/**'
+            backend: 'backend/**'
+            frontend: 'frontend/**'
+            payments: 'payments/**'
+            backoffice: 'backoffice/**'
+
+  build:
+    needs: detect
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend, payments, backoffice]
+    steps:
+      - name: Skip if unchanged
+        if: needs.detect.outputs[matrix.service] != 'true'
+        run: echo "No changes" && exit 0
 
       - name: Normalize GHCR namespace
         id: namespace
@@ -102,13 +109,30 @@ jobs:
     steps:
       - name: Write SSH private key
         env:
-          SSH_KEY: ${{ secrets.BACKEND_SSH_KEY }}
+          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
         run: |
-          printf "%s" "$SSH_KEY" > /tmp/deploy_key
-          chmod 600 /tmp/deploy_key
+          printf '%s\n' "$FRONTEND_ENV" > ./frontend/.env.frontend
+          echo "--- .env.frontend size and line count ---"
+          wc -lc ./frontend/.env.frontend
+          echo "--- variable names only (no values) ---"
+          grep -oE '^[A-Z_]+' ./frontend/.env.frontend || echo "EMPTY FILE"
+      
+      - uses: docker/build-push-action@v5
+        if: needs.detect.outputs[matrix.service] == 'true'
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/hornero-${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Deploy on EC2
+  deploy:
+    needs: [detect, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and pull
         env:
+          SSH_KEY: ${{ secrets.BACKEND_SSH_KEY }}
           EC2_USER: ${{ secrets.EC2_USER }}
           BACKEND_HOST: ${{ secrets.BACKEND_HOST }}
           GHCR_NAMESPACE: ${{ needs.detect.outputs.namespace }}
@@ -119,10 +143,11 @@ jobs:
           PAYMENTS_CHANGED: ${{ needs.detect.outputs.payments }}
           BACKOFFICE_CHANGED: ${{ needs.detect.outputs.backoffice }}
         run: |
+          printf "%s" "$SSH_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no "${EC2_USER}@${BACKEND_HOST}" <<EOF
           set -e
           cd /home/${EC2_USER}/ProyectoHornero
-
           git pull --ff-only origin main
           docker network inspect hornero-network >/dev/null 2>&1 || docker network create hornero-network
           echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
@@ -152,7 +177,4 @@ jobs:
             docker compose up -d backoffice
           fi
           EOF
-
-      - name: Remove SSH key
-        if: always()
-        run: rm -f /tmp/deploy_key
+          rm -f /tmp/deploy_key
