@@ -37,8 +37,8 @@ async function refreshAccessToken() {
 function handleSessionExpired() {
   window.dispatchEvent(new CustomEvent('auth:logout'))
 
-  if (!window.location.pathname.includes('/login')) {
-    window.location.href = '/login'
+  if (!window.location.pathname.includes('/backoffice/login')) {
+    window.location.href = '/backoffice/login'
   }
 }
 

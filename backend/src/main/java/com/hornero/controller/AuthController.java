@@ -51,6 +51,10 @@ public class AuthController {
 
             // Get user from refresh token
             User user = refreshToken.getUser();
+            if (!Boolean.TRUE.equals(user.getEnabled())) {
+                refreshTokenService.revokeAllUserTokens(user);
+                throw new RuntimeException("Usuario deshabilitado");
+            }
             String roleName = user.getRole() != null ? user.getRole().getName() : "USER";
 
             // Generate new access token

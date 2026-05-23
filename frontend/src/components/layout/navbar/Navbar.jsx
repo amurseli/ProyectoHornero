@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Menu, ChevronDown, Settings, FolderOpen, LogOut } from "lucide-react"
+import { User, Menu, ChevronDown, Settings, FolderOpen, LogOut, ShieldCheck } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../ui"
@@ -8,12 +8,30 @@ import { NavbarSearchBar } from "../../features"
 import { useUser } from "../../../store/useUser"
 import "./Navbar.css"
 
+function getBackofficeUrl() {
+  const configured = import.meta.env.VITE_BACKOFFICE_URL
+  if (configured) return configured
+
+  if (typeof window === 'undefined') return 'http://localhost:5174/backoffice/'
+
+  const { protocol, hostname, port } = window.location
+  const isLocalDev = hostname === 'localhost' || hostname === '127.0.0.1'
+
+  if (isLocalDev) {
+    const backofficePort = port === '5174' ? port : '5174'
+    return `${protocol}//${hostname}:${backofficePort}/backoffice/`
+  }
+
+  return `${window.location.origin}/backoffice/`
+}
+
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const { user, logout } = useUser()
   const navigate = useNavigate()
   const dropdownRef = useRef(null)
+  const backofficeUrl = getBackofficeUrl()
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -80,6 +98,18 @@ function Navbar() {
                     <FolderOpen size={16} aria-hidden="true" />
                     Mis campañas
                   </Link>
+                  {user.role === 'ADMIN' && (
+                    <a
+                      href={backofficeUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="navbar-dropdown-item"
+                      onClick={() => setUserDropdownOpen(false)}
+                    >
+                      <ShieldCheck size={16} aria-hidden="true" />
+                      Backoffice
+                    </a>
+                  )}
                   <div className="navbar-dropdown-divider" />
                   <button
                     className="navbar-dropdown-item navbar-dropdown-item--danger"
@@ -129,6 +159,17 @@ function Navbar() {
               <Link to="/campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
                 Mis campañas
               </Link>
+              {user.role === 'ADMIN' && (
+                <a
+                  href={backofficeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="navbar-mobile-link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Backoffice
+                </a>
+              )}
               <button className="navbar-mobile-link" onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>
                 Cerrar sesión
               </button>

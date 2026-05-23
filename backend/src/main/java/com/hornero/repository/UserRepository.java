@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -23,4 +24,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.userName = :userName")
     boolean existsByUserName(@Param("userName") String userName);
+    long countByRole_Name(String roleName);
+
+    long countByEnabledFalse();
 }

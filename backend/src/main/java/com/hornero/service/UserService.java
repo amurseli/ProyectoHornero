@@ -1,15 +1,21 @@
 package com.hornero.service;
 
+import com.hornero.dto.AdminUserListResponse;
+import com.hornero.dto.AdminUserResponse;
 import com.hornero.dto.UpdateProfileRequest;
 import com.hornero.model.Role;
 import com.hornero.model.User;
 import com.hornero.repository.RoleRepository;
 import com.hornero.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +33,9 @@ public class UserService {
 
     @Autowired
     private EmailVerificationService emailVerificationService;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
     
     @Transactional
     public User createUser(User user) {        
@@ -68,6 +77,21 @@ public class UserService {
     
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    public AdminUserListResponse listUsers(int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<User> users = userRepository.findAll(pageable);
+
+        AdminUserListResponse response = new AdminUserListResponse();
+        response.setItems(users.getContent().stream().map(AdminUserResponse::fromEntity).toList());
+        response.setTotalUsers(userRepository.count());
+        response.setTotalAdmins(userRepository.countByRole_Name("ADMIN"));
+        response.setTotalBlocked(userRepository.countByEnabledFalse());
+        response.setPage(users.getNumber());
+        response.setSize(users.getSize());
+        response.setTotalPages(users.getTotalPages());
+        return response;
     }
     
     public Optional<User> getUserById(Long id) {
@@ -130,6 +154,10 @@ public class UserService {
         }
         
         return user;
+    }
+
+    public Optional<User> getEnabledUserById(Long userId) {
+        return userRepository.findById(userId).filter(user -> Boolean.TRUE.equals(user.getEnabled()));
     }
 
     /**
@@ -213,5 +241,53 @@ public class UserService {
         user.setRole(creatorRole);
 
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public User promoteToAdmin(Long userId, Long actorUserId) {
+        if (userId.equals(actorUserId)) {
+            throw new RuntimeException("No podés cambiar tu propio rol desde esta sección");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Role adminRole = roleRepository.findByName("ADMIN")
+                .orElseThrow(() -> new RuntimeException("Role ADMIN not found"));
+
+        user.setRole(adminRole);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User removeAdmin(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Role contributorRole = roleRepository.findByName("CONTRIBUTOR")
+                .orElseThrow(() -> new RuntimeException("Role CONTRIBUTOR not found"));
+
+        user.setRole(contributorRole);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User setUserEnabled(Long userId, boolean enabled, Long actorUserId) {
+        if (userId.equals(actorUserId) && !enabled) {
+            throw new RuntimeException("No podés bloquear tu propio usuario");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        user.setEnabled(enabled);
+        user.setDisabledAt(enabled ? null : LocalDateTime.now());
+        User saved = userRepository.save(user);
+
+        if (!enabled) {
+            refreshTokenService.revokeAllUserTokens(saved);
+        }
+
+        return saved;
     }
 }

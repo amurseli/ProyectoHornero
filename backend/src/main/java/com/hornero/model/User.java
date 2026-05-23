@@ -173,6 +173,14 @@ public class User {
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
+
+    public LocalDateTime getDisabledAt() {
+        return disabledAt;
+    }
+
+    public void setDisabledAt(LocalDateTime disabledAt) {
+        this.disabledAt = disabledAt;
+    }
     
     public Role getRole() {
         return role;
