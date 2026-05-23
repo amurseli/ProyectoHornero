@@ -9,6 +9,19 @@ on:
       - 'payments/**'
       - 'backoffice/**'
       - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Servicio a desplegar'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - backend
+          - frontend
+          - payments
+          - backoffice
 
 concurrency:
   group: deploy-main
@@ -21,17 +34,52 @@ permissions:
 jobs:
   detect:
     runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.changes.outputs.backend }}
-      frontend: ${{ steps.changes.outputs.frontend }}
-      payments: ${{ steps.changes.outputs.payments }}
-      backoffice: ${{ steps.changes.outputs.backoffice }}
-      namespace: ${{ steps.namespace.outputs.value }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Resolve manual selection
+        id: manual
+        run: |
+          SERVICE="${{ github.event.inputs.service }}"
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            SERVICE="auto"
+          fi
+
+          if [ "$SERVICE" = "all" ]; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+            echo "payments=true" >> "$GITHUB_OUTPUT"
+            echo "backoffice=true" >> "$GITHUB_OUTPUT"
+          elif [ "$SERVICE" = "backend" ]; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+            echo "payments=false" >> "$GITHUB_OUTPUT"
+            echo "backoffice=false" >> "$GITHUB_OUTPUT"
+          elif [ "$SERVICE" = "frontend" ]; then
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+            echo "payments=false" >> "$GITHUB_OUTPUT"
+            echo "backoffice=false" >> "$GITHUB_OUTPUT"
+          elif [ "$SERVICE" = "payments" ]; then
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+            echo "payments=true" >> "$GITHUB_OUTPUT"
+            echo "backoffice=false" >> "$GITHUB_OUTPUT"
+          elif [ "$SERVICE" = "backoffice" ]; then
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+            echo "payments=false" >> "$GITHUB_OUTPUT"
+            echo "backoffice=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+            echo "payments=false" >> "$GITHUB_OUTPUT"
+            echo "backoffice=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: dorny/paths-filter@v3
         id: changes
+        if: github.event_name != 'workflow_dispatch'
         with:
           filters: |
             backend: 'backend/**'
@@ -39,9 +87,31 @@ jobs:
             payments: 'payments/**'
             backoffice: 'backoffice/**'
 
+      - name: Export effective service flags
+        id: effective
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "backend=${{ steps.manual.outputs.backend }}" >> "$GITHUB_OUTPUT"
+            echo "frontend=${{ steps.manual.outputs.frontend }}" >> "$GITHUB_OUTPUT"
+            echo "payments=${{ steps.manual.outputs.payments }}" >> "$GITHUB_OUTPUT"
+            echo "backoffice=${{ steps.manual.outputs.backoffice }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=${{ steps.changes.outputs.backend }}" >> "$GITHUB_OUTPUT"
+            echo "frontend=${{ steps.changes.outputs.frontend }}" >> "$GITHUB_OUTPUT"
+            echo "payments=${{ steps.changes.outputs.payments }}" >> "$GITHUB_OUTPUT"
+            echo "backoffice=${{ steps.changes.outputs.backoffice }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Normalize GHCR namespace
         id: namespace
         run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      backend: ${{ steps.effective.outputs.backend }}
+      frontend: ${{ steps.effective.outputs.frontend }}
+      payments: ${{ steps.effective.outputs.payments }}
+      backoffice: ${{ steps.effective.outputs.backoffice }}
+      namespace: ${{ steps.namespace.outputs.value }}
 
   build:
     needs: detect
