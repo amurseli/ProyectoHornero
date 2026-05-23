@@ -1,5 +1,6 @@
 package com.hornero.payments.service;
 
+import com.hornero.payments.client.BackendClient;
 import com.hornero.payments.dto.RefundSummaryResponse;
 import com.hornero.payments.gateway.MercadoPagoGateway;
 import com.hornero.payments.model.Contribution;

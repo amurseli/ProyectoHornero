@@ -1,1 +1,0 @@
-ALTER TABLE campaign ADD COLUMN money_status VARCHAR(30) NULL;
