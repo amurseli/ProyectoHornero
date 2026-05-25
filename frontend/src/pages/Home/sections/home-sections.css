@@ -2,20 +2,8 @@
    HOME SECTIONS - Unified Styles
    ========================================================================== */
 
-/* Fade-in Animation */
-.fade-in {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.fade-in--visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* ==========================================================================
-   Shared Section Styles
+   Shared
    ========================================================================== */
 
 .section-header {
@@ -45,35 +33,6 @@
   margin: 0;
 }
 
-/* ==========================================================================
-   Featured Section
-   ========================================================================== */
-
-.featured-section {
-  min-width: 0;
-}
-
-.featured-icon { color: var(--color-primary); }
-
-.featured-hero {
-  margin-bottom: 1.25rem;
-}
-
-.featured-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-}
-
-@media (max-width: 1024px) {
-  .featured-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 640px) {
-  .featured-grid { grid-template-columns: 1fr; }
-}
-
-/* Loading */
 .section-loading {
   padding: 3rem;
   text-align: center;
@@ -95,39 +54,12 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ==========================================================================
-   Ending Soon Section
-   ========================================================================== */
-
-.ending-soon-section {
-  min-width: 0;
-}
-
-.ending-soon-icon { color: var(--color-primary-light); }
-
-.ending-soon-hero {
-  margin-bottom: 1.25rem;
-}
-
-.ending-soon-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-}
-
-@media (max-width: 1024px) {
-  .ending-soon-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 640px) {
-  .ending-soon-grid { grid-template-columns: 1fr; }
-}
-
-/* ==========================================================================
-   Spotlight Section - Carousel
+   Spotlight Section - Full Width Carousel (va FUERA del grid)
    ========================================================================== */
 
 .spotlight-section {
-  min-width: 0;
+  width: 100%;
+  margin-bottom: 2.5rem;
 }
 
 .spotlight-icon { color: var(--color-secondary-dark); }
@@ -136,12 +68,10 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
-.spotlight-header-content {
-  flex: 1;
-}
+.spotlight-header-content { flex: 1; }
 
 .spotlight-nav {
   display: flex;
@@ -149,8 +79,8 @@
 }
 
 .spotlight-nav-btn {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 50%;
   border: 1px solid var(--color-border);
   background: var(--color-background);
@@ -174,49 +104,159 @@
 
 .spotlight-carousel {
   overflow: hidden;
+  border-radius: var(--radius-lg);
 }
 
 .spotlight-track {
   display: flex;
   gap: 1.25rem;
-  transition: transform 0.4s ease;
+  transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .spotlight-item {
-  flex: 0 0 280px;
+  flex: 0 0 calc(50% - 0.625rem);
   min-width: 0;
 }
 
+@media (max-width: 1024px) {
+  .spotlight-item { flex: 0 0 calc(66.666% - 0.625rem); }
+}
+
 @media (max-width: 640px) {
-  .spotlight-item { flex: 0 0 85vw; }
+  .spotlight-item { flex: 0 0 90%; }
   .spotlight-nav { display: none; }
   
   .spotlight-carousel {
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+    scrollbar-width: none;
   }
-  
-  .spotlight-carousel::-webkit-scrollbar { height: 6px; }
-  .spotlight-carousel::-webkit-scrollbar-track { background: transparent; }
-  .spotlight-carousel::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 3px;
-  }
-  
+  .spotlight-carousel::-webkit-scrollbar { display: none; }
   .spotlight-track { transition: none; }
-  .spotlight-item { scroll-snap-align: start; }
+  .spotlight-item { scroll-snap-align: center; }
+}
+/* ==========================================================================
+   Featured Section - Bento Layout
+   ========================================================================== */
+
+.featured-section { min-width: 0; }
+.featured-icon { color: var(--color-primary); }
+
+.featured-bento {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.featured-bento-hero {
+  grid-row: span 2;
+}
+
+.featured-bento-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .featured-bento {
+    grid-template-columns: 1fr;
+  }
+  
+  .featured-bento-hero {
+    grid-row: span 1;
+  }
+  
+  .featured-bento-stack {
+    flex-direction: row;
+  }
+  
+  .featured-bento-stack > * {
+    flex: 1;
+  }
+  
+  .featured-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .featured-bento-stack {
+    flex-direction: column;
+  }
+  
+  .featured-grid { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   Ending Soon Section - Bento Layout
+   ========================================================================== */
+
+.ending-soon-section { min-width: 0; }
+.ending-soon-icon { color: var(--color-primary-light); }
+
+.ending-soon-bento {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.ending-soon-bento-hero {
+  grid-row: span 2;
+}
+
+.ending-soon-bento-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ending-soon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .ending-soon-bento {
+    grid-template-columns: 1fr;
+  }
+  
+  .ending-soon-bento-hero {
+    grid-row: span 1;
+  }
+  
+  .ending-soon-bento-stack {
+    flex-direction: row;
+  }
+  
+  .ending-soon-bento-stack > * {
+    flex: 1;
+  }
+  
+  .ending-soon-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .ending-soon-bento-stack {
+    flex-direction: column;
+  }
+  
+  .ending-soon-grid { grid-template-columns: 1fr; }
 }
 
 /* ==========================================================================
    Near Goal Section (Sidebar)
    ========================================================================== */
 
-.near-goal-section {
-  min-width: 0;
-}
+.near-goal-section { min-width: 0; }
 
 .near-goal-header {
   margin-bottom: 1rem;

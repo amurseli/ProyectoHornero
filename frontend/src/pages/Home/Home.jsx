@@ -40,17 +40,22 @@ function Home() {
               onNext={search.goNext}
             />
           ) : (
-            <div className="home-grid">
-              <div className="home-main-column">
-                <FeaturedSection   campaigns={featuredCampaigns}   isLoading={isLoading} />
-                <EndingSoonSection campaigns={endingSoonCampaigns} isLoading={isLoading} />
-                <SpotlightSection  campaigns={recentCampaigns}     isLoading={isLoading} />
-              </div>
+            <>
+              {/* Carrusel full-width - FUERA del grid */}
+              <SpotlightSection campaigns={recentCampaigns} isLoading={isLoading} />
 
-              <aside className="home-sidebar">
-                <NearGoalSection campaigns={nearGoalCampaigns} isLoading={isLoading} />
-              </aside>
-            </div>
+              {/* Grid principal */}
+              <div className="home-grid">
+                <div className="home-main-column">
+                  <FeaturedSection campaigns={featuredCampaigns} isLoading={isLoading} />
+                  <EndingSoonSection campaigns={endingSoonCampaigns} isLoading={isLoading} />
+                </div>
+
+                <aside className="home-sidebar">
+                  <NearGoalSection campaigns={nearGoalCampaigns} isLoading={isLoading} />
+                </aside>
+              </div>
+            </>
           )}
         </div>
       </main>

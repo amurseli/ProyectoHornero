@@ -9,7 +9,8 @@ function EndingSoonSection({ campaigns, isLoading }) {
   if (isLoading) return null
   if (!campaigns || campaigns.length === 0) return null
 
-  const [hero, ...rest] = campaigns
+  const [hero, side1, side2, ...rest] = campaigns
+  const hasBento = hero && side1 && side2
 
   return (
     <section ref={ref} className={`ending-soon-section ${className}`}>
@@ -21,9 +22,15 @@ function EndingSoonSection({ campaigns, isLoading }) {
         <p className="section-subtitle">Ultimos dias para sumarte antes de que cierren</p>
       </div>
 
-      {hero && (
-        <div className="ending-soon-hero">
-          <CampaignCard campaign={hero} variant="featured" />
+      {hasBento && (
+        <div className="ending-soon-bento">
+          <div className="ending-soon-bento-hero">
+            <CampaignCard campaign={hero} variant="featured" />
+          </div>
+          <div className="ending-soon-bento-stack">
+            <CampaignCard campaign={side1} variant="featured" />
+            <CampaignCard campaign={side2} variant="featured" />
+          </div>
         </div>
       )}
 

@@ -20,15 +20,22 @@ function FeaturedSection({ campaigns, isLoading }) {
 
   if (!campaigns || campaigns.length === 0) return null
 
-  const [hero, ...rest] = campaigns
+  const [hero, side1, side2, ...rest] = campaigns
+  const hasBento = hero && side1 && side2
 
   return (
     <section ref={ref} className={`featured-section ${className}`}>
       <SectionHeader />
       
-      {hero && (
-        <div className="featured-hero">
-          <CampaignCard campaign={hero} variant="featured" />
+      {hasBento && (
+        <div className="featured-bento">
+          <div className="featured-bento-hero">
+            <CampaignCard campaign={hero} variant="featured" />
+          </div>
+          <div className="featured-bento-stack">
+            <CampaignCard campaign={side1} variant="featured" />
+            <CampaignCard campaign={side2} variant="featured" />
+          </div>
         </div>
       )}
       
