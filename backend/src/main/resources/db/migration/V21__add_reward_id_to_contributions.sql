@@ -1,0 +1,1 @@
+ALTER TABLE payments.contribution ADD COLUMN reward_id BIGINT; 

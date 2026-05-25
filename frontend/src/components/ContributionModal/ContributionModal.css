@@ -5,12 +5,13 @@
 .cm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: var(--space-lg);
+  backdrop-filter: blur(2px);
 }
 
 .cm-modal {
@@ -46,9 +47,83 @@
   color: var(--color-text-primary);
 }
 
-/* ── Step container ── */
+/* ── Step indicator ── */
 
-.cm-step {
+.cm-steps {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-xl);
+  padding-right: 2.5rem;
+}
+
+.cm-step-item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.cm-step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-bg-card, white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: all var(--transition-base);
+  z-index: 1;
+}
+
+.cm-step-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+
+.cm-step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--color-border);
+  margin: 0 var(--space-xs);
+  transition: background var(--transition-base);
+}
+
+/* active step */
+.cm-step-item--active .cm-step-dot {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+.cm-step-item--active .cm-step-label {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* completed step */
+.cm-step-item--done .cm-step-dot {
+  border-color: #16a34a;
+  background: #16a34a;
+  color: white;
+}
+.cm-step-item--done .cm-step-label {
+  color: #16a34a;
+}
+.cm-step-item--done .cm-step-line {
+  background: #16a34a;
+}
+
+/* ── Body ── */
+
+.cm-body {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -59,27 +134,57 @@
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0;
-  padding-right: 2rem;
 }
 
 .cm-subtitle {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+/* ── Amount chips ── */
+
+.cm-chips {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.cm-chip {
+  padding: 0.375rem 0.875rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+.cm-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+.cm-chip--active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
 }
 
 /* ── Amount input ── */
 
 .cm-amount-row {
   display: flex;
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
   transition: box-shadow var(--transition-fast);
 }
 .cm-amount-row:focus-within {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
   border-color: var(--color-primary);
 }
 
@@ -87,9 +192,9 @@
   padding: 0.625rem 0.875rem;
   background: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-muted);
-  border-right: 1px solid var(--color-border);
+  border-right: 1.5px solid var(--color-border);
   display: flex;
   align-items: center;
   white-space: nowrap;
@@ -98,8 +203,8 @@
 .cm-amount-input {
   border: none;
   padding: 0.625rem 0.75rem;
-  font-size: var(--font-size-base);
-  font-weight: 600;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
   width: 100%;
   outline: none;
   font-family: inherit;
@@ -159,6 +264,30 @@
   border-top: 1px solid #b7e4c7;
 }
 
+/* ── Payment summary banner ── */
+
+.cm-payment-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border-radius: var(--radius-md);
+  padding: 0.625rem 1rem;
+}
+
+.cm-payment-summary__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.cm-payment-summary__amount {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
 /* ── Buttons ── */
 
 .cm-btn {
@@ -190,15 +319,33 @@
 .cm-result {
   align-items: center;
   text-align: center;
-  padding: var(--space-md) 0;
+  padding: var(--space-lg) 0 var(--space-md);
 }
 
-.cm-icon {
+.cm-result-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
-.cm-icon--success { color: #16a34a; }
-.cm-icon--error   { color: #dc2626; }
-.cm-icon--pending { color: var(--color-primary); }
+
+.cm-result-icon--success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.cm-result-icon--error {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.cm-result-icon--pending {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
 
 /* ── Spinner animation ── */
 

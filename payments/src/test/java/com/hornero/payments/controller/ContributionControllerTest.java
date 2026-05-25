@@ -77,7 +77,7 @@ class ContributionControllerTest {
     void initiate_withValidJwtInCookie_callsServiceAndReturns201() throws Exception {
         when(jwtUtil.validateToken("test-token")).thenReturn(true);
         when(jwtUtil.extractUserId("test-token")).thenReturn(1L);
-        contributionService.initiateResponse = new InitiateContributionResponse(42L, "TEST-key", new BigDecimal("100"), "ARS", null, "PENDING");
+        contributionService.initiateResponse = new InitiateContributionResponse(42L, "TEST-key", new BigDecimal("100"), "ARS", null, "PENDING", null);
 
         mockMvc.perform(post("/api/payments/contributions/initiate")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -91,7 +91,7 @@ class ContributionControllerTest {
     void initiate_withValidJwtInAuthorizationHeader_callsServiceAndReturns201() throws Exception {
         when(jwtUtil.validateToken("header-token")).thenReturn(true);
         when(jwtUtil.extractUserId("header-token")).thenReturn(2L);
-        contributionService.initiateResponse = new InitiateContributionResponse(99L, "TEST-key", new BigDecimal("200"), "ARS", null, "PENDING");
+        contributionService.initiateResponse = new InitiateContributionResponse(99L, "TEST-key", new BigDecimal("200"), "ARS", null, "PENDING", null);
 
         mockMvc.perform(post("/api/payments/contributions/initiate")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -154,7 +154,7 @@ public class BackendClient {
     }
 
     public String getUsername(Long userId) {
-        String url = backendUrl + "/api/users/" + userId;
+        String url = backendUrl + "/internal/users/" + userId;
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Service-Key", serviceKey);

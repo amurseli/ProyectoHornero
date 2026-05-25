@@ -14,9 +14,16 @@ import com.hornero.payments.repository.ContributionRepository;
 import com.hornero.payments.repository.TransactionRepository;
 import com.mercadopago.client.payment.PaymentCreateRequest;
 import com.mercadopago.client.payment.PaymentPayerRequest;
+import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
+import com.mercadopago.client.preference.PreferenceClient;
+import com.mercadopago.client.preference.PreferenceItemRequest;
+import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
+import com.mercadopago.resources.preference.Preference;
+
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
-import java.util.List;
 
 @Service
 public class ContributionService {
@@ -41,6 +47,9 @@ public class ContributionService {
 
     @Value("${mercadopago.public-key}")
     private String mpPublicKey;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     public ContributionService(ContributionRepository contributionRepository,
                                TransactionRepository transactionRepository,
@@ -76,13 +85,16 @@ public class ContributionService {
         logger.info("Contribucion {} iniciada: user={} campaign={} amount={} reward={}", contribution.getId(), userId, campaignId, selection.amount(), selection.rewardId());
         eventLog.logContributionInitiated(contribution.getId(), userId, campaignId, selection.amount());
 
+        String preferenceId = createPreference(contribution.getId(), selection.amount());
+
         return new InitiateContributionResponse(
                 contribution.getId(),
                 mpPublicKey,
                 selection.amount(),
                 "ARS",
                 toRewardInfo(selection),
-                contribution.getStatus()
+                contribution.getStatus(),
+                preferenceId
         );
     }
 
@@ -96,8 +108,16 @@ public class ContributionService {
             throw new SecurityException("No autorizado para procesar esta contribucion");
         }
 
-        if (!"PENDING".equals(contribution.getStatus())) {
+        boolean isWalletReturn = "wallet_purchase".equalsIgnoreCase(req.getPaymentType());
+        if (!isWalletReturn && !"PENDING".equals(contribution.getStatus())) {
             throw new IllegalStateException("La contribucion ya fue procesada. Estado actual: " + contribution.getStatus());
+        }
+        // Para wallet_purchase que ya fue procesado (estado final), solo devolvemos el estado actual
+        if (isWalletReturn && (
+                "APPROVED".equals(contribution.getStatus()) ||
+                "REJECTED".equals(contribution.getStatus()) ||
+                "CANCELLED".equals(contribution.getStatus()))) {
+            return buildStatusResponse(contribution, contribution.getTransaction());
         }
 
         // Validar que la campana sigue activa antes de cobrar
@@ -107,22 +127,46 @@ public class ContributionService {
         Transaction transaction = new Transaction();
         transaction.setContribution(contribution);
         transaction.setAmount(contribution.getAmount());
-        transaction.setTransactionMethod("CARD");
+
+        boolean isWalletPurchase = isWalletReturn;
+        boolean isAccountMoney = "account_money".equalsIgnoreCase(req.getPaymentMethodId());
+        transaction.setTransactionMethod(isWalletPurchase || isAccountMoney ? "ACCOUNT_MONEY" : "CARD");
         transaction.setPaymentProvider("MERCADO_PAGO");
 
         try {
-            // Llamar a MercadoPago
-            PaymentCreateRequest mpRequest = PaymentCreateRequest.builder()
-                    .transactionAmount(contribution.getAmount())
-                    .token(req.getToken())
-                    .paymentMethodId(req.getPaymentMethodId())
-                    .installments(req.getInstallments())
-                    .payer(PaymentPayerRequest.builder()
-                            .email(req.getPayerEmail())
-                            .build())
-                    .build();
+            Payment mpPayment;
 
-            Payment mpPayment = mercadoPagoGateway.create(mpRequest);
+            if (isWalletPurchase) {
+                // El pago fue procesado por MP via la Preference; solo lo consultamos por ID
+                Long mpPaymentId = req.getPaymentId();
+                if (mpPaymentId == null) {
+                    throw new IllegalArgumentException("wallet_purchase requiere paymentId");
+                }
+                mpPayment = mercadoPagoGateway.get(mpPaymentId);
+            } else {
+                // Llamar a MercadoPago
+                PaymentCreateRequest mpRequest;
+                if (isAccountMoney) {
+                    mpRequest = PaymentCreateRequest.builder()
+                            .transactionAmount(contribution.getAmount())
+                            .paymentMethodId("account_money")
+                            .payer(PaymentPayerRequest.builder()
+                                    .email(req.getPayerEmail())
+                                    .build())
+                            .build();
+                } else {
+                    mpRequest = PaymentCreateRequest.builder()
+                            .transactionAmount(contribution.getAmount())
+                            .token(req.getToken())
+                            .paymentMethodId(req.getPaymentMethodId())
+                            .installments(req.getInstallments())
+                            .payer(PaymentPayerRequest.builder()
+                                    .email(req.getPayerEmail())
+                                    .build())
+                            .build();
+                }
+                mpPayment = mercadoPagoGateway.create(mpRequest);
+            }
 
             transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
 
@@ -290,6 +334,42 @@ public class ContributionService {
                 approvedTotal == null ? BigDecimal.ZERO : approvedTotal,
                 currentRewardContribution
         );
+    }
+
+    private String createPreference(Long contributionId, BigDecimal amount) {
+        try {
+            String returnBase = frontendUrl + "/payment/return";
+
+            PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
+                    .success(returnBase + "?status=success&contributionId=" + contributionId)
+                    .failure(returnBase + "?status=failure&contributionId=" + contributionId)
+                    .pending(returnBase + "?status=pending&contributionId=" + contributionId)
+                    .build();
+
+            PreferenceItemRequest item = PreferenceItemRequest.builder()
+                    .id(String.valueOf(contributionId))
+                    .title("Contribución a campaña")
+                    .quantity(1)
+                    .unitPrice(amount)
+                    .currencyId("ARS")
+                    .build();
+
+            Preference preference = new PreferenceClient().create(
+                    PreferenceRequest.builder()
+                            .items(List.of(item))
+                            .backUrls(backUrls)
+                            .externalReference(String.valueOf(contributionId))
+                            .build()
+            );
+            return preference.getId();
+        } catch (MPApiException e) {
+            logger.warn("No se pudo crear la Preference de MP para contribucion {}: HTTP {} - {}",
+                    contributionId, e.getStatusCode(), e.getApiResponse().getContent());
+            return null;
+        } catch (Exception e) {
+            logger.warn("No se pudo crear la Preference de MP para contribucion {}: {}", contributionId, e.getMessage());
+            return null;
+        }
     }
 
     private String mapProviderStatus(String mpStatus) {
