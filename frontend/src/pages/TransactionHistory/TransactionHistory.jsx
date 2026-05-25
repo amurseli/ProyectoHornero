@@ -64,7 +64,7 @@ function TransactionHistory() {
           <h1>Historial de transacciones</h1>
           <p>
             Consultá todos los pagos registrados en la aplicación y, cuando exista hash on-chain,
-            seguí el enlace directo a Polygonscan.
+            seguí el enlace directo a Polygonscan Amoy.
           </p>
         </div>
       </section>
@@ -117,10 +117,6 @@ function TransactionHistory() {
                     <div>
                       <span className="transaction-label">Fecha</span>
                       <strong>{formatDate(transaction.createdAt)}</strong>
-                    </div>
-                    <div>
-                      <span className="transaction-label">ID externo</span>
-                      <strong className="transaction-code">{transaction.externalTransactionId || 'N/D'}</strong>
                     </div>
                   </div>
 

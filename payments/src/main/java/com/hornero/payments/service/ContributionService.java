@@ -111,10 +111,13 @@ public class ContributionService {
 
             transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
             transaction.setPaymentProvider("MERCADO_PAGO");
-            transaction.setHashTx(ledgerClient.registerTransaction(contribution, transaction));
-            transactionRepository.save(transaction);
 
             String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
+            if ("APPROVED".equals(newStatus)) {
+                transaction.setHashTx(ledgerClient.registerTransaction(contribution, transaction));
+            }
+            transactionRepository.save(transaction);
+
             contribution.setStatus(newStatus);
             contributionRepository.save(contribution);
 

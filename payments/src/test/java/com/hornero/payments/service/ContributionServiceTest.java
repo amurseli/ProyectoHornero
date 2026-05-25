@@ -142,13 +142,13 @@ class ContributionServiceTest {
         when(mockPayment.getStatus()).thenReturn("rejected");
         when(mockPayment.getId()).thenReturn(222L);
         when(mercadoPagoGateway.create(any())).thenReturn(mockPayment);
-        when(ledgerClient.registerTransaction(any(), any())).thenReturn(LedgerClient.WALLET_OUT_OF_MONEY);
 
         ContributionStatusResponse response = service.process(1L, 1L, buildRequest());
 
         assertThat(response.getStatus()).isEqualTo("REJECTED");
-        assertThat(response.getTransaction().getHashTx()).isEqualTo(LedgerClient.WALLET_OUT_OF_MONEY);
+        assertThat(response.getTransaction().getHashTx()).isNull();
         verify(backendClient, never()).updateCampaignAmount(any(), any());
+        verify(ledgerClient, never()).registerTransaction(any(), any());
     }
 
     @Test

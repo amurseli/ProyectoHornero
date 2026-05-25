@@ -21,7 +21,7 @@ public class TransactionHistoryController {
     @Autowired
     private PaymentContributionRepository paymentContributionRepository;
 
-    @Value("${app.blockchain.explorer-base-url:https://polygonscan.com/tx/}")
+    @Value("${app.blockchain.explorer-base-url:https://amoy.polygonscan.com}")
     private String blockchainExplorerBaseUrl;
 
     @GetMapping("/history")
@@ -54,6 +54,6 @@ public class TransactionHistoryController {
         if (hashTx == null || hashTx.isBlank() || !hashTx.startsWith("0x")) {
             return null;
         }
-        return blockchainExplorerBaseUrl + hashTx;
+        return blockchainExplorerBaseUrl + "/tx/" + hashTx + "#eventlog";
     }
 }

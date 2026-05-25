@@ -90,7 +90,7 @@ app:
   frontend:
     url: ${FRONTEND_URL:http://localhost:5173}
   blockchain:
-    explorer-base-url: ${BLOCKCHAIN_EXPLORER_BASE_URL:https://polygonscan.com/tx/}
+    explorer-base-url: ${BLOCKCHAIN_EXPLORER_BASE_URL:https://amoy.polygonscan.com}
   oauth2:
     authorized-redirect-uris:
       - ${FRONTEND_URL:http://localhost:5173}/oauth2/redirect
