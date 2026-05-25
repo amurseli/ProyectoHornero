@@ -1,75 +1,54 @@
-import { useState, useEffect, useRef } from 'react'
-import { Eye, Pencil, HelpCircle, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Eye, Pencil, HelpCircle, Save } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { Button } from '$components/ui'
 import api from '$utils/api/api'
 
 const MAX_LENGTH = 6000
-const DEBOUNCE_MS = 1500
-
-function SaveStatus({ status }) {
-  if (status === 'saving') return (
-    <span className="edc-historia-status edc-historia-status--saving">
-      <Loader2 size={14} className="edc-spin" /> Guardando…
-    </span>
-  )
-  if (status === 'saved') return (
-    <span className="edc-historia-status edc-historia-status--saved">
-      <Check size={14} /> Guardado
-    </span>
-  )
-  if (status === 'error') return (
-    <span className="edc-historia-status edc-historia-status--error">
-      <AlertCircle size={14} /> Error al guardar
-    </span>
-  )
-  return null
-}
 
 export default function SectionHistoria({ campaign, onSaved }) {
   const [description, setDescription] = useState(campaign.description || '')
   const [mode, setMode] = useState('edit')
   const [showGuide, setShowGuide] = useState(false)
-  const [status, setStatus] = useState('idle')
-
-  const lastSavedRef = useRef(campaign.description || '')
-  const timerRef = useRef(null)
-
-  useEffect(() => {
-    if (description === lastSavedRef.current) return
-
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(async () => {
-      setStatus('saving')
-      try {
-        await api.put(`/api/campaigns/${campaign.id}`, {
-          title: campaign.title,
-          shortDescription: campaign.shortDescription,
-          description,
-          country: campaign.country,
-          targetAmount: campaign.targetAmount,
-          startDate: campaign.startDate,
-          endDate: campaign.endDate,
-          status: campaign.status,
-          owner: campaign.owner ? { id: campaign.owner.id } : null,
-          category: campaign.category ? { id: campaign.category.id } : null,
-          // null => leave existing media untouched (this section never edits it)
-          media: null,
-        })
-        lastSavedRef.current = description
-        setStatus('saved')
-        if (onSaved) onSaved()
-      } catch (err) {
-        setStatus('error')
-      }
-    }, DEBOUNCE_MS)
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [description])
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
 
   const tooLong = description.length > MAX_LENGTH
+
+  const handleChange = (value) => {
+    setDescription(value)
+    setSaved(false)
+    setError('')
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      await api.put(`/api/campaigns/${campaign.id}`, {
+        title: campaign.title,
+        shortDescription: campaign.shortDescription,
+        description,
+        country: campaign.country,
+        targetAmount: campaign.targetAmount,
+        startDate: campaign.startDate,
+        endDate: campaign.endDate,
+        status: campaign.status,
+        owner: campaign.owner ? { id: campaign.owner.id } : null,
+        category: campaign.category ? { id: campaign.category.id } : null,
+        // null => leave existing media untouched (this section never edits it)
+        media: null,
+      })
+      setSaved(true)
+      if (onSaved) onSaved()
+    } catch (err) {
+      setError('Error al guardar: ' + (err.message || 'Intentá de nuevo'))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="edc-form">
@@ -81,7 +60,7 @@ export default function SectionHistoria({ campaign, onSaved }) {
         </p>
         <p>
           Podés escribir directo o <strong>pegar texto en formato Markdown</strong>. Te lo vamos a
-          renderizar tal cual al publicar. Los cambios se guardan automáticamente.
+          renderizar tal cual al publicar.
         </p>
         <button type="button" className="edc-historia-guide-toggle" onClick={() => setShowGuide(s => !s)}>
           <HelpCircle size={14} /> {showGuide ? 'Ocultar' : 'Ver'} guía rápida de Markdown
@@ -118,7 +97,6 @@ export default function SectionHistoria({ campaign, onSaved }) {
             <Eye size={14} /> Vista previa
           </button>
         </div>
-        <SaveStatus status={status} />
       </div>
 
       {mode === 'edit' ? (
@@ -129,7 +107,7 @@ export default function SectionHistoria({ campaign, onSaved }) {
             maxLength={MAX_LENGTH}
             placeholder="# Mi proyecto&#10;&#10;Contá tu historia acá. Podés usar Markdown..."
             value={description}
-            onChange={e => setDescription(e.target.value)}
+            onChange={e => handleChange(e.target.value)}
           />
           <span className="edc-hint">
             {description.length}/{MAX_LENGTH} caracteres
@@ -144,6 +122,16 @@ export default function SectionHistoria({ campaign, onSaved }) {
           }
         </div>
       )}
+
+      {error && <p className="auth-error" style={{ margin: 0 }}>{error}</p>}
+
+      <div className="edc-save-row">
+        <Button variant="primary" size="md" onClick={handleSave} disabled={saving}>
+          <Save size={16} />
+          {saving ? 'Guardando...' : 'Guardar cambios'}
+        </Button>
+        {saved && <span className="edc-saved-msg">Guardado correctamente</span>}
+      </div>
     </div>
   )
 }

@@ -4,6 +4,16 @@
   padding: var(--space-xl) var(--space-md);
 }
 
+.edc-page--embedded {
+  min-height: auto;
+  background: transparent;
+  padding: 0;
+}
+
+.edc-page--embedded .edc-container {
+  max-width: none;
+}
+
 .edc-container {
   max-width: 720px;
   margin: 0 auto;

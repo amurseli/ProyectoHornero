@@ -210,7 +210,7 @@ function MyCampaigns() {
 
       {active && (
         <section className="container mc-featured-section">
-          <a href={`/campaigns/${active.id}/edit`} className="mc-featured">
+          <a href={`/campaigns/${active.id}/manage`} className="mc-featured">
             <div className="mc-featured-image">
               <img src={active.imageUrl} alt={active.title} />
               <span className="mc-featured-status">
@@ -268,7 +268,7 @@ function MyCampaigns() {
               )
             }
             return (
-              <a key={item.id} href={`/campaigns/${item.id}/edit`} className="mc-mini-card mc-draft-card">
+              <a key={item.id} href={`/campaigns/${item.id}/manage`} className="mc-mini-card mc-draft-card">
                 <div className="mc-mini-image">
                   <img src={item.imageUrl} alt={item.title} />
                   <span className="mc-draft-badge"><Pencil size={12} /> Borrador</span>
@@ -301,7 +301,7 @@ function MyCampaigns() {
             renderItem={(c) => {
               const p = c.goal > 0 ? Math.min((c.raised / c.goal) * 100, 100) : 0
               return (
-                <a key={c.id} href={`/campaigns/${c.id}/edit`} className="mc-mini-card">
+                <a key={c.id} href={`/campaigns/${c.id}/manage`} className="mc-mini-card">
                   <div className="mc-mini-image">
                     <img src={c.imageUrl} alt={c.title} />
                   </div>

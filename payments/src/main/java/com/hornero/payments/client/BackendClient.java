@@ -12,12 +12,29 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 // Cliente HTTP para comunicacion interna con el backend.
 // Usa X-Service-Key para autenticacion entre servicios.
 @Component
 public class BackendClient {
+
+    public static class RewardSummary {
+        private final Long id;
+        private final String title;
+        private final BigDecimal price;
+
+        public RewardSummary(Long id, String title, BigDecimal price) {
+            this.id = id;
+            this.title = title;
+            this.price = price;
+        }
+
+        public Long getId() { return id; }
+        public String getTitle() { return title; }
+        public BigDecimal getPrice() { return price; }
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(BackendClient.class);
 
@@ -101,6 +118,38 @@ public class BackendClient {
         } catch (Exception e) {
             logger.error("Error al obtener título de campaña {}: {}", campaignId, e.getMessage());
             throw new RuntimeException("Error al comunicarse con el backend para obtener la campaña", e);
+        }
+    }
+
+    public RewardSummary getCampaignReward(Long campaignId, Long rewardId) {
+        String url = backendUrl + "/api/campaigns/" + campaignId + "/rewards";
+
+        try {
+            ResponseEntity<List> response = restTemplate.exchange(url, HttpMethod.GET, HttpEntity.EMPTY, List.class);
+            List<?> rewards = response.getBody();
+
+            if (rewards == null) {
+                throw new IllegalStateException("La campaña no tiene recompensas configuradas");
+            }
+
+            for (Object item : rewards) {
+                if (!(item instanceof Map<?, ?> reward)) continue;
+                Long currentId = asLong(reward.get("id"));
+                if (currentId != null && currentId.equals(rewardId)) {
+                    BigDecimal price = asBigDecimal(reward.get("price"));
+                    if (price == null) {
+                        throw new IllegalStateException("La recompensa seleccionada no tiene precio válido");
+                    }
+                    return new RewardSummary(currentId, String.valueOf(reward.get("title")), price);
+                }
+            }
+
+            throw new IllegalStateException("La recompensa seleccionada no existe en esta campaña");
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al obtener recompensa {} de campaña {}: {}", rewardId, campaignId, e.getMessage());
+            throw new RuntimeException("Error al comunicarse con el backend para obtener la recompensa", e);
         }
     }
 
@@ -229,5 +278,18 @@ public class BackendClient {
             logger.error("Error al actualizar monto de campana {}: {}", campaignId, e.getMessage());
             throw new RuntimeException("Error al actualizar el monto de la campana en el backend", e);
         }
+    }
+
+    private Long asLong(Object value) {
+        if (value instanceof Number number) return number.longValue();
+        if (value instanceof String text && !text.isBlank()) return Long.valueOf(text);
+        return null;
+    }
+
+    private BigDecimal asBigDecimal(Object value) {
+        if (value instanceof BigDecimal decimal) return decimal;
+        if (value instanceof Number number) return new BigDecimal(number.toString());
+        if (value instanceof String text && !text.isBlank()) return new BigDecimal(text);
+        return null;
     }
 }

@@ -233,6 +233,8 @@ public class AdminCampaignController {
         response.setContributorName(buildUserName(user));
         response.setContributorEmail(user != null ? user.getEmail() : null);
         response.setAmount(contribution.getAmount());
+        response.setRewardId(contribution.getRewardId());
+        response.setRewardPrice(contribution.getRewardPrice());
         response.setStatus(contribution.getStatus());
         response.setCreatedAt(contribution.getCreatedAt());
         response.setUpdatedAt(contribution.getUpdatedAt());
