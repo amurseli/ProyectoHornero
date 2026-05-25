@@ -40,6 +40,9 @@ public class Payout {
     @Column(name = "id_payout_external", length = 50)
     private String idPayoutExternal;
 
+    @Column(name = "hash_tx", length = 120)
+    private String hashTx;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -62,6 +65,7 @@ public class Payout {
     public String getPaymentProvider() { return paymentProvider; }
     public String getStatus() { return status; }
     public String getIdPayoutExternal() { return idPayoutExternal; }
+    public String getHashTx() { return hashTx; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getProcessedAt() { return processedAt; }
 
@@ -75,5 +79,6 @@ public class Payout {
     public void setPaymentProvider(String paymentProvider) { this.paymentProvider = paymentProvider; }
     public void setStatus(String status) { this.status = status; }
     public void setIdPayoutExternal(String idPayoutExternal) { this.idPayoutExternal = idPayoutExternal; }
+    public void setHashTx(String hashTx) { this.hashTx = hashTx; }
     public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
 }

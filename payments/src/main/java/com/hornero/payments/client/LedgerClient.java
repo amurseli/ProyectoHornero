@@ -1,6 +1,8 @@
 package com.hornero.payments.client;
 
 import com.hornero.payments.model.Contribution;
+import com.hornero.payments.model.Payout;
+import com.hornero.payments.model.Refund;
 import com.hornero.payments.model.Transaction;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.slf4j.Logger;
@@ -22,6 +24,7 @@ public class LedgerClient {
 
     public static final String WALLET_OUT_OF_MONEY = "WALLET_OUT_OF_MONEY";
     public static final String BLOCKCHAIN_REGISTRATION_FAILED = "BLOCKCHAIN_REGISTRATION_FAILED";
+    private static final String HORNERO_MAIN_ACCOUNT = "HORNERO_MAIN_ACCOUNT";
 
     private static final Logger logger = LoggerFactory.getLogger(LedgerClient.class);
 
@@ -36,16 +39,43 @@ public class LedgerClient {
         this.restTemplate = new RestTemplate(factory);
     }
 
-    public String registerTransaction(Contribution contribution, Transaction transaction) {
+    public String registerContributionTransaction(Contribution contribution, Transaction transaction, String campaignTitle) {
+        return registerTransaction(
+                "USER_" + contribution.getIdUser(),
+                HORNERO_MAIN_ACCOUNT,
+                transaction.getAmount(),
+                "campaign:" + campaignTitle
+        );
+    }
+
+    public String registerPayoutTransaction(Payout payout, String campaignTitle) {
+        return registerTransaction(
+                HORNERO_MAIN_ACCOUNT,
+                "CREATOR_" + payout.getIdCreatorUser(),
+                payout.getNetAmount(),
+                "campaign:" + campaignTitle
+        );
+    }
+
+    public String registerRefundTransaction(Refund refund, String campaignTitle) {
+        return registerTransaction(
+                HORNERO_MAIN_ACCOUNT,
+                "USER_" + refund.getContribution().getIdUser(),
+                refund.getAmount(),
+                "refund campaign:" + campaignTitle
+        );
+    }
+
+    private String registerTransaction(String emisor, String receptor, java.math.BigDecimal amount, String reference) {
         String url = blockchainUrl + "/api/v1/transactions";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         LedgerRegisterRequest request = new LedgerRegisterRequest(
-                "USER_" + contribution.getIdUser(),
-                "CAMPAIGN_" + contribution.getIdCampaign(),
-                transaction.getAmount().movePointRight(2).toBigIntegerExact(),
-                buildReference(contribution, transaction)
+                emisor,
+                receptor,
+                amount.movePointRight(2).toBigIntegerExact(),
+                reference
         );
 
         try {
@@ -56,24 +86,24 @@ public class LedgerClient {
             );
 
             if (response == null || response.txHash() == null || response.txHash().isBlank()) {
-                logger.warn("Registro en blockchain sin txHash para contribution {}", contribution.getId());
+                logger.warn("Registro en blockchain sin txHash para reference {}", reference);
                 return BLOCKCHAIN_REGISTRATION_FAILED;
             }
 
-            logger.info("Contribution {} registrada en blockchain con txHash={}", contribution.getId(), response.txHash());
+            logger.info("Registro en blockchain exitoso para reference {} con txHash={}", reference, response.txHash());
             return response.txHash();
         } catch (HttpClientErrorException e) {
             String body = e.getResponseBodyAsString();
             if (isWalletOutOfMoney(body)) {
-                logger.warn("Wallet sin fondos para registrar contribution {} en blockchain", contribution.getId());
+                logger.warn("Wallet sin fondos para registrar reference {} en blockchain", reference);
                 return WALLET_OUT_OF_MONEY;
             }
 
-            logger.error("Error funcional registrando contribution {} en blockchain: status={} body={}",
-                    contribution.getId(), e.getStatusCode(), body);
+            logger.error("Error funcional registrando reference {} en blockchain: status={} body={}",
+                    reference, e.getStatusCode(), body);
             return BLOCKCHAIN_REGISTRATION_FAILED;
         } catch (RestClientException | ArithmeticException e) {
-            logger.error("Error registrando contribution {} en blockchain: {}", contribution.getId(), e.getMessage());
+            logger.error("Error registrando reference {} en blockchain: {}", reference, e.getMessage());
             return BLOCKCHAIN_REGISTRATION_FAILED;
         }
     }
@@ -88,11 +118,6 @@ public class LedgerClient {
                 || normalized.contains("fund wallet")
                 || normalized.contains("balancewei");
     }
-
-    private String buildReference(Contribution contribution, Transaction transaction) {
-        return "contribution:" + contribution.getId() + "|payment:" + transaction.getIdTransactionExternal();
-    }
-
     private record LedgerRegisterRequest(
             String emisor,
             String receptor,

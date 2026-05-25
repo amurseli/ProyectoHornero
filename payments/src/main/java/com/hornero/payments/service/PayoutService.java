@@ -1,6 +1,7 @@
 package com.hornero.payments.service;
 
 import com.hornero.payments.client.BackendClient;
+import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.PayoutStatusResponse;
 import com.hornero.payments.model.Contribution;
 import com.hornero.payments.model.Payout;
@@ -25,6 +26,7 @@ public class PayoutService {
     private final PayoutRepository payoutRepository;
     private final ContributionRepository contributionRepository;
     private final BackendClient backendClient;
+    private final LedgerClient ledgerClient;
     private final PaymentEventLogService eventLog;
 
     @Value("${app.fees.platform-rate}")
@@ -36,10 +38,12 @@ public class PayoutService {
     public PayoutService(PayoutRepository payoutRepository,
                          ContributionRepository contributionRepository,
                          BackendClient backendClient,
+                         LedgerClient ledgerClient,
                          PaymentEventLogService eventLog) {
         this.payoutRepository = payoutRepository;
         this.contributionRepository = contributionRepository;
         this.backendClient = backendClient;
+        this.ledgerClient = ledgerClient;
         this.eventLog = eventLog;
     }
 
@@ -96,12 +100,14 @@ public class PayoutService {
     public PayoutStatusResponse confirmManualPayout(Long campaignId, String mpTransferReference) {
         Payout payout = payoutRepository.findByIdCampaign(campaignId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe payout para la campaña " + campaignId));
+        String campaignTitle = backendClient.getCampaignTitle(campaignId);
 
         payout.setStatus("COMPLETED");
         payout.setProcessedAt(LocalDateTime.now());
         if (mpTransferReference != null && !mpTransferReference.isBlank()) {
             payout.setIdPayoutExternal(mpTransferReference);
         }
+        payout.setHashTx(ledgerClient.registerPayoutTransaction(payout, campaignTitle));
         payoutRepository.save(payout);
 
         try {
@@ -132,6 +138,7 @@ public class PayoutService {
                 payout.getPaymentProvider(),
                 payout.getStatus(),
                 payout.getIdPayoutExternal(),
+                payout.getHashTx(),
                 payout.getCreatedAt(),
                 payout.getProcessedAt()
         );

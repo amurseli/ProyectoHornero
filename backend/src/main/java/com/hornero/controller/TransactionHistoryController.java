@@ -35,15 +35,18 @@ public class TransactionHistoryController {
 
     private TransactionHistoryResponse toResponse(TransactionHistoryProjection row) {
         TransactionHistoryResponse response = new TransactionHistoryResponse();
+        response.setHistoryType(row.getHistoryType());
         response.setContributionId(row.getContributionId());
         response.setCampaignId(row.getCampaignId());
         response.setCampaignTitle(row.getCampaignTitle());
         response.setAmount(row.getAmount());
-        response.setContributionStatus(row.getContributionStatus());
+        response.setEntryStatus(row.getEntryStatus());
         response.setTransactionId(row.getTransactionId());
         response.setTransactionMethod(row.getTransactionMethod());
         response.setPaymentProvider(row.getPaymentProvider());
-        response.setExternalTransactionId(row.getExternalTransactionId());
+        response.setSenderLabel(row.getSenderLabel());
+        response.setRecipientLabel(row.getRecipientLabel());
+        response.setReference(row.getReference());
         response.setHashTx(row.getHashTx());
         response.setExplorerUrl(resolveExplorerUrl(row.getHashTx()));
         response.setCreatedAt(row.getCreatedAt());

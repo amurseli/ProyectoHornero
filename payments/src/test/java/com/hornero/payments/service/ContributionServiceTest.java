@@ -116,12 +116,13 @@ class ContributionServiceTest {
         c.setAmount(new BigDecimal("200"));
         c.setIdCampaign(10L);
         when(contributionRepository.findById(1L)).thenReturn(Optional.of(c));
+        when(backendClient.getCampaignTitle(10L)).thenReturn("Campaña Solar");
 
         Payment mockPayment = mock(Payment.class);
         when(mockPayment.getStatus()).thenReturn("approved");
         when(mockPayment.getId()).thenReturn(111L);
         when(mercadoPagoGateway.create(any(PaymentCreateRequest.class))).thenReturn(mockPayment);
-        when(ledgerClient.registerTransaction(any(), any())).thenReturn("0xabc123");
+        when(ledgerClient.registerContributionTransaction(any(), any(), anyString())).thenReturn("0xabc123");
 
         ContributionStatusResponse response = service.process(1L, 1L, buildRequest());
 
@@ -137,6 +138,7 @@ class ContributionServiceTest {
         c.setAmount(new BigDecimal("100"));
         c.setIdCampaign(10L);
         when(contributionRepository.findById(1L)).thenReturn(Optional.of(c));
+        when(backendClient.getCampaignTitle(10L)).thenReturn("Campaña Solar");
 
         Payment mockPayment = mock(Payment.class);
         when(mockPayment.getStatus()).thenReturn("rejected");
@@ -148,7 +150,7 @@ class ContributionServiceTest {
         assertThat(response.getStatus()).isEqualTo("REJECTED");
         assertThat(response.getTransaction().getHashTx()).isNull();
         verify(backendClient, never()).updateCampaignAmount(any(), any());
-        verify(ledgerClient, never()).registerTransaction(any(), any());
+        verify(ledgerClient, never()).registerContributionTransaction(any(), any(), anyString());
     }
 
     @Test

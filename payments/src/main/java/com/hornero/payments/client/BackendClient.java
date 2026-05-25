@@ -78,6 +78,32 @@ public class BackendClient {
         }
     }
 
+    public String getCampaignTitle(Long campaignId) {
+        String url = backendUrl + "/api/campaigns/" + campaignId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Service-Key", serviceKey);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<?, ?> campaign = response.getBody();
+
+            if (campaign == null || campaign.get("title") == null) {
+                throw new IllegalStateException("Campaña no encontrada: " + campaignId);
+            }
+
+            return String.valueOf(campaign.get("title"));
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new IllegalStateException("Campaña no encontrada: " + campaignId);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al obtener título de campaña {}: {}", campaignId, e.getMessage());
+            throw new RuntimeException("Error al comunicarse con el backend para obtener la campaña", e);
+        }
+    }
+
     // Valida que la campaña está en status SUCCESSFUL antes de ejecutar el payout.
     // Lanza IllegalStateException si no está en ese estado.
     public void validateCampaignSuccessful(Long campaignId) {

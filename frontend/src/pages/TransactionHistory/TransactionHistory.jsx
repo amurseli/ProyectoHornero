@@ -12,10 +12,16 @@ function formatAmount(amount) {
 
 function formatDate(value) {
   if (!value) return 'Sin fecha'
+
+  const normalizedValue = typeof value === 'string' && !value.endsWith('Z')
+    ? `${value}Z`
+    : value
+
   return new Intl.DateTimeFormat('es-AR', {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value))
+    timeZone: 'America/Argentina/Buenos_Aires',
+  }).format(new Date(normalizedValue))
 }
 
 function getHashStatus(hashTx) {
@@ -23,6 +29,10 @@ function getHashStatus(hashTx) {
   if (hashTx === 'WALLET_OUT_OF_MONEY') return { label: 'Wallet sin fondos', tone: 'warning' }
   if (hashTx === 'BLOCKCHAIN_REGISTRATION_FAILED') return { label: 'Sin registro on-chain', tone: 'muted' }
   return { label: 'Registrada en blockchain', tone: 'success' }
+}
+
+function describeTransaction(transaction) {
+  return `${transaction.senderLabel} --> ${transaction.recipientLabel}`
 }
 
 function TransactionHistory() {
@@ -89,10 +99,7 @@ function TransactionHistory() {
                 <article className="transaction-card" key={transaction.transactionId}>
                   <div className="transaction-card-header">
                     <div>
-                      <p className="transaction-card-title">{transaction.campaignTitle}</p>
-                      <p className="transaction-card-subtitle">
-                        Campaña #{transaction.campaignId} · Contribución #{transaction.contributionId}
-                      </p>
+                      <p className="transaction-card-title">{describeTransaction(transaction)}</p>
                     </div>
                     <span className={`transaction-status ${hashState.tone}`}>{hashState.label}</span>
                   </div>
@@ -103,20 +110,24 @@ function TransactionHistory() {
                       <strong>{formatAmount(transaction.amount)}</strong>
                     </div>
                     <div>
+                      <span className="transaction-label">Campaña</span>
+                      <strong>{transaction.campaignTitle}</strong>
+                    </div>
+                    <div>
                       <span className="transaction-label">Estado</span>
-                      <strong>{transaction.contributionStatus}</strong>
+                      <strong>{transaction.entryStatus}</strong>
                     </div>
                     <div>
                       <span className="transaction-label">Proveedor</span>
                       <strong>{transaction.paymentProvider || 'N/D'}</strong>
                     </div>
                     <div>
-                      <span className="transaction-label">Método</span>
-                      <strong>{transaction.transactionMethod || 'N/D'}</strong>
-                    </div>
-                    <div>
                       <span className="transaction-label">Fecha</span>
                       <strong>{formatDate(transaction.createdAt)}</strong>
+                    </div>
+                    <div>
+                      <span className="transaction-label">Tipo</span>
+                      <strong>{transaction.historyType}</strong>
                     </div>
                   </div>
 

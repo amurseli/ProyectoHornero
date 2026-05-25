@@ -1,0 +1,2 @@
+ALTER TABLE payments.payout
+ADD COLUMN IF NOT EXISTS hash_tx VARCHAR(120);

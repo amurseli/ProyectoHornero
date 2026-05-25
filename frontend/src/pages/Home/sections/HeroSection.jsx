@@ -15,7 +15,7 @@ function HeroSection({ search }) {
           </p>
           <div className="hero-actions">
             <Button size="lg" onClick={() => navigate('/transactions')}>
-              Ver historial blockchain
+              Ver historial de transacciones
             </Button>
           </div>
         </div>

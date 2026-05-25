@@ -4,15 +4,18 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public interface TransactionHistoryProjection {
+    String getHistoryType();
     Long getContributionId();
     Long getCampaignId();
     String getCampaignTitle();
     BigDecimal getAmount();
-    String getContributionStatus();
+    String getEntryStatus();
     Long getTransactionId();
     String getTransactionMethod();
     String getPaymentProvider();
-    String getExternalTransactionId();
+    String getSenderLabel();
+    String getRecipientLabel();
+    String getReference();
     String getHashTx();
     LocalDateTime getCreatedAt();
 }

@@ -5,18 +5,24 @@ import java.time.LocalDateTime;
 
 public class TransactionHistoryResponse {
 
+    private String historyType;
     private Long contributionId;
     private Long campaignId;
     private String campaignTitle;
     private BigDecimal amount;
-    private String contributionStatus;
+    private String entryStatus;
     private Long transactionId;
     private String transactionMethod;
     private String paymentProvider;
-    private String externalTransactionId;
+    private String senderLabel;
+    private String recipientLabel;
+    private String reference;
     private String hashTx;
     private String explorerUrl;
     private LocalDateTime createdAt;
+
+    public String getHistoryType() { return historyType; }
+    public void setHistoryType(String historyType) { this.historyType = historyType; }
 
     public Long getContributionId() { return contributionId; }
     public void setContributionId(Long contributionId) { this.contributionId = contributionId; }
@@ -30,8 +36,8 @@ public class TransactionHistoryResponse {
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
 
-    public String getContributionStatus() { return contributionStatus; }
-    public void setContributionStatus(String contributionStatus) { this.contributionStatus = contributionStatus; }
+    public String getEntryStatus() { return entryStatus; }
+    public void setEntryStatus(String entryStatus) { this.entryStatus = entryStatus; }
 
     public Long getTransactionId() { return transactionId; }
     public void setTransactionId(Long transactionId) { this.transactionId = transactionId; }
@@ -42,8 +48,14 @@ public class TransactionHistoryResponse {
     public String getPaymentProvider() { return paymentProvider; }
     public void setPaymentProvider(String paymentProvider) { this.paymentProvider = paymentProvider; }
 
-    public String getExternalTransactionId() { return externalTransactionId; }
-    public void setExternalTransactionId(String externalTransactionId) { this.externalTransactionId = externalTransactionId; }
+    public String getSenderLabel() { return senderLabel; }
+    public void setSenderLabel(String senderLabel) { this.senderLabel = senderLabel; }
+
+    public String getRecipientLabel() { return recipientLabel; }
+    public void setRecipientLabel(String recipientLabel) { this.recipientLabel = recipientLabel; }
+
+    public String getReference() { return reference; }
+    public void setReference(String reference) { this.reference = reference; }
 
     public String getHashTx() { return hashTx; }
     public void setHashTx(String hashTx) { this.hashTx = hashTx; }
