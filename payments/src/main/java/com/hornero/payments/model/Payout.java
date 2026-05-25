@@ -33,9 +33,9 @@ public class Payout {
     @Column(name = "payment_provider", nullable = false, length = 30)
     private String paymentProvider; // de momento es solo MERCADO_PAGO pero podría haber otros en el futuro
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 30)
     private String status = "PENDING";
-    // PENDING | PROCESSING | COMPLETED | FAILED
+    // PENDING | PROCESSING | COMPLETED | FAILED | PENDING_MANUAL_TRANSFER
 
     @Column(name = "id_payout_external", length = 50)
     private String idPayoutExternal;

@@ -21,6 +21,12 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "LEFT JOIN FETCH c.owner")
     List<Campaign> findAllWithRelations();
 
+    @Query("SELECT c FROM Campaign c " +
+           "LEFT JOIN FETCH c.owner " +
+           "LEFT JOIN FETCH c.category " +
+           "WHERE c.status <> 'DRAFT'")
+    List<Campaign> findAllAdminWithOwner();
+
     @Query("SELECT DISTINCT c FROM Campaign c " +
            "LEFT JOIN FETCH c.media " +
            "LEFT JOIN FETCH c.category " +
