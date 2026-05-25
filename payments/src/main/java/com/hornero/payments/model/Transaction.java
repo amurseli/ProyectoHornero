@@ -34,6 +34,9 @@ public class Transaction {
     @Column(name = "payment_provider", nullable = false, length = 30)
     private String paymentProvider;
 
+    @Column(name = "hash_tx", length = 120)
+    private String hashTx;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -51,6 +54,7 @@ public class Transaction {
     public String getCbuDestination() { return cbuDestination; }
     public String getIdTransactionExternal() { return idTransactionExternal; }
     public String getPaymentProvider() { return paymentProvider; }
+    public String getHashTx() { return hashTx; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     // Setters
@@ -61,4 +65,5 @@ public class Transaction {
     public void setCbuDestination(String cbuDestination) { this.cbuDestination = cbuDestination; }
     public void setIdTransactionExternal(String idTransactionExternal) { this.idTransactionExternal = idTransactionExternal; }
     public void setPaymentProvider(String paymentProvider) { this.paymentProvider = paymentProvider; }
+    public void setHashTx(String hashTx) { this.hashTx = hashTx; }
 }

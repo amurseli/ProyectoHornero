@@ -1,6 +1,7 @@
 package com.hornero.payments.service;
 
 import com.hornero.payments.client.BackendClient;
+import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.ContributionStatusResponse;
 import com.hornero.payments.dto.InitiateContributionResponse;
 import com.hornero.payments.dto.ProcessContributionRequest;
@@ -34,6 +35,7 @@ class ContributionServiceTest {
     @Mock ContributionRepository contributionRepository;
     @Mock TransactionRepository transactionRepository;
     @Mock BackendClient backendClient;
+    @Mock LedgerClient ledgerClient;
     @Mock MercadoPagoGateway mercadoPagoGateway;
     @Mock PaymentEventLogService paymentEventLogService;
 
@@ -119,10 +121,12 @@ class ContributionServiceTest {
         when(mockPayment.getStatus()).thenReturn("approved");
         when(mockPayment.getId()).thenReturn(111L);
         when(mercadoPagoGateway.create(any(PaymentCreateRequest.class))).thenReturn(mockPayment);
+        when(ledgerClient.registerTransaction(any(), any())).thenReturn("0xabc123");
 
         ContributionStatusResponse response = service.process(1L, 1L, buildRequest());
 
         assertThat(response.getStatus()).isEqualTo("APPROVED");
+        assertThat(response.getTransaction().getHashTx()).isEqualTo("0xabc123");
         verify(backendClient).updateCampaignAmount(eq(10L), eq(new BigDecimal("200")));
         verify(contributionRepository, atLeastOnce()).save(argThat(con -> "APPROVED".equals(con.getStatus())));
     }
@@ -138,10 +142,12 @@ class ContributionServiceTest {
         when(mockPayment.getStatus()).thenReturn("rejected");
         when(mockPayment.getId()).thenReturn(222L);
         when(mercadoPagoGateway.create(any())).thenReturn(mockPayment);
+        when(ledgerClient.registerTransaction(any(), any())).thenReturn(LedgerClient.WALLET_OUT_OF_MONEY);
 
         ContributionStatusResponse response = service.process(1L, 1L, buildRequest());
 
         assertThat(response.getStatus()).isEqualTo("REJECTED");
+        assertThat(response.getTransaction().getHashTx()).isEqualTo(LedgerClient.WALLET_OUT_OF_MONEY);
         verify(backendClient, never()).updateCampaignAmount(any(), any());
     }
 

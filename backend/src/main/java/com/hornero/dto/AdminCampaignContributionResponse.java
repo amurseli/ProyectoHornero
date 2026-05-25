@@ -21,6 +21,7 @@ public class AdminCampaignContributionResponse {
         private String transactionMethod;
         private String paymentProvider;
         private String externalTransactionId;
+        private String hashTx;
         private LocalDateTime createdAt;
 
         public Long getTransactionId() { return transactionId; }
@@ -37,6 +38,9 @@ public class AdminCampaignContributionResponse {
 
         public String getExternalTransactionId() { return externalTransactionId; }
         public void setExternalTransactionId(String externalTransactionId) { this.externalTransactionId = externalTransactionId; }
+
+        public String getHashTx() { return hashTx; }
+        public void setHashTx(String hashTx) { this.hashTx = hashTx; }
 
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

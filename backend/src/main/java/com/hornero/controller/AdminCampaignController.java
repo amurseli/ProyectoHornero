@@ -245,6 +245,7 @@ public class AdminCampaignController {
             tx.setTransactionMethod(transaction.getTransactionMethod());
             tx.setPaymentProvider(transaction.getPaymentProvider());
             tx.setExternalTransactionId(transaction.getIdTransactionExternal());
+            tx.setHashTx(transaction.getHashTx());
             tx.setCreatedAt(transaction.getCreatedAt());
             response.setTransaction(tx);
         }
