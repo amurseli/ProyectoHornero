@@ -129,6 +129,13 @@ function getRewardAccessState(reward, contributionSummary) {
   }
 }
 
+function sanitizeContributionAmountInput(value) {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (!digits) return ''
+  const normalized = digits.replace(/^0+(\d)/, '$1')
+  return normalized || ''
+}
+
 function DetailOverlay({ item, onClose, onContribute, disabledReason, contributionSummary }) {
   useEffect(() => {
     if (!item) return undefined
@@ -487,7 +494,7 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
       : [{ id: 'historia', text: 'Historia', level: 1 }]
   ), [storyHeadings])
   const [activeToc, setActiveToc] = useState(tocItems[0]?.id || 'historia')
-  const [sidebarAmount, setSidebarAmount] = useState(1)
+  const [sidebarAmount, setSidebarAmount] = useState('1')
   const [expandedItem, setExpandedItem] = useState(null)
   const leadMember = team[0] || null
   const storyRef = useRef(null)
@@ -780,10 +787,10 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
             <div className="cp-amount-input">
               <span className="cp-amount-prefix">ARS $</span>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 value={sidebarAmount}
-                onChange={(e) => setSidebarAmount(Number(e.target.value))}
-                min={1}
+                onChange={(e) => setSidebarAmount(sanitizeContributionAmountInput(e.target.value))}
                 className="cp-amount-field"
               />
             </div>
@@ -791,8 +798,8 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
               variant="primary"
               size="sm"
               className="cp-contribute-btn"
-              onClick={() => onContribute(sidebarAmount)}
-              disabled={!!contributeDisabledReason}
+              onClick={() => onContribute(Number(sidebarAmount || 0))}
+              disabled={!!contributeDisabledReason || !sidebarAmount || Number(sidebarAmount) < 1}
               title={contributeDisabledReason || undefined}
             >
               Aportar

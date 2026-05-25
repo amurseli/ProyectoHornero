@@ -137,9 +137,9 @@
   flex-direction: column;
   gap: 0.75rem;
   padding: 0.875rem 1rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid #b7e4c7;
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-primary) 6%, white);
+  background: #edfdf3;
 }
 
 .cm-reward-summary-row {
@@ -147,16 +147,16 @@
   justify-content: space-between;
   gap: 1rem;
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: #166534;
 }
 
 .cm-reward-summary-row strong {
-  color: var(--color-text-primary);
+  color: #14532d;
 }
 
 .cm-reward-summary-row--payable {
   padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid #b7e4c7;
 }
 
 /* ── Buttons ── */

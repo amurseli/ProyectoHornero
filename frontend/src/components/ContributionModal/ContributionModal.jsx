@@ -9,6 +9,11 @@ function formatMoney(value) {
   return `ARS $${Number(value || 0).toLocaleString('es-AR')}`
 }
 
+function normalizeAmount(value, fallback = 1) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
 export default function ContributionModal({ campaignId, initialAmount = 1, reward = null, onClose, onCompleted }) {
   const rewardMode = !!reward
   const [step, setStep] = useState(rewardMode ? 'reward' : 'amount')
@@ -31,7 +36,7 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
         mpInitialized.current = true
       }
       setContributionId(data.contributionId)
-      setAmount(Number(data.amount) || 1)
+      setAmount(normalizeAmount(data.amount))
       setRewardMeta(data.reward || null)
       if (data.status === 'APPROVED' && Number(data.amount) === 0) {
         setResult({ status: 'APPROVED', reward: data.reward, amount: data.amount })
@@ -88,6 +93,9 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
   const amountFormatted = formatMoney(amount)
   const rewardPriceFormatted = formatMoney(rewardMeta?.rewardPrice ?? reward?.price)
   const previousRewardFormatted = formatMoney(rewardMeta?.previousRewardPrice)
+  const resultAmount = normalizeAmount(result?.amount, amount)
+  const resultAmountFormatted = formatMoney(resultAmount)
+  const rewardActivatedWithoutPayment = rewardMode && result?.status === 'APPROVED' && resultAmount === 0
 
   return (
     <div className="cm-overlay" onClick={handleOverlayClick}>
@@ -212,10 +220,12 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
             {result.status === 'APPROVED' ? (
               <>
                 <CheckCircle size={56} className="cm-icon cm-icon--success" />
-                <h2 className="cm-title">¡Contribución exitosa!</h2>
+                <h2 className="cm-title">{rewardActivatedWithoutPayment ? '¡Recompensa activada!' : '¡Contribución exitosa!'}</h2>
                 <p className="cm-subtitle">
-                  {rewardMode
-                    ? <>Tu pago de <strong>{amountFormatted}</strong> para <strong>{reward.title}</strong> fue procesado correctamente.</>
+                  {rewardActivatedWithoutPayment
+                    ? <>Activaste la recompensa <strong>{reward.title}</strong> con tus aportes previos.</>
+                    : rewardMode
+                    ? <>Tu pago de <strong>{resultAmountFormatted}</strong> para <strong>{reward.title}</strong> fue procesado correctamente.</>
                     : <>Tu aporte de <strong>{amountFormatted}</strong> fue procesado correctamente.</>}
                 </p>
                 <Button variant="primary" className="cm-btn" onClick={onClose}>
