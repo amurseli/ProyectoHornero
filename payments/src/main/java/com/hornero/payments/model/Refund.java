@@ -29,6 +29,9 @@ public class Refund {
     @Column(name = "id_refund_external", length = 50)
     private String idRefundExternal;
 
+    @Column(name = "hash_tx", length = 120)
+    private String hashTx;
+
     @Column(nullable = false, length = 50)
     private String reason;
     // CAMPAIGN_FAILED | CAMPAIGN_CANCELLED
@@ -51,6 +54,7 @@ public class Refund {
     public String getPaymentProvider() { return paymentProvider; }
     public String getStatus() { return status; }
     public String getIdRefundExternal() { return idRefundExternal; }
+    public String getHashTx() { return hashTx; }
     public String getReason() { return reason; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getProcessedAt() { return processedAt; }
@@ -61,6 +65,7 @@ public class Refund {
     public void setPaymentProvider(String paymentProvider) { this.paymentProvider = paymentProvider; }
     public void setStatus(String status) { this.status = status; }
     public void setIdRefundExternal(String idRefundExternal) { this.idRefundExternal = idRefundExternal; }
+    public void setHashTx(String hashTx) { this.hashTx = hashTx; }
     public void setReason(String reason) { this.reason = reason; }
     public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
 }

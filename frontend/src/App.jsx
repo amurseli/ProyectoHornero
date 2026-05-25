@@ -22,6 +22,8 @@ import UserConfig from '$pages/UserConfig/UserConfig';
 import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 import CampaignPage from '$pages/CampaignPage/CampaignPage';
 import EditDraftCampaign from '$pages/Campaigns/EditDraftCampaign';
+import CreatorCampaignDashboard from '$pages/Campaigns/CreatorCampaignDashboard';
+import TransactionHistory from '$pages/TransactionHistory/TransactionHistory.jsx';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -71,12 +73,14 @@ function App() {
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns/:id" element={<CampaignPage />} />
           <Route path="/for-creators" element={<ForCreators />} />
+          <Route path="/transactions" element={<TransactionHistory />} />
 
           {/* Protected */}
           <Route path="/campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
           <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
+          <Route path="/campaigns/:id/manage" element={<ProtectedRoute><CreatorCampaignDashboard /></ProtectedRoute>} />
           <Route path="/campaigns/:id/edit" element={<ProtectedRoute><EditDraftCampaign /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />

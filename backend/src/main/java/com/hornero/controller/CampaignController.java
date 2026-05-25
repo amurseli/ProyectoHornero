@@ -56,6 +56,18 @@ public class CampaignController {
         return ResponseEntity.ok(campaignService.getPublicCampaigns());
     }
 
+    // GET /api/campaigns/home — secciones para la home pública.
+    @GetMapping("/home")
+    public ResponseEntity<Map<String, List<Campaign>>> getHomeSections(
+            @RequestParam(required = false, defaultValue = "6") Integer spotlight,
+            @RequestParam(required = false, defaultValue = "6") Integer featured,
+            @RequestParam(required = false, defaultValue = "4") Integer endingSoon,
+            @RequestParam(required = false, defaultValue = "4") Integer nearGoal,
+            @RequestParam(required = false, defaultValue = "8") Integer recent) {
+        return ResponseEntity.ok(
+                campaignService.getHomeSections(spotlight, featured, endingSoon, nearGoal, recent));
+    }
+
     // GET /api/campaigns/categories — lista de categorías disponibles
     @GetMapping("/categories")
     public List<CampaignCategory> getCategories() {
@@ -75,14 +87,23 @@ public class CampaignController {
     }
 
     // GET /api/campaigns/{id}
-    // Devuelve la campaña si está en CROWDFUNDING (cualquier visitante)
-    // o si el usuario autenticado es el dueño (cualquier estado)
+    // - Con X-Service-Key: devuelve la campaña en cualquier estado (uso interno entre servicios)
+    // - Sin X-Service-Key: solo visible si es CROWDFUNDING, SUCCESSFUL, o FAILED (pública)
+    //   o si el usuario autenticado es el dueño (cualquier estado)
     @GetMapping("/{id}")
-    public ResponseEntity<Campaign> getCampaignById(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<Campaign> getCampaignById(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Service-Key", required = false) String incomingKey,
+            HttpServletRequest request) {
         Campaign campaign = campaignService.getCampaignById(id).orElse(null);
         if (campaign == null) return ResponseEntity.notFound().build();
 
-        if ("CROWDFUNDING".equals(campaign.getStatus())) return ResponseEntity.ok(campaign);
+        if (serviceKey.equals(incomingKey)) return ResponseEntity.ok(campaign);
+
+        String status = campaign.getStatus();
+        if ("CROWDFUNDING".equals(status) || "SUCCESSFUL".equals(status) || "FAILED".equals(status)) {
+            return ResponseEntity.ok(campaign);
+        }
 
         Long requestingUserId = (Long) request.getAttribute("userId");
         boolean isOwner = requestingUserId != null
@@ -160,6 +181,31 @@ public class CampaignController {
 
         campaignService.addToCampaignAmount(id, amount);
         return ResponseEntity.ok().build();
+    }
+
+    // PATCH /api/campaigns/{id}/money-status
+    // Llamado internamente por el payments service al completar/fallar un payout o refund
+    @PatchMapping("/{id}/money-status")
+    public ResponseEntity<Void> updateMoneyStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            @RequestHeader("X-Service-Key") String incomingKey) {
+
+        if (!serviceKey.equals(incomingKey)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        String moneyStatus = body.get("moneyStatus");
+        if (moneyStatus == null || moneyStatus.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            campaignService.updateMoneyStatus(id, moneyStatus);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // DELETE /api/campaigns/{id}

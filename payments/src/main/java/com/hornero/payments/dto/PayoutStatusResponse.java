@@ -14,12 +14,13 @@ public class PayoutStatusResponse {
     private String paymentProvider;
     private String status;
     private String idPayoutExternal;
+    private String hashTx;
     private LocalDateTime createdAt;
     private LocalDateTime processedAt;
 
     public PayoutStatusResponse(Long payoutId, Long campaignId, BigDecimal grossAmount,
                                 BigDecimal platformFee, BigDecimal providerFee, BigDecimal netAmount,
-                                String paymentProvider, String status, String idPayoutExternal,
+                                String paymentProvider, String status, String idPayoutExternal, String hashTx,
                                 LocalDateTime createdAt, LocalDateTime processedAt) {
         this.payoutId = payoutId;
         this.campaignId = campaignId;
@@ -30,6 +31,7 @@ public class PayoutStatusResponse {
         this.paymentProvider = paymentProvider;
         this.status = status;
         this.idPayoutExternal = idPayoutExternal;
+        this.hashTx = hashTx;
         this.createdAt = createdAt;
         this.processedAt = processedAt;
     }
@@ -43,6 +45,7 @@ public class PayoutStatusResponse {
     public String getPaymentProvider() { return paymentProvider; }
     public String getStatus() { return status; }
     public String getIdPayoutExternal() { return idPayoutExternal; }
+    public String getHashTx() { return hashTx; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getProcessedAt() { return processedAt; }
 }

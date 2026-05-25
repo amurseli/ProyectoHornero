@@ -200,8 +200,9 @@ function SectionGroup({ title, sections, campaign, openSection, onToggle, onSave
   )
 }
 
-export default function EditDraftCampaign() {
-  const { id } = useParams()
+export default function EditDraftCampaign({ campaignId: campaignIdProp = null, embedded = false }) {
+  const { id: routeId } = useParams()
+  const id = campaignIdProp ?? routeId
   const navigate = useNavigate()
   const { user } = useUser()
   const [campaign, setCampaign] = useState(null)
@@ -303,11 +304,13 @@ export default function EditDraftCampaign() {
   }
 
   return (
-    <div className="edc-page">
+    <div className={`edc-page ${embedded ? 'edc-page--embedded' : ''}`}>
       <div className="edc-container">
-        <button className="edc-back" onClick={() => navigate('/campaigns')}>
-          <ArrowLeft size={16} /> Mis campañas
-        </button>
+        {!embedded && (
+          <button className="edc-back" onClick={() => navigate('/campaigns')}>
+            <ArrowLeft size={16} /> Mis campañas
+          </button>
+        )}
 
         <div className="edc-header">
           <h1 className="edc-title">{campaign.title || 'Campaña sin título'}</h1>

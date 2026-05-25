@@ -13,7 +13,7 @@ function normalizeCampaign(campaign) {
     })(),
     goal: campaign.targetAmount || campaign.goal || 0,
     category: campaign.category?.name || campaign.category || "General",
-    daysLeft: campaign.endDate 
+    daysLeft: campaign.endDate
               ? Math.max(0, Math.ceil((new Date(campaign.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
               : 30,
     videoUrl: campaign.media?.find(m => m.mediaType === 'VIDEO')?.url || null,
@@ -30,23 +30,36 @@ export const campaignService = {
     return data.map(normalizeCampaign)
   },
 
-  async getFeaturedCampaigns(limit = 4) {
-    const campaigns = await this.getAllCampaigns()
-    return campaigns
-      .filter((c) => c.status === "CROWDFUNDING")
-      .sort((a, b) => {
-        const pA = a.goal > 0 ? a.currentAmount / a.goal : 0
-        const pB = b.goal > 0 ? b.currentAmount / b.goal : 0
-        return pB - pA
-      })
-      .slice(0, limit)
-  },
-  
-  async getRecentCampaigns(limit = 6) {
-    const campaigns = await this.getAllCampaigns()
-    return campaigns
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, limit)
+  // Trae las 5 secciones de la home en un único request. El backend ya filtra
+  // y ordena: spotlight (elegidas a mano), featured (por % progreso), 
+  // endingSoon (≤ 14 días, sin haber cumplido meta), nearGoal (entre 70% y 99%) 
+  // y recent (createdAt desc).
+  async getHomeSections({
+    spotlight = 6,   // <-- Agregado parámetro por defecto
+    featured = 6,
+    endingSoon = 4,
+    nearGoal = 4,
+    recent = 8,
+  } = {}) {
+    const params = new URLSearchParams()
+    params.set("spotlight", String(spotlight)) // <-- Agregado a los query params
+    params.set("featured", String(featured))
+    params.set("endingSoon", String(endingSoon))
+    params.set("nearGoal", String(nearGoal))
+    params.set("recent", String(recent))
+
+    const response = await fetch(`${API_URL}/api/campaigns/home?${params.toString()}`)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data = await response.json()
+    return {
+      spotlight:  (data.spotlight  || []).map(normalizeCampaign), // <-- Mapeo de la nueva sección
+      featured:   (data.featured   || []).map(normalizeCampaign),
+      endingSoon: (data.endingSoon || []).map(normalizeCampaign),
+      nearGoal:   (data.nearGoal   || []).map(normalizeCampaign),
+      recent:     (data.recent     || []).map(normalizeCampaign),
+    }
   },
 
   async getCampaignById(id) {

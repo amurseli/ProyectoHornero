@@ -11,15 +11,19 @@ import com.hornero.service.validator.CampaignPublishValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,6 +86,67 @@ public class CampaignService {
         campaigns.sort(Comparator.comparingInt(c -> orderMap.get(c.getId())));
         appImageService.hydrateCampaigns(campaigns);
         return new PageImpl<>(campaigns, pageable, idPage.getTotalElements());
+    }
+
+    /**
+     * Devuelve las 5 secciones que necesita la home:
+     * - spotlight:  elegidas a mano por el staff ("Nuestras favoritas")
+     * - featured:   mayor % de progreso
+     * - endingSoon: menor tiempo restante (≤ 14 días, sin haber cumplido meta)
+     * - nearGoal:   % de progreso entre 70% y 99%
+     * - recent:     más recientes por createdAt
+     */
+    public Map<String, List<Campaign>> getHomeSections(int spotlightLimit,
+                                                       int featuredLimit,
+                                                       int endingSoonLimit,
+                                                       int nearGoalLimit,
+                                                       int recentLimit) {
+        LocalDate today = LocalDate.now();
+        LocalDate endingSoonCutoff = today.plusDays(14);
+
+        List<Long> spotlightIds = campaignRepository.findSpotlightIds(
+                PageRequest.of(0, Math.max(1, spotlightLimit)));
+        List<Long> featuredIds = campaignRepository.findFeaturedIds(
+                PageRequest.of(0, Math.max(1, featuredLimit)));
+        List<Long> endingSoonIds = campaignRepository.findEndingSoonIds(
+                today, endingSoonCutoff, PageRequest.of(0, Math.max(1, endingSoonLimit)));
+        List<Long> nearGoalIds = campaignRepository.findNearGoalIds(
+                PageRequest.of(0, Math.max(1, nearGoalLimit)));
+        List<Long> recentIds = campaignRepository.findRecentIds(
+                PageRequest.of(0, Math.max(1, recentLimit)));
+
+        // Carga única de todos los IDs distintos con sus relaciones.
+        Set<Long> allIds = new LinkedHashSet<>();
+        allIds.addAll(spotlightIds);
+        allIds.addAll(featuredIds);
+        allIds.addAll(endingSoonIds);
+        allIds.addAll(nearGoalIds);
+        allIds.addAll(recentIds);
+
+        Map<Long, Campaign> byId = new HashMap<>();
+        if (!allIds.isEmpty()) {
+            List<Campaign> loaded = campaignRepository.findAllByIdsWithRelations(
+                    new ArrayList<>(allIds));
+            appImageService.hydrateCampaigns(loaded);
+            for (Campaign c : loaded) byId.put(c.getId(), c);
+        }
+
+        Map<String, List<Campaign>> result = new LinkedHashMap<>();
+        result.put("spotlight",  mapIdsToCampaigns(spotlightIds,  byId));
+        result.put("featured",   mapIdsToCampaigns(featuredIds,   byId));
+        result.put("endingSoon", mapIdsToCampaigns(endingSoonIds, byId));
+        result.put("nearGoal",   mapIdsToCampaigns(nearGoalIds,   byId));
+        result.put("recent",     mapIdsToCampaigns(recentIds,     byId));
+        return result;
+    }
+
+    private List<Campaign> mapIdsToCampaigns(List<Long> ids, Map<Long, Campaign> byId) {
+        List<Campaign> out = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            Campaign c = byId.get(id);
+            if (c != null) out.add(c);
+        }
+        return out;
     }
 
     public List<CampaignCategory> getAllCategories() {
@@ -198,6 +263,45 @@ public class CampaignService {
                 .orElseThrow(() -> new RuntimeException("Campaña no encontrada: " + campaignId));
         campaign.setCurrentAmount(campaign.getCurrentAmount().add(amount));
         campaignRepository.save(campaign);
+    }
+
+    @Transactional
+    public void updateMoneyStatus(Long campaignId, String moneyStatus) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campaña no encontrada: " + campaignId));
+        campaign.setMoneyStatus(moneyStatus);
+        campaignRepository.save(campaign);
+    }
+
+    // Finaliza una campaña vencida: cambia su status según si alcanzó la meta.
+    // Idempotente: si ya no está en CROWDFUNDING, no hace nada.
+    @Transactional
+    public boolean finalizeCampaign(Campaign campaign) {
+        if (!"CROWDFUNDING".equals(campaign.getStatus())) {
+            return false;
+        }
+        boolean reachedGoal = campaign.getCurrentAmount().compareTo(campaign.getTargetAmount()) >= 0;
+        if (reachedGoal) {
+            campaign.setStatus("SUCCESSFUL");
+            campaign.setMoneyStatus("PAYOUT_PENDING");
+        } else {
+            campaign.setStatus("FAILED");
+            campaign.setMoneyStatus("REFUND_PENDING");
+        }
+        campaignRepository.save(campaign);
+        return true;
+    }
+
+    public List<Campaign> findExpiredCrowdfundingCampaigns() {
+        return campaignRepository.findExpiredCrowdfundingCampaigns(LocalDate.now());
+    }
+
+    public List<Campaign> findSuccessfulWithPendingPayout() {
+        return campaignRepository.findSuccessfulWithPendingPayout();
+    }
+
+    public List<Campaign> findFailedWithPartialRefund() {
+        return campaignRepository.findFailedWithPartialRefund();
     }
 
     private Set<String> normalizeCampaignMedia(Campaign campaign, List<CampaignMedia> incomingMedia) {

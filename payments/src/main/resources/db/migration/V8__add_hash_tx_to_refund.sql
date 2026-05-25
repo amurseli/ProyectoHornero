@@ -1,0 +1,2 @@
+ALTER TABLE payments.refund
+ADD COLUMN IF NOT EXISTS hash_tx VARCHAR(120);

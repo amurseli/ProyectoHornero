@@ -1,8 +1,12 @@
-/* Home - Proyecto Hornero - Gradiente Intenso */
+/* ════════════════════════════════════════════════════════════════════
+   Home — Proyecto Hornero
+   Layout 2 columnas: main 1fr + sidebar 340px (sticky).
+   En ≤1024px colapsa a una sola columna y el sidebar va al final.
+   ════════════════════════════════════════════════════════════════════ */
 
 .home {
   min-height: 100vh;
-  background: linear-gradient(135deg, 
+  background: linear-gradient(135deg,
     color-mix(in srgb, var(--color-primary) 8%, transparent) 0%,
     color-mix(in srgb, var(--color-secondary) 12%, transparent) 33%,
     color-mix(in srgb, var(--color-accent) 8%, transparent) 66%,
@@ -13,47 +17,59 @@
 }
 
 @keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  25% {
-    background-position: 100% 50%;
-  }
-  50% {
-    background-position: 100% 100%;
-  }
-  75% {
-    background-position: 0% 100%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  0%   { background-position: 0% 50%; }
+  25%  { background-position: 100% 50%; }
+  50%  { background-position: 100% 100%; }
+  75%  { background-position: 0% 100%; }
+  100% { background-position: 0% 50%; }
 }
 
 .home-main {
   background: var(--color-bg-primary);
 }
 
-/* Content Container */
+/* Container central */
 .home-content {
   padding: 3rem 0;
   max-width: var(--max-width);
   margin: 0 auto;
 }
 
-/* Grid Layout - Dos columnas */
+/* ── Grid principal: main + sidebar ──────────────────────────────── */
+
+/* Contenedor principal que divide el contenido del sidebar */
 .home-grid {
   display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: 2.5rem;
-  align-items: start;
+  grid-template-columns: 2fr 1fr; /* O la distribución que tengas configurada */
+  gap: 2rem;
+  
+  align-items: start; 
 }
 
-/* Responsive - Una columna en mobile/tablet */
+/* Columna izquierda donde conviven las secciones */
+.home-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem; /* Ajustá el espacio vertical que quieras entre secciones */
+  width: 100%;
+}
+
+.home-sidebar {
+  position: sticky;
+  top: calc(var(--navbar-height, 64px) + 1.5rem);
+  min-width: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
 @media (max-width: 1024px) {
   .home-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 3rem;
+  }
+  .home-sidebar {
+    position: static;
+    top: auto;
   }
 }
 
@@ -61,14 +77,44 @@
   .home-content {
     padding: 2rem 0;
   }
-  
-  .home-grid {
-    gap: 2rem;
+  .home-main-column {
+    gap: 2.5rem;
   }
 }
 
 @media (max-width: 640px) {
   .home-content {
     padding: 1.5rem 0;
+  }
+  .home-main-column {
+    gap: 2rem;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Fade-in al scrollear
+   Lo aplica el hook useFadeInOnScroll a cada sección.
+   ════════════════════════════════════════════════════════════════════ */
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+  will-change: opacity, transform;
+}
+
+.fade-in--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Respetar preferencia del usuario por menos animaciones */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

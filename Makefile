@@ -6,6 +6,8 @@ BACKEND_DIR    = backend
 FRONTEND_DIR   = frontend
 BACKOFFICE_DIR = backoffice
 PAYMENTS_DIR   = payments
+SCHEDULER_DIR  = scheduler
+BLOCKCHAIN_DIR = blockchain
 NETWORK        = hornero-network
 
 ifeq ($(OS),Windows_NT)
@@ -19,6 +21,8 @@ endif
         up-backoffice down-backoffice build-backoffice logs-backoffice \
         up-bo-prod down-bo-prod build-bo-prod \
         up-pay down-pay build-pay logs-pay \
+        up-chain down-chain build-chain logs-chain \
+        up-sched down-sched build-sched logs-sched \
         up-all down-all build-all \
         ps clean
 
@@ -47,7 +51,17 @@ help:
 	@echo "  make build-pay    Reconstruye payments"
 	@echo "  make logs-pay     Logs de payments"
 	@echo ""
-	@echo "  make up-all       Levanta todo (backend + frontend + backoffice + payments)"
+	@echo "  make up-chain     Levanta blockchain"
+	@echo "  make down-chain   Detiene blockchain"
+	@echo "  make build-chain  Reconstruye blockchain"
+	@echo "  make logs-chain   Logs de blockchain"
+	@echo ""
+	@echo "  make up-sched     Levanta scheduler"
+	@echo "  make down-sched   Detiene scheduler"
+	@echo "  make build-sched  Reconstruye scheduler (rapido, Alpine+curl)"
+	@echo "  make logs-sched   Logs del scheduler"
+	@echo ""
+	@echo "  make up-all       Levanta todo (backend + frontend + backoffice + payments + blockchain + scheduler)"
 	@echo "  make down-all     Detiene todo"
 	@echo "  make build-all    Reconstruye todo"
 	@echo ""
@@ -149,13 +163,43 @@ logs-pay:
 	cd $(PAYMENTS_DIR) && docker-compose logs -f
 
 # ------------------------------------------------------------
+# Blockchain
+# ------------------------------------------------------------
+up-chain: network
+	cd $(BLOCKCHAIN_DIR) && docker-compose -f compose.yaml up -d --build
+
+down-chain:
+	cd $(BLOCKCHAIN_DIR) && docker-compose -f compose.yaml down || true
+
+build-chain:
+	cd $(BLOCKCHAIN_DIR) && docker-compose -f compose.yaml build
+
+logs-chain:
+	cd $(BLOCKCHAIN_DIR) && docker-compose -f compose.yaml logs -f
+
+# ------------------------------------------------------------
+# Scheduler
+# ------------------------------------------------------------
+up-sched: network
+	cd $(SCHEDULER_DIR) && docker-compose up -d
+
+down-sched:
+	cd $(SCHEDULER_DIR) && docker-compose down || true
+
+build-sched:
+	cd $(SCHEDULER_DIR) && docker-compose build
+
+logs-sched:
+	cd $(SCHEDULER_DIR) && docker-compose logs -f
+
+# ------------------------------------------------------------
 # Todo junto (testing local)
 # ------------------------------------------------------------
-up-all: up up-bo up-pay
+up-all: up up-bo up-pay up-chain up-sched
 
-down-all: down-pay down-bo down
+down-all: down-sched down-chain down-pay down-bo down
 
-build-all: build build-bo build-pay
+build-all: build build-bo build-pay build-chain build-sched
 
 # ------------------------------------------------------------
 # Desarrollo (backend Docker, frontend local)
@@ -173,6 +217,8 @@ ps:
 	@docker ps --filter "network=$(NETWORK)" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 clean:
+	cd $(SCHEDULER_DIR) && docker-compose down -v --rmi all --remove-orphans || true
+	cd $(BLOCKCHAIN_DIR) && docker-compose -f compose.yaml down -v --rmi all --remove-orphans || true
 	cd $(PAYMENTS_DIR) && docker-compose down -v --rmi all --remove-orphans || true
 	cd $(BACKEND_DIR) && docker-compose down -v --rmi all --remove-orphans || true
 	docker network rm $(NETWORK) || true

@@ -1,0 +1,17 @@
+services:
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    container_name: hornero-scheduler
+    environment:
+      BACKEND_URL: http://hornero-backend:8080
+      SERVICE_KEY: ${SERVICE_KEY_PAYMENTS:-internal-secret-dev}
+    networks:
+      - hornero-network
+    restart: unless-stopped
+
+networks:
+  hornero-network:
+    external: true

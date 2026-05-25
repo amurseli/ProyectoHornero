@@ -1,5 +1,7 @@
 package com.hornero.payments.service;
 
+import com.hornero.payments.client.BackendClient;
+import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.RefundSummaryResponse;
 import com.hornero.payments.gateway.MercadoPagoGateway;
 import com.hornero.payments.model.Contribution;
@@ -30,12 +32,16 @@ class RefundServiceTest {
     @Mock RefundRepository refundRepository;
     @Mock ContributionRepository contributionRepository;
     @Mock MercadoPagoGateway mercadoPagoGateway;
+    @Mock BackendClient backendClient;
+    @Mock LedgerClient ledgerClient;
+    @Mock PaymentEventLogService paymentEventLogService;
 
     @InjectMocks RefundService service;
 
     @Test
     void refundAll_whenNoApprovedContributions_returnsEmptyList() {
         when(contributionRepository.findByIdCampaignAndStatus(1L, "APPROVED")).thenReturn(List.of());
+        when(backendClient.getCampaignTitle(1L)).thenReturn("Campaña Solar");
 
         RefundSummaryResponse response = service.refundAll(1L, "CAMPAIGN_FAILED");
 
@@ -48,6 +54,8 @@ class RefundServiceTest {
     void refundAll_whenContributionHasNoTransaction_marksRefundFailed() {
         Contribution c = contribution(null);
         when(contributionRepository.findByIdCampaignAndStatus(1L, "APPROVED")).thenReturn(List.of(c));
+        when(backendClient.getCampaignTitle(1L)).thenReturn("Campaña Solar");
+        when(backendClient.getUsername(2L)).thenReturn("mateo");
         when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         RefundSummaryResponse response = service.refundAll(1L, "CAMPAIGN_FAILED");
@@ -63,13 +71,17 @@ class RefundServiceTest {
         tx.setIdTransactionExternal("123456");
         tx.setPaymentProvider("MERCADO_PAGO");
         Contribution c = contribution(tx);
+        c.setIdUser(2L);
 
         when(contributionRepository.findByIdCampaignAndStatus(1L, "APPROVED")).thenReturn(List.of(c));
+        when(backendClient.getCampaignTitle(1L)).thenReturn("Campaña Solar");
+        when(backendClient.getUsername(2L)).thenReturn("mateo");
         when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         PaymentRefund mockRefund = mock(PaymentRefund.class);
         when(mockRefund.getId()).thenReturn(999L);
         when(mercadoPagoGateway.refund(123456L)).thenReturn(mockRefund);
+        when(ledgerClient.registerRefundTransaction(eq("mateo"), any(), eq("Campaña Solar"))).thenReturn("0xrefund");
 
         RefundSummaryResponse response = service.refundAll(1L, "CAMPAIGN_FAILED");
 
@@ -89,10 +101,15 @@ class RefundServiceTest {
 
         Contribution c1 = contribution(tx1);
         ReflectionTestUtils.setField(c1, "id", 1L);
+        c1.setIdUser(2L);
         Contribution c2 = contribution(tx2);
         ReflectionTestUtils.setField(c2, "id", 2L);
+        c2.setIdUser(3L);
 
         when(contributionRepository.findByIdCampaignAndStatus(1L, "APPROVED")).thenReturn(List.of(c1, c2));
+        when(backendClient.getCampaignTitle(1L)).thenReturn("Campaña Solar");
+        when(backendClient.getUsername(2L)).thenReturn("mateo");
+        when(backendClient.getUsername(3L)).thenReturn("lucia");
         when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         MPApiException apiEx = mock(MPApiException.class);
@@ -105,6 +122,7 @@ class RefundServiceTest {
         PaymentRefund okRefund = mock(PaymentRefund.class);
         when(okRefund.getId()).thenReturn(999L);
         when(mercadoPagoGateway.refund(222L)).thenReturn(okRefund);
+        when(ledgerClient.registerRefundTransaction(eq("lucia"), any(), eq("Campaña Solar"))).thenReturn("0xrefund");
 
         RefundSummaryResponse response = service.refundAll(1L, "CAMPAIGN_FAILED");
 

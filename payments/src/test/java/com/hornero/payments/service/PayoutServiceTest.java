@@ -1,6 +1,7 @@
 package com.hornero.payments.service;
 
 import com.hornero.payments.client.BackendClient;
+import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.PayoutStatusResponse;
 import com.hornero.payments.model.Contribution;
 import com.hornero.payments.model.Payout;
@@ -27,6 +28,8 @@ class PayoutServiceTest {
     @Mock PayoutRepository payoutRepository;
     @Mock ContributionRepository contributionRepository;
     @Mock BackendClient backendClient;
+    @Mock LedgerClient ledgerClient;
+    @Mock PaymentEventLogService paymentEventLogService;
 
     @InjectMocks PayoutService service;
 
@@ -75,6 +78,26 @@ class PayoutServiceTest {
         assertThat(response.getPlatformFee()).isEqualByComparingTo("50.00");
         assertThat(response.getProviderFee()).isEqualByComparingTo("29.90");
         assertThat(response.getNetAmount()).isEqualByComparingTo("920.10");
+    }
+
+    @Test
+    void confirmManualPayout_registersBlockchainTransfer() {
+        Payout payout = new Payout();
+        payout.setIdCampaign(1L);
+        payout.setIdCreatorUser(10L);
+        payout.setNetAmount(new BigDecimal("920.10"));
+        payout.setStatus("PENDING_MANUAL_TRANSFER");
+        ReflectionTestUtils.setField(payout, "id", 7L);
+
+        when(payoutRepository.findByIdCampaign(1L)).thenReturn(java.util.Optional.of(payout));
+        when(backendClient.getCampaignTitle(1L)).thenReturn("Campaña Solar");
+        when(backendClient.getUsername(10L)).thenReturn("creador1");
+        when(ledgerClient.registerPayoutTransaction("creador1", payout, "Campaña Solar")).thenReturn("0xpayout");
+
+        PayoutStatusResponse response = service.confirmManualPayout(1L, "MP-REF-1");
+
+        assertThat(response.getStatus()).isEqualTo("COMPLETED");
+        assertThat(response.getHashTx()).isEqualTo("0xpayout");
     }
 
     @Test
