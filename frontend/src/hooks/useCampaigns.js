@@ -4,28 +4,37 @@ import { useState, useEffect } from "react"
 import { campaignService } from "../utils/campaignService"
 
 export function useCampaigns() {
-  const [featuredCampaigns, setFeaturedCampaigns] = useState([])
-  const [recentCampaigns, setRecentCampaigns] = useState([])
+  const [sections, setSections] = useState({
+    featured: [],
+    endingSoon: [],
+    nearGoal: [],
+    recent: [],
+  })
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const loadCampaigns = async () => {
+    let cancelled = false
+
+    const load = async () => {
       try {
-        const [featured, recent] = await Promise.all([
-          campaignService.getFeaturedCampaigns(4),
-          campaignService.getRecentCampaigns(6)
-        ])
-        setFeaturedCampaigns(featured)
-        setRecentCampaigns(recent)
+        const data = await campaignService.getHomeSections()
+        if (!cancelled) setSections(data)
       } catch (error) {
-        console.error('Error loading campaigns:', error)
+        console.error('Error loading home sections:', error)
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
 
-    loadCampaigns()
+    load()
+    return () => { cancelled = true }
   }, [])
 
-  return { featuredCampaigns, recentCampaigns, isLoading }
+  return {
+    featuredCampaigns:   sections.featured,
+    endingSoonCampaigns: sections.endingSoon,
+    nearGoalCampaigns:   sections.nearGoal,
+    recentCampaigns:     sections.recent,
+    isLoading,
+  }
 }
