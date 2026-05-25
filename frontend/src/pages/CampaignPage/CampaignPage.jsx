@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { campaignService } from '$utils/campaignService'
+import { contributionService } from '$utils/contributionService'
 import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
 import { Button } from '$components/ui'
 import ContributionModal from '$components/ContributionModal/ContributionModal'
@@ -84,7 +85,51 @@ function DescriptionPreview({ text }) {
   return <p className={`cp-description-text ${preview.truncated ? 'cp-description-text--truncated' : ''}`}>{preview.text}</p>
 }
 
-function DetailOverlay({ item, onClose, onContribute, disabledReason }) {
+function getRewardAccessState(reward, contributionSummary) {
+  const approvedTotal = Number(contributionSummary?.approvedTotal || 0)
+  const currentRewardId = contributionSummary?.currentReward?.rewardId || null
+  const currentRewardPrice = Number(contributionSummary?.currentReward?.rewardPrice || 0)
+  const rewardPrice = Number(reward?.price || 0)
+  const remaining = Math.max(0, rewardPrice - approvedTotal)
+
+  if (currentRewardId === reward.id) {
+    return {
+      status: 'current',
+      cta: 'Tier actual',
+      helper: 'Ya tenés esta recompensa asignada.',
+      remaining: 0,
+    }
+  }
+
+  if (currentRewardId && rewardPrice <= currentRewardPrice) {
+    return {
+      status: 'locked',
+      cta: 'No disponible',
+      helper: 'Ya tenés una recompensa de igual o mayor valor.',
+      remaining,
+    }
+  }
+
+  if (remaining === 0) {
+    return {
+      status: 'available',
+      cta: 'Activar recompensa',
+      helper: 'Ya alcanzaste esta tier con tus aportes previos.',
+      remaining: 0,
+    }
+  }
+
+  return {
+    status: 'upgrade',
+    cta: `Pagar ${formatCurrency(remaining)}`,
+    helper: approvedTotal > 0
+      ? `Te faltan ${formatCurrency(remaining)} para acceder a esta recompensa.`
+      : `Necesitás ${formatCurrency(rewardPrice)} para acceder a esta recompensa.`,
+    remaining,
+  }
+}
+
+function DetailOverlay({ item, onClose, onContribute, disabledReason, contributionSummary }) {
   useEffect(() => {
     if (!item) return undefined
 
@@ -106,6 +151,7 @@ function DetailOverlay({ item, onClose, onContribute, disabledReason }) {
 
   const imageSrc = getEntityImageSrc(item)
   const isReward = item.kind === 'reward'
+  const rewardState = isReward ? getRewardAccessState(item, contributionSummary) : null
 
   return (
     <div className="cp-focus-overlay" onClick={onClose}>
@@ -137,12 +183,13 @@ function DetailOverlay({ item, onClose, onContribute, disabledReason }) {
               <Button
                 variant="primary"
                 className="cp-focus-action"
-                onClick={() => onContribute(Number(item.price) || 1)}
-                disabled={!!disabledReason}
-                title={disabledReason || undefined}
+                onClick={() => onContribute({ reward: item })}
+                disabled={!!disabledReason || rewardState?.status === 'current' || rewardState?.status === 'locked'}
+                title={disabledReason || rewardState?.helper || undefined}
               >
-                Elegir {formatCurrency(item.price || 0)}
+                {rewardState?.cta || `Elegir ${formatCurrency(item.price || 0)}`}
               </Button>
+              {!disabledReason && rewardState?.helper && <p className="cp-reward-disabled">{rewardState.helper}</p>}
               {disabledReason && <p className="cp-reward-disabled">{disabledReason}</p>}
             </>
           )}
@@ -152,8 +199,9 @@ function DetailOverlay({ item, onClose, onContribute, disabledReason }) {
   )
 }
 
-function RewardTierCard({ reward, onContribute, onOpenCard, compact = false, disabledReason = null }) {
+function RewardTierCard({ reward, onContribute, onOpenCard, compact = false, disabledReason = null, contributionSummary = null }) {
   const imageSrc = getEntityImageSrc(reward)
+  const rewardState = getRewardAccessState(reward, contributionSummary)
 
   const handleKeyDown = (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -187,14 +235,16 @@ function RewardTierCard({ reward, onContribute, onOpenCard, compact = false, dis
           className="cp-reward-btn"
           onClick={(event) => {
             event.stopPropagation()
-            onContribute(Number(reward.price) || 1)
+            onContribute({ reward })
           }}
-          disabled={!!disabledReason}
-          title={disabledReason || undefined}
+          disabled={!!disabledReason || rewardState.status === 'current' || rewardState.status === 'locked'}
+          title={disabledReason || rewardState.helper || undefined}
         >
-          Elegir {formatCurrency(reward.price || 0)}
+          {rewardState.cta}
         </Button>
-        {disabledReason && <p className="cp-reward-disabled">{disabledReason}</p>}
+        {disabledReason
+          ? <p className="cp-reward-disabled">{disabledReason}</p>
+          : <p className="cp-reward-disabled">{rewardState.helper}</p>}
       </div>
     </article>
   )
@@ -340,7 +390,7 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
             variant="primary"
             size="lg"
             className="cp-cta"
-            onClick={() => onContribute()}
+            onClick={() => onContribute({ amount: 1 })}
             disabled={!!contributeDisabledReason}
             title={contributeDisabledReason || undefined}
           >
@@ -429,7 +479,7 @@ function TeamMemberCard({ member }) {
   )
 }
 
-function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribute, contributeDisabledReason }) {
+function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribute, contributeDisabledReason, contributionSummary }) {
   const storyHeadings = useMemo(() => extractMarkdownHeadings(campaign.description), [campaign.description])
   const tocItems = useMemo(() => (
     storyHeadings.length > 0
@@ -441,6 +491,7 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
   const [expandedItem, setExpandedItem] = useState(null)
   const leadMember = team[0] || null
   const storyRef = useRef(null)
+  const currentReward = rewards.find(r => r.id === contributionSummary?.currentReward?.rewardId) || null
 
   useEffect(() => {
     setActiveToc(tocItems[0]?.id || 'historia')
@@ -567,6 +618,7 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
                       onContribute={onContribute}
                       onOpenCard={openRewardDescription}
                       disabledReason={contributeDisabledReason}
+                      contributionSummary={contributionSummary}
                     />
                   ))}
                 </div>
@@ -581,6 +633,7 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
           onClose={() => setExpandedItem(null)}
           onContribute={onContribute}
           disabledReason={contributeDisabledReason}
+          contributionSummary={contributionSummary}
         />
       </>
     )
@@ -719,6 +772,11 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
           <div className="cp-contribute-card">
             <span className="cp-contribute-title">Contribuir sin recompensa</span>
             <p className="cp-contribute-desc">Apoyá el proyecto simplemente porque te parece interesante.</p>
+            {contributionSummary?.approvedTotal > 0 && (
+              <p className="cp-contribute-progress">
+                Ya aportaste {formatCurrency(contributionSummary.approvedTotal)} en esta campaña.
+              </p>
+            )}
             <div className="cp-amount-input">
               <span className="cp-amount-prefix">ARS $</span>
               <input
@@ -747,6 +805,11 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
                 <Gift size={16} />
                 <span>Elegí una recompensa</span>
               </div>
+              {contributionSummary?.currentReward && (
+                <div className="cp-current-tier">
+                  Tu tier actual: <strong>{currentReward?.title || formatCurrency(contributionSummary.currentReward.rewardPrice)}</strong>
+                </div>
+              )}
               <p className="cp-reward-sidebar-copy">
                 Si aportás el monto indicado o uno mayor, el creador se compromete a entregarte esta recompensa.
               </p>
@@ -759,6 +822,7 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
                     onOpenCard={openRewardDescription}
                     compact
                     disabledReason={contributeDisabledReason}
+                    contributionSummary={contributionSummary}
                   />
                 ))}
               </div>
@@ -771,6 +835,7 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
         onClose={() => setExpandedItem(null)}
         onContribute={onContribute}
         disabledReason={contributeDisabledReason}
+        contributionSummary={contributionSummary}
       />
     </>
   )
@@ -790,16 +855,34 @@ export default function CampaignPage() {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('history')
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalAmount, setModalAmount] = useState(1)
+  const [modalConfig, setModalConfig] = useState({ amount: 1, reward: null })
+  const [contributionSummary, setContributionSummary] = useState(null)
 
   const tabs = TABS.filter(tab => {
     if (tab.key === 'faq') return faqs.length > 0
     return true
   })
 
-  function openModal(amount = 1) {
-    setModalAmount(amount)
+  function openModal(selection = {}) {
+    if (typeof selection === 'number') {
+      setModalConfig({ amount: selection, reward: null })
+    } else {
+      setModalConfig({
+        amount: Number(selection.amount) || 1,
+        reward: selection.reward || null,
+      })
+    }
     setModalOpen(true)
+  }
+
+  function refreshContributionSummary() {
+    if (!user) {
+      setContributionSummary(null)
+      return
+    }
+    contributionService.getCampaignSummary(id)
+      .then(setContributionSummary)
+      .catch(() => setContributionSummary(null))
   }
 
   function getContributeDisabledReason(c) {
@@ -838,6 +921,15 @@ export default function CampaignPage() {
       setActiveTab('history')
     }
   }, [activeTab, faqs.length])
+
+  useEffect(() => {
+    if (!user) {
+      setContributionSummary(null)
+      return undefined
+    }
+    refreshContributionSummary()
+    return undefined
+  }, [id, user])
 
   if (loading) {
     return (
@@ -889,6 +981,7 @@ export default function CampaignPage() {
                 activeTab={activeTab}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
+                contributionSummary={contributionSummary}
               />
             </>
           )
@@ -896,7 +989,9 @@ export default function CampaignPage() {
         {modalOpen && (
           <ContributionModal
             campaignId={Number(id)}
-            initialAmount={modalAmount}
+            initialAmount={modalConfig.amount}
+            reward={modalConfig.reward}
+            onCompleted={refreshContributionSummary}
             onClose={() => setModalOpen(false)}
           />
         )}

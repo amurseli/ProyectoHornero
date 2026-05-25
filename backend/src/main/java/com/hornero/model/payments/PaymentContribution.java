@@ -22,6 +22,12 @@ public class PaymentContribution {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "reward_id")
+    private Long rewardId;
+
+    @Column(name = "reward_price", precision = 15, scale = 2)
+    private BigDecimal rewardPrice;
+
     @Column(nullable = false, length = 20)
     private String status;
 
@@ -38,6 +44,8 @@ public class PaymentContribution {
     public Long getIdUser() { return idUser; }
     public Long getIdCampaign() { return idCampaign; }
     public BigDecimal getAmount() { return amount; }
+    public Long getRewardId() { return rewardId; }
+    public BigDecimal getRewardPrice() { return rewardPrice; }
     public String getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

@@ -14,10 +14,10 @@ async function request(path, options = {}) {
 }
 
 export const contributionService = {
-  initiate: (campaignId, amount) =>
+  initiate: (campaignId, amount, rewardId = null) =>
     request('/api/payments/contributions/initiate', {
       method: 'POST',
-      body: JSON.stringify({ campaignId, amount }),
+      body: JSON.stringify({ campaignId, amount, rewardId }),
     }),
 
   process: (contributionId, formData) =>
@@ -36,4 +36,7 @@ export const contributionService = {
 
   getStatus: (contributionId) =>
     request(`/api/payments/contributions/${contributionId}`),
+
+  getCampaignSummary: (campaignId) =>
+    request(`/api/payments/campaigns/${campaignId}/summary`),
 }

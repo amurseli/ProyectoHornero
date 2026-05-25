@@ -994,6 +994,12 @@
   line-height: 1.5;
   margin: 0 0 0.75rem;
 }
+
+.cp-contribute-progress {
+  margin: 0 0 0.75rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+}
 .cp-amount-input {
   display: flex;
   border: 1px solid var(--color-border);
@@ -1047,6 +1053,15 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: 1.5;
+}
+
+.cp-current-tier {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
 }
 
 .cp-reward-sidebar-list {

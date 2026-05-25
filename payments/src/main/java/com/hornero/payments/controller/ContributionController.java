@@ -1,6 +1,7 @@
 package com.hornero.payments.controller;
 
 import com.hornero.payments.dto.ContributionStatusResponse;
+import com.hornero.payments.dto.CampaignContributionSummaryResponse;
 import com.hornero.payments.dto.InitiateContributionRequest;
 import com.hornero.payments.dto.InitiateContributionResponse;
 import com.hornero.payments.dto.ProcessContributionRequest;
@@ -42,7 +43,8 @@ public class ContributionController {
         InitiateContributionResponse response = contributionService.initiate(
                 request.getCampaignId(),
                 userId,
-                request.getAmount()
+                request.getAmount(),
+                request.getRewardId()
         );
 
         return ResponseEntity.status(201).body(response);
@@ -72,6 +74,16 @@ public class ContributionController {
         Long userId = extractUserIdFromRequest(httpRequest);
 
         ContributionStatusResponse response = contributionService.getStatus(id, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/campaigns/{campaignId}/summary")
+    public ResponseEntity<CampaignContributionSummaryResponse> getCampaignContributionSummary(
+            @PathVariable Long campaignId,
+            HttpServletRequest httpRequest) {
+
+        Long userId = extractUserIdFromRequest(httpRequest);
+        CampaignContributionSummaryResponse response = contributionService.getCampaignContributionSummary(campaignId, userId);
         return ResponseEntity.ok(response);
     }
 

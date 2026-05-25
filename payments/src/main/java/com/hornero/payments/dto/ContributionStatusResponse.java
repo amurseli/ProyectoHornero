@@ -8,13 +8,15 @@ public class ContributionStatusResponse {
     private Long campaignId;
     private BigDecimal amount;
     private String status;
+    private ContributionRewardInfo reward;
     private TransactionInfo transaction;
 
-    public ContributionStatusResponse(Long contributionId, Long campaignId, BigDecimal amount, String status, TransactionInfo transaction) {
+    public ContributionStatusResponse(Long contributionId, Long campaignId, BigDecimal amount, String status, ContributionRewardInfo reward, TransactionInfo transaction) {
         this.contributionId = contributionId;
         this.campaignId = campaignId;
         this.amount = amount;
         this.status = status;
+        this.reward = reward;
         this.transaction = transaction;
     }
 
@@ -22,6 +24,7 @@ public class ContributionStatusResponse {
     public Long getCampaignId() { return campaignId; }
     public BigDecimal getAmount() { return amount; }
     public String getStatus() { return status; }
+    public ContributionRewardInfo getReward() { return reward; }
     public TransactionInfo getTransaction() { return transaction; }
 
     public static class TransactionInfo {

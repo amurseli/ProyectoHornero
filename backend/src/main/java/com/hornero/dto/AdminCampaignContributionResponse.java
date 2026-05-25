@@ -10,6 +10,8 @@ public class AdminCampaignContributionResponse {
     private String contributorName;
     private String contributorEmail;
     private BigDecimal amount;
+    private Long rewardId;
+    private BigDecimal rewardPrice;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -60,6 +62,12 @@ public class AdminCampaignContributionResponse {
 
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public Long getRewardId() { return rewardId; }
+    public void setRewardId(Long rewardId) { this.rewardId = rewardId; }
+
+    public BigDecimal getRewardPrice() { return rewardPrice; }
+    public void setRewardPrice(BigDecimal rewardPrice) { this.rewardPrice = rewardPrice; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
