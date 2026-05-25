@@ -2,6 +2,8 @@ package com.hornero.controller;
 
 import com.hornero.client.PaymentsServiceClient;
 import com.hornero.model.Campaign;
+import com.hornero.model.User;
+import com.hornero.repository.UserRepository;
 import com.hornero.service.CampaignService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,9 @@ public class InternalController {
 
     @Autowired
     private PaymentsServiceClient paymentsServiceClient;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Value("${app.service-key}")
     private String serviceKey;
@@ -118,5 +123,21 @@ public class InternalController {
                 "refundRetried", refundRetried,
                 "errors", errors
         ));
+    }
+
+    // GET /internal/users/{id}
+    // Usado por el servicio de payments para obtener el userName sin JWT.
+    @GetMapping("/users/{id}")
+    public ResponseEntity<Map<String, Object>> getUser(
+            @PathVariable Long id,
+            @RequestHeader("X-Service-Key") String incomingKey) {
+
+        if (!serviceKey.equals(incomingKey)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return userRepository.findById(id)
+                .map(user -> ResponseEntity.ok(Map.<String, Object>of("userName", user.getUserName())))
+                .orElse(ResponseEntity.notFound().build());
     }
 }

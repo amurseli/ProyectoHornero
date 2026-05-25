@@ -24,6 +24,7 @@ import CampaignPage from '$pages/CampaignPage/CampaignPage';
 import EditDraftCampaign from '$pages/Campaigns/EditDraftCampaign';
 import CreatorCampaignDashboard from '$pages/Campaigns/CreatorCampaignDashboard';
 import TransactionHistory from '$pages/TransactionHistory/TransactionHistory.jsx';
+import PaymentReturn from '$pages/PaymentReturn/PaymentReturn.jsx';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -74,6 +75,7 @@ function App() {
           <Route path="/campaigns/:id" element={<CampaignPage />} />
           <Route path="/for-creators" element={<ForCreators />} />
           <Route path="/transactions" element={<TransactionHistory />} />
+          <Route path="/payment/return" element={<PaymentReturn />} />
 
           {/* Protected */}
           <Route path="/campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />

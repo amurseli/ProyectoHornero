@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { initMercadoPago, Payment } from '@mercadopago/sdk-react'
 import { contributionService } from '$utils/contributionService'
 import { Button } from '$components/ui'
-import { X, CheckCircle, XCircle, Loader } from 'lucide-react'
+import { X, CheckCircle, XCircle, Loader, Clock } from 'lucide-react'
 import './ContributionModal.css'
 
 function formatMoney(value) {
@@ -14,11 +14,17 @@ function normalizeAmount(value, fallback = 1) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+const AMOUNT_SUGGESTIONS = [500, 1000, 2000, 5000]
+
+const STEPS = ['Monto', 'Pago', 'Resultado']
+const STEP_INDEX = { amount: 0, reward: 0, payment: 1, result: 2 }
+
 export default function ContributionModal({ campaignId, initialAmount = 1, reward = null, onClose, onCompleted }) {
   const rewardMode = !!reward
   const [step, setStep] = useState(rewardMode ? 'reward' : 'amount')
   const [amount, setAmount] = useState(Number(initialAmount) || 1)
   const [contributionId, setContributionId] = useState(null)
+  const [preferenceId, setPreferenceId] = useState(null)
   const [mpReady, setMpReady] = useState(false)
   const [rewardMeta, setRewardMeta] = useState(null)
   const [result, setResult] = useState(null)
@@ -38,6 +44,7 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
       setContributionId(data.contributionId)
       setAmount(normalizeAmount(data.amount))
       setRewardMeta(data.reward || null)
+      setPreferenceId(data.preferenceId ?? null)
       if (data.status === 'APPROVED' && Number(data.amount) === 0) {
         setResult({ status: 'APPROVED', reward: data.reward, amount: data.amount })
         onCompleted?.()
@@ -64,7 +71,11 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
     await startContribution({ nextAmount: amount })
   }
 
-  async function handlePaymentSubmit({ formData }) {
+  async function handlePaymentSubmit({ selectedPaymentMethod, formData }) {
+    if (selectedPaymentMethod === 'wallet_purchase' || formData?.paymentType === 'wallet_purchase') {
+      // MP redirige al usuario a su sitio; el resultado se maneja en /payment/return
+      return
+    }
     try {
       const data = await contributionService.process(contributionId, formData)
       setResult(data)
@@ -80,6 +91,7 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
     setStep(rewardMode ? 'reward' : 'amount')
     setResult(null)
     setContributionId(null)
+    setPreferenceId(null)
     setMpReady(false)
     setRewardMeta(null)
     mpInitialized.current = false
@@ -96,6 +108,7 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
   const resultAmount = normalizeAmount(result?.amount, amount)
   const resultAmountFormatted = formatMoney(resultAmount)
   const rewardActivatedWithoutPayment = rewardMode && result?.status === 'APPROVED' && resultAmount === 0
+  const currentStepIndex = STEP_INDEX[step]
 
   return (
     <div className="cm-overlay" onClick={handleOverlayClick}>
@@ -104,10 +117,40 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
           <X size={18} />
         </button>
 
+        {/* Step indicator */}
+        <div className="cm-steps">
+          {STEPS.map((label, i) => (
+            <div
+              key={label}
+              className={`cm-step-item ${i < currentStepIndex ? 'cm-step-item--done' : ''} ${i === currentStepIndex ? 'cm-step-item--active' : ''}`}
+            >
+              <div className="cm-step-dot">
+                {i < currentStepIndex ? <CheckCircle size={14} /> : <span>{i + 1}</span>}
+              </div>
+              <span className="cm-step-label">{label}</span>
+              {i < STEPS.length - 1 && <div className="cm-step-line" />}
+            </div>
+          ))}
+        </div>
+
         {step === 'amount' && (
-          <div className="cm-step">
+          <div className="cm-body">
             <h2 className="cm-title">Hacer una contribución</h2>
             <p className="cm-subtitle">Ingresá el monto que querés aportar a esta campaña.</p>
+
+            <div className="cm-chips">
+              {AMOUNT_SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`cm-chip ${amount === s ? 'cm-chip--active' : ''}`}
+                  onClick={() => setAmount(s)}
+                >
+                  ${s.toLocaleString('es-AR')}
+                </button>
+              ))}
+            </div>
+
             <form onSubmit={handleAmountSubmit}>
               <div className="cm-amount-row">
                 <span className="cm-amount-prefix">ARS $</span>
@@ -166,10 +209,10 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
         )}
 
         {step === 'payment' && mpReady && (
-          <div className="cm-step">
-            <h2 className="cm-title">Datos de pago</h2>
+          <div className="cm-body">
             {rewardMode ? (
               <>
+                <h2 className="cm-title">Datos de pago</h2>
                 <p className="cm-subtitle">
                   Seleccionaste <strong>{reward.title}</strong>. El monto de esta recompensa queda fijo en <strong>{rewardPriceFormatted}</strong>.
                 </p>
@@ -198,35 +241,42 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
                 </div>
               </>
             ) : (
-              <p className="cm-subtitle">
-                Estás contribuyendo <strong>{amountFormatted}</strong>
-              </p>
+              <div className="cm-payment-summary">
+                <span className="cm-payment-summary__label">Contribución</span>
+                <span className="cm-payment-summary__amount">{amountFormatted}</span>
+              </div>
             )}
             <Payment
-              initialization={{ amount }}
+              initialization={{ amount, ...(preferenceId ? { preferenceId } : {}) }}
               customization={{
-                paymentMethods: { creditCard: 'all', debitCard: 'all' },
+                paymentMethods: {
+                  creditCard: 'all',
+                  debitCard: 'all',
+                  ...(preferenceId ? { mercadoPago: 'all' } : {}),
+                },
                 visual: { hideFormTitle: true },
               }}
               onSubmit={handlePaymentSubmit}
-              onError={(err) => setError(String(err?.message || err))}
+              onError={(err) => { if (err?.type === 'critical') setError(String(err?.message || err)) }}
             />
             {error && <p className="cm-error-msg">{error}</p>}
           </div>
         )}
 
         {step === 'result' && result && (
-          <div className="cm-step cm-result">
+          <div className="cm-body cm-result">
             {result.status === 'APPROVED' ? (
               <>
-                <CheckCircle size={56} className="cm-icon cm-icon--success" />
+                <div className="cm-result-icon cm-result-icon--success">
+                  <CheckCircle size={40} />
+                </div>
                 <h2 className="cm-title">{rewardActivatedWithoutPayment ? '¡Recompensa activada!' : '¡Contribución exitosa!'}</h2>
                 <p className="cm-subtitle">
                   {rewardActivatedWithoutPayment
                     ? <>Activaste la recompensa <strong>{reward.title}</strong> con tus aportes previos.</>
                     : rewardMode
                     ? <>Tu pago de <strong>{resultAmountFormatted}</strong> para <strong>{reward.title}</strong> fue procesado correctamente.</>
-                    : <>Tu aporte de <strong>{amountFormatted}</strong> fue procesado correctamente.</>}
+                    : <>Tu aporte de <strong>{amountFormatted}</strong> fue procesado correctamente. ¡Gracias por apoyar esta campaña!</>}
                 </p>
                 <Button variant="primary" className="cm-btn" onClick={onClose}>
                   Cerrar
@@ -234,10 +284,12 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
               </>
             ) : result.status === 'IN_PROCESS' ? (
               <>
-                <Loader size={56} className="cm-icon cm-icon--pending cm-spin" />
+                <div className="cm-result-icon cm-result-icon--pending">
+                  <Clock size={40} />
+                </div>
                 <h2 className="cm-title">Pago en proceso</h2>
                 <p className="cm-subtitle">
-                  Tu pago está siendo verificado. Te notificaremos cuando se confirme.
+                  Tu pago está siendo verificado por Mercado Pago. Te notificaremos cuando se confirme.
                 </p>
                 <Button variant="primary" className="cm-btn" onClick={onClose}>
                   Entendido
@@ -245,10 +297,14 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
               </>
             ) : (
               <>
-                <XCircle size={56} className="cm-icon cm-icon--error" />
+                <div className="cm-result-icon cm-result-icon--error">
+                  <XCircle size={40} />
+                </div>
                 <h2 className="cm-title">No se pudo procesar el pago</h2>
                 <p className="cm-subtitle">
-                  Verificá los datos de tu tarjeta e intentá de nuevo.
+                  {result.error
+                    ? result.error
+                    : 'Verificá los datos ingresados o intentá con otro método de pago.'}
                 </p>
                 <div className="cm-btn-row">
                   <Button variant="secondary" className="cm-btn" onClick={handleRetry}>

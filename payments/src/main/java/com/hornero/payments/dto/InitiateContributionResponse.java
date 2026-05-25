@@ -10,14 +10,16 @@ public class InitiateContributionResponse {
     private String currency;
     private ContributionRewardInfo reward;
     private String status;
+    private String preferenceId;
 
-    public InitiateContributionResponse(Long contributionId, String publicKey, BigDecimal amount, String currency, ContributionRewardInfo reward, String status) {
+    public InitiateContributionResponse(Long contributionId, String publicKey, BigDecimal amount, String currency, ContributionRewardInfo reward, String status, String preferenceId) {
         this.contributionId = contributionId;
         this.publicKey = publicKey;
         this.amount = amount;
         this.currency = currency;
         this.reward = reward;
         this.status = status;
+        this.preferenceId = preferenceId;
     }
 
     public Long getContributionId() { return contributionId; }
@@ -26,4 +28,5 @@ public class InitiateContributionResponse {
     public String getCurrency() { return currency; }
     public ContributionRewardInfo getReward() { return reward; }
     public String getStatus() { return status; }
+    public String getPreferenceId() { return preferenceId; }
 }

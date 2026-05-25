@@ -20,19 +20,26 @@ export const contributionService = {
       body: JSON.stringify({ campaignId, amount, rewardId }),
     }),
 
-  process: (contributionId, formData) =>
-    request(`/api/payments/contributions/${contributionId}/process`, {
+  process: (contributionId, formData) => {
+    if (!formData) return Promise.reject(new Error('Datos de pago inválidos'))
+    const isWallet = formData.paymentType === 'wallet_purchase'
+    const body = isWallet
+      ? { paymentType: 'wallet_purchase', paymentId: formData.paymentId }
+      : {
+          paymentType: formData.payment_method_id,
+          token: formData.token,
+          paymentMethodId: formData.payment_method_id,
+          issuerId: formData.issuer_id,
+          installments: formData.installments,
+          payerEmail: formData.payer?.email,
+          identificationType: formData.payer?.identification?.type,
+          identificationNumber: formData.payer?.identification?.number,
+        }
+    return request(`/api/payments/contributions/${contributionId}/process`, {
       method: 'POST',
-      body: JSON.stringify({
-        token: formData.token,
-        paymentMethodId: formData.payment_method_id,
-        issuerId: formData.issuer_id,
-        installments: formData.installments,
-        payerEmail: formData.payer.email,
-        identificationType: formData.payer.identification.type,
-        identificationNumber: formData.payer.identification.number,
-      }),
-    }),
+      body: JSON.stringify(body),
+    })
+  },
 
   getStatus: (contributionId) =>
     request(`/api/payments/contributions/${contributionId}`),
