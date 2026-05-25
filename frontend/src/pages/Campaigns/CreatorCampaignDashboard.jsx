@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, BarChart3, FilePenLine, Clock3, Target, Users } from 'lucide-react'
 import { Button } from '$components/ui'
@@ -167,6 +167,7 @@ function StatisticsSection({ detail, rewards }) {
 export default function CreatorCampaignDashboard() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const mainRef = useRef(null)
   const [campaign, setCampaign] = useState(null)
   const [rewards, setRewards] = useState([])
   const [detail, setDetail] = useState(null)
@@ -189,6 +190,17 @@ export default function CreatorCampaignDashboard() {
       .catch(err => setError(err.message || 'No se pudo cargar la campaña'))
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleSectionChange = (section) => {
+    setActiveSection(section)
+
+    requestAnimationFrame(() => {
+      const top = mainRef.current
+        ? mainRef.current.getBoundingClientRect().top + window.scrollY - 96
+        : 0
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    })
+  }
 
   if (loading) {
     return (
@@ -217,12 +229,12 @@ export default function CreatorCampaignDashboard() {
 
   return (
     <div className="ccd-page">
+      <button className="ccd-back" onClick={() => navigate('/campaigns')}>
+        <ArrowLeft size={16} /> Mis campañas
+      </button>
+
       <div className="ccd-shell">
         <aside className="ccd-sidebar">
-          <button className="ccd-back" onClick={() => navigate('/campaigns')}>
-            <ArrowLeft size={16} /> Mis campañas
-          </button>
-
           <div className="ccd-campaign-card">
             <span className="ccd-kicker">Panel de campaña</span>
             <h1>{campaign.title || 'Campaña sin título'}</h1>
@@ -232,20 +244,20 @@ export default function CreatorCampaignDashboard() {
           <nav className="ccd-nav">
             <button
               className={`ccd-nav-item ${activeSection === 'campaign' ? 'is-active' : ''}`}
-              onClick={() => setActiveSection('campaign')}
+              onClick={() => handleSectionChange('campaign')}
             >
               <FilePenLine size={16} /> Mi campaña
             </button>
             <button
               className={`ccd-nav-item ${activeSection === 'stats' ? 'is-active' : ''}`}
-              onClick={() => setActiveSection('stats')}
+              onClick={() => handleSectionChange('stats')}
             >
               <BarChart3 size={16} /> Estadísticas
             </button>
           </nav>
         </aside>
 
-        <main className="ccd-main">
+        <main className="ccd-main" ref={mainRef}>
           {activeSection === 'campaign' ? (
             <section className="ccd-section">
               <div className="ccd-panel-header">

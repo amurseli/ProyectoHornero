@@ -6,6 +6,20 @@
   padding: 1.5rem;
 }
 
+.ccd-back {
+  max-width: 1400px;
+  margin: 0 auto 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
 .ccd-shell {
   max-width: 1400px;
   margin: 0 auto;
@@ -21,18 +35,6 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.ccd-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  border: none;
-  background: none;
-  color: var(--color-text-muted);
-  padding: 0;
-  cursor: pointer;
-  font: inherit;
 }
 
 .ccd-campaign-card,
@@ -273,6 +275,10 @@
 
   .ccd-sidebar {
     position: static;
+  }
+
+  .ccd-main {
+    min-width: 0;
   }
 
   .ccd-stats-grid {
