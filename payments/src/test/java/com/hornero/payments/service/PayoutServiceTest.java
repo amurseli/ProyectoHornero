@@ -91,7 +91,8 @@ class PayoutServiceTest {
 
         when(payoutRepository.findByIdCampaign(1L)).thenReturn(java.util.Optional.of(payout));
         when(backendClient.getCampaignTitle(1L)).thenReturn("Campaña Solar");
-        when(ledgerClient.registerPayoutTransaction(payout, "Campaña Solar")).thenReturn("0xpayout");
+        when(backendClient.getUsername(10L)).thenReturn("creador1");
+        when(ledgerClient.registerPayoutTransaction("creador1", payout, "Campaña Solar")).thenReturn("0xpayout");
 
         PayoutStatusResponse response = service.confirmManualPayout(1L, "MP-REF-1");
 

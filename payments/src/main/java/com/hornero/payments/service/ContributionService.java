@@ -89,6 +89,7 @@ public class ContributionService {
         // Validar que la campana sigue activa antes de cobrar
         backendClient.validateCampaign(contribution.getIdCampaign());
         String campaignTitle = backendClient.getCampaignTitle(contribution.getIdCampaign());
+        String username = backendClient.getUsername(contribution.getIdUser());
 
         // Crear el registro de transaccion
         Transaction transaction = new Transaction();
@@ -115,7 +116,7 @@ public class ContributionService {
 
             String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
             if ("APPROVED".equals(newStatus)) {
-                transaction.setHashTx(ledgerClient.registerContributionTransaction(contribution, transaction, campaignTitle));
+                transaction.setHashTx(ledgerClient.registerContributionTransaction(username, transaction, campaignTitle));
             }
             transactionRepository.save(transaction);
 

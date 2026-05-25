@@ -64,6 +64,7 @@ public class RefundService {
         List<RefundSummaryResponse.RefundInfo> results = new ArrayList<>();
 
         for (Contribution contribution : approved) {
+            String username = backendClient.getUsername(contribution.getIdUser());
             Optional<Refund> existing = refundRepository.findFirstByContribution_Id(contribution.getId());
 
             if (existing.isPresent() && "COMPLETED".equals(existing.get().getStatus())) {
@@ -84,7 +85,7 @@ public class RefundService {
                 return r;
             });
 
-            processRefund(refund, contribution, campaignTitle);
+            processRefund(refund, contribution, campaignTitle, username);
             results.add(toInfo(refund, contribution.getId()));
         }
 
@@ -112,7 +113,8 @@ public class RefundService {
 
         for (Refund refund : failedRefunds) {
             Contribution contribution = refund.getContribution();
-            processRefund(refund, contribution, campaignTitle);
+            String username = backendClient.getUsername(contribution.getIdUser());
+            processRefund(refund, contribution, campaignTitle, username);
             results.add(toInfo(refund, contribution.getId()));
         }
 
@@ -134,7 +136,7 @@ public class RefundService {
         return new RefundSummaryResponse(campaignId, reason, infos);
     }
 
-    private void processRefund(Refund refund, Contribution contribution, String campaignTitle) {
+    private void processRefund(Refund refund, Contribution contribution, String campaignTitle, String username) {
         String transactionId = contribution.getTransaction() != null
                 ? contribution.getTransaction().getIdTransactionExternal()
                 : null;
@@ -154,7 +156,7 @@ public class RefundService {
             refund.setIdRefundExternal(String.valueOf(providerRefund.getId()));
             refund.setStatus("COMPLETED");
             refund.setProcessedAt(LocalDateTime.now());
-            refund.setHashTx(ledgerClient.registerRefundTransaction(refund, campaignTitle));
+            refund.setHashTx(ledgerClient.registerRefundTransaction(username, refund, campaignTitle));
             refundRepository.save(refund);
             contribution.setStatus("CANCELLED");
             contributionRepository.save(contribution);

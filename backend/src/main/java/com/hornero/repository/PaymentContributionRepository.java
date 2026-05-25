@@ -31,13 +31,14 @@ public interface PaymentContributionRepository extends JpaRepository<PaymentCont
             t.id AS transactionId,
             t.transaction_method AS transactionMethod,
             t.payment_provider AS paymentProvider,
-            CONCAT('USER_', c.id_user) AS senderLabel,
+            u.user_name AS senderLabel,
             'HORNERO_MAIN_ACCOUNT' AS recipientLabel,
             CONCAT('campaign:', cam.title) AS reference,
             t.hash_tx AS hashTx,
             t.created_at AS createdAt
         FROM payments.transaction t
         JOIN payments.contribution c ON c.id = t.id_contribution
+        JOIN "user" u ON u.id = c.id_user
         JOIN campaign cam ON cam.id = c.id_campaign
         WHERE c.status = 'APPROVED'
         UNION ALL
@@ -52,11 +53,12 @@ public interface PaymentContributionRepository extends JpaRepository<PaymentCont
             'MANUAL_TRANSFER' AS transactionMethod,
             p.payment_provider AS paymentProvider,
             'HORNERO_MAIN_ACCOUNT' AS senderLabel,
-            CONCAT('CREATOR_', p.id_creator_user) AS recipientLabel,
+            CONCAT('CREATOR_', cu.user_name) AS recipientLabel,
             CONCAT('campaign:', cam.title) AS reference,
             p.hash_tx AS hashTx,
             COALESCE(p.processed_at, p.created_at) AS createdAt
         FROM payments.payout p
+        JOIN "user" cu ON cu.id = p.id_creator_user
         JOIN campaign cam ON cam.id = p.id_campaign
         WHERE p.status = 'COMPLETED'
         UNION ALL
@@ -71,12 +73,13 @@ public interface PaymentContributionRepository extends JpaRepository<PaymentCont
             'REFUND' AS transactionMethod,
             r.payment_provider AS paymentProvider,
             'HORNERO_MAIN_ACCOUNT' AS senderLabel,
-            CONCAT('USER_', c.id_user) AS recipientLabel,
+            u2.user_name AS recipientLabel,
             CONCAT('refund campaign:', cam.title) AS reference,
             r.hash_tx AS hashTx,
             COALESCE(r.processed_at, r.created_at) AS createdAt
         FROM payments.refund r
         JOIN payments.contribution c ON c.id = r.id_contribution
+        JOIN "user" u2 ON u2.id = c.id_user
         JOIN campaign cam ON cam.id = c.id_campaign
         WHERE r.status = 'COMPLETED'
         ORDER BY createdAt DESC

@@ -39,28 +39,28 @@ public class LedgerClient {
         this.restTemplate = new RestTemplate(factory);
     }
 
-    public String registerContributionTransaction(Contribution contribution, Transaction transaction, String campaignTitle) {
+    public String registerContributionTransaction(String username, Transaction transaction, String campaignTitle) {
         return registerTransaction(
-                "USER_" + contribution.getIdUser(),
+                username,
                 HORNERO_MAIN_ACCOUNT,
                 transaction.getAmount(),
                 "campaign:" + campaignTitle
         );
     }
 
-    public String registerPayoutTransaction(Payout payout, String campaignTitle) {
+    public String registerPayoutTransaction(String creatorUsername, Payout payout, String campaignTitle) {
         return registerTransaction(
                 HORNERO_MAIN_ACCOUNT,
-                "CREATOR_" + payout.getIdCreatorUser(),
+                "CREATOR_" + creatorUsername,
                 payout.getNetAmount(),
                 "campaign:" + campaignTitle
         );
     }
 
-    public String registerRefundTransaction(Refund refund, String campaignTitle) {
+    public String registerRefundTransaction(String username, Refund refund, String campaignTitle) {
         return registerTransaction(
                 HORNERO_MAIN_ACCOUNT,
-                "USER_" + refund.getContribution().getIdUser(),
+                username,
                 refund.getAmount(),
                 "refund campaign:" + campaignTitle
         );

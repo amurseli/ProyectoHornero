@@ -104,6 +104,32 @@ public class BackendClient {
         }
     }
 
+    public String getUsername(Long userId) {
+        String url = backendUrl + "/api/users/" + userId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Service-Key", serviceKey);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<?, ?> user = response.getBody();
+
+            if (user == null || user.get("userName") == null) {
+                throw new IllegalStateException("Usuario no encontrado: " + userId);
+            }
+
+            return String.valueOf(user.get("userName"));
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new IllegalStateException("Usuario no encontrado: " + userId);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al obtener username de usuario {}: {}", userId, e.getMessage());
+            throw new RuntimeException("Error al comunicarse con el backend para obtener el usuario", e);
+        }
+    }
+
     // Valida que la campaña está en status SUCCESSFUL antes de ejecutar el payout.
     // Lanza IllegalStateException si no está en ese estado.
     public void validateCampaignSuccessful(Long campaignId) {

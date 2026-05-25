@@ -101,13 +101,14 @@ public class PayoutService {
         Payout payout = payoutRepository.findByIdCampaign(campaignId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe payout para la campaña " + campaignId));
         String campaignTitle = backendClient.getCampaignTitle(campaignId);
+        String creatorUsername = backendClient.getUsername(payout.getIdCreatorUser());
 
         payout.setStatus("COMPLETED");
         payout.setProcessedAt(LocalDateTime.now());
         if (mpTransferReference != null && !mpTransferReference.isBlank()) {
             payout.setIdPayoutExternal(mpTransferReference);
         }
-        payout.setHashTx(ledgerClient.registerPayoutTransaction(payout, campaignTitle));
+        payout.setHashTx(ledgerClient.registerPayoutTransaction(creatorUsername, payout, campaignTitle));
         payoutRepository.save(payout);
 
         try {
