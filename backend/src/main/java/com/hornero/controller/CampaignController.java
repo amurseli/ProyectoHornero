@@ -57,17 +57,15 @@ public class CampaignController {
     }
 
     // GET /api/campaigns/home — secciones para la home pública.
-    // Devuelve un mapa con 4 listas: featured, endingSoon, nearGoal, recent.
-    // Los limits son ajustables por query param; los defaults coinciden con lo
-    // que pide el frontend en useCampaigns.
     @GetMapping("/home")
     public ResponseEntity<Map<String, List<Campaign>>> getHomeSections(
+            @RequestParam(required = false, defaultValue = "6") Integer spotlight,
             @RequestParam(required = false, defaultValue = "6") Integer featured,
             @RequestParam(required = false, defaultValue = "4") Integer endingSoon,
             @RequestParam(required = false, defaultValue = "4") Integer nearGoal,
             @RequestParam(required = false, defaultValue = "8") Integer recent) {
         return ResponseEntity.ok(
-                campaignService.getHomeSections(featured, endingSoon, nearGoal, recent));
+                campaignService.getHomeSections(spotlight, featured, endingSoon, nearGoal, recent));
     }
 
     // GET /api/campaigns/categories — lista de categorías disponibles

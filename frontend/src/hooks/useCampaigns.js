@@ -5,6 +5,7 @@ import { campaignService } from "../utils/campaignService"
 
 export function useCampaigns() {
   const [sections, setSections] = useState({
+    spotlight: [],
     featured: [],
     endingSoon: [],
     nearGoal: [],
@@ -31,6 +32,7 @@ export function useCampaigns() {
   }, [])
 
   return {
+    spotlightCampaigns:  sections.spotlight,
     featuredCampaigns:   sections.featured,
     endingSoonCampaigns: sections.endingSoon,
     nearGoalCampaigns:   sections.nearGoal,
