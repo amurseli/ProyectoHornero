@@ -35,6 +35,9 @@ public class PaymentTransaction {
     @Column(name = "payment_provider", nullable = false, length = 30)
     private String paymentProvider;
 
+    @Column(name = "hash_tx", length = 120)
+    private String hashTx;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -46,5 +49,6 @@ public class PaymentTransaction {
     public String getCbuDestination() { return cbuDestination; }
     public String getIdTransactionExternal() { return idTransactionExternal; }
     public String getPaymentProvider() { return paymentProvider; }
+    public String getHashTx() { return hashTx; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

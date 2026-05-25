@@ -1,6 +1,7 @@
 package com.hornero.payments.service;
 
 import com.hornero.payments.client.BackendClient;
+import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.ContributionStatusResponse;
 import com.hornero.payments.dto.InitiateContributionResponse;
 import com.hornero.payments.dto.ProcessContributionRequest;
@@ -30,6 +31,7 @@ public class ContributionService {
     private final ContributionRepository contributionRepository;
     private final TransactionRepository transactionRepository;
     private final BackendClient backendClient;
+    private final LedgerClient ledgerClient;
     private final MercadoPagoGateway mercadoPagoGateway;
     private final PaymentEventLogService eventLog;
 
@@ -39,11 +41,13 @@ public class ContributionService {
     public ContributionService(ContributionRepository contributionRepository,
                                TransactionRepository transactionRepository,
                                BackendClient backendClient,
+                               LedgerClient ledgerClient,
                                MercadoPagoGateway mercadoPagoGateway,
                                PaymentEventLogService eventLog) {
         this.contributionRepository = contributionRepository;
         this.transactionRepository = transactionRepository;
         this.backendClient = backendClient;
+        this.ledgerClient = ledgerClient;
         this.mercadoPagoGateway = mercadoPagoGateway;
         this.eventLog = eventLog;
     }
@@ -84,6 +88,7 @@ public class ContributionService {
 
         // Validar que la campana sigue activa antes de cobrar
         backendClient.validateCampaign(contribution.getIdCampaign());
+        String campaignTitle = backendClient.getCampaignTitle(contribution.getIdCampaign());
 
         // Crear el registro de transaccion
         Transaction transaction = new Transaction();
@@ -107,9 +112,13 @@ public class ContributionService {
 
             transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
             transaction.setPaymentProvider("MERCADO_PAGO");
-            transactionRepository.save(transaction);
 
             String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
+            if ("APPROVED".equals(newStatus)) {
+                transaction.setHashTx(ledgerClient.registerContributionTransaction(contribution, transaction, campaignTitle));
+            }
+            transactionRepository.save(transaction);
+
             contribution.setStatus(newStatus);
             contributionRepository.save(contribution);
 
@@ -199,7 +208,8 @@ public class ContributionService {
                     transaction.getId(),
                     transaction.getTransactionMethod(),
                     transaction.getIdTransactionExternal(),
-                    transaction.getPaymentProvider()
+                    transaction.getPaymentProvider(),
+                    transaction.getHashTx()
             );
         }
         return new ContributionStatusResponse(

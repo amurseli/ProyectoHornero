@@ -1,6 +1,10 @@
 import { SearchBar } from "../../../components/features"
+import { useNavigate } from "react-router-dom"
+import { Button } from "$components/ui"
 
 function HeroSection({ search }) {
+  const navigate = useNavigate()
+
   return (
     <section className="hero-section">
       <div className="hero-content-wrapper">
@@ -9,6 +13,11 @@ function HeroSection({ search }) {
           <p className="hero-description">
             Explora miles de proyectos innovadores y apoya a creadores de todo el mundo
           </p>
+          <div className="hero-actions">
+            <Button size="lg" onClick={() => navigate('/transactions')}>
+              Ver historial de transacciones
+            </Button>
+          </div>
         </div>
 
         <SearchBar search={search} />
@@ -59,6 +68,12 @@ function HeroSection({ search }) {
           font-size: var(--font-size-lg);
           color: var(--color-text-secondary);
           line-height: 1.6;
+        }
+
+        .hero-actions {
+          margin-top: 1.5rem;
+          display: flex;
+          justify-content: center;
         }
 
         @media (max-width: 768px) {

@@ -4,6 +4,10 @@
 
 const BASE_URL = import.meta.env.VITE_API_URL
 
+function backendUnavailableMessage() {
+  return `No se pudo conectar con el backend en ${BASE_URL || 'la URL configurada'}`
+}
+
 // Refresh state management
 let isRefreshing = false
 let refreshQueue = []
@@ -38,7 +42,7 @@ function handleSessionExpired() {
   window.dispatchEvent(new CustomEvent('auth:logout'))
 
   // Redirect to login only if on protected route
-  const publicRoutes = ['/', '/campaigns', '/for-creators', '/verify-email', '/confirm-email-change', '/reset-password', '/forgot-password', '/email-sent']
+  const publicRoutes = ['/', '/campaigns', '/for-creators', '/transactions', '/verify-email', '/confirm-email-change', '/reset-password', '/forgot-password', '/email-sent']
   const publicPatterns = [/^\/campaigns\/\d+$/]
   const currentPath = window.location.pathname
   const isPublicRoute = publicRoutes.includes(currentPath) ||
@@ -64,11 +68,16 @@ async function request(path, options = {}) {
   }
 
   // Make initial request
-  let response = await fetch(url, {
-    headers,
-    credentials: 'include', // Always send cookies
-    ...options,
-  })
+  let response
+  try {
+    response = await fetch(url, {
+      headers,
+      credentials: 'include', // Always send cookies
+      ...options,
+    })
+  } catch {
+    throw new Error(backendUnavailableMessage())
+  }
 
   // Check if JWT is missing or expired (401/403)
   const isAuthError = response.status === 401 || response.status === 403
@@ -86,11 +95,15 @@ async function request(path, options = {}) {
       })
 
       // Retry request with new JWT
-      response = await fetch(url, {
-        headers,
-        credentials: 'include',
-        ...options,
-      })
+      try {
+        response = await fetch(url, {
+          headers,
+          credentials: 'include',
+          ...options,
+        })
+      } catch {
+        throw new Error(backendUnavailableMessage())
+      }
     } else {
       // Start refresh process
       isRefreshing = true
@@ -103,11 +116,15 @@ async function request(path, options = {}) {
           isRefreshing = false
           processRefreshQueue()
 
-          response = await fetch(url, {
-            headers,
-            credentials: 'include',
-            ...options,
-          })
+          try {
+            response = await fetch(url, {
+              headers,
+              credentials: 'include',
+              ...options,
+            })
+          } catch {
+            throw new Error(backendUnavailableMessage())
+          }
         } else {
           // No valid refresh token - session expired
           isRefreshing = false

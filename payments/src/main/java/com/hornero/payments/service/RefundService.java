@@ -1,6 +1,7 @@
 package com.hornero.payments.service;
 
 import com.hornero.payments.client.BackendClient;
+import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.RefundSummaryResponse;
 import com.hornero.payments.gateway.MercadoPagoGateway;
 import com.hornero.payments.model.Contribution;
@@ -29,17 +30,20 @@ public class RefundService {
     private final ContributionRepository contributionRepository;
     private final MercadoPagoGateway mercadoPagoGateway;
     private final BackendClient backendClient;
+    private final LedgerClient ledgerClient;
     private final PaymentEventLogService eventLog;
 
     public RefundService(RefundRepository refundRepository,
                          ContributionRepository contributionRepository,
                          MercadoPagoGateway mercadoPagoGateway,
                          BackendClient backendClient,
+                         LedgerClient ledgerClient,
                          PaymentEventLogService eventLog) {
         this.refundRepository = refundRepository;
         this.contributionRepository = contributionRepository;
         this.mercadoPagoGateway = mercadoPagoGateway;
         this.backendClient = backendClient;
+        this.ledgerClient = ledgerClient;
         this.eventLog = eventLog;
     }
 
@@ -49,6 +53,7 @@ public class RefundService {
     @Transactional
     public RefundSummaryResponse refundAll(Long campaignId, String reason) {
         List<Contribution> approved = contributionRepository.findByIdCampaignAndStatus(campaignId, "APPROVED");
+        String campaignTitle = approved.isEmpty() ? backendClient.getCampaignTitle(campaignId) : backendClient.getCampaignTitle(approved.get(0).getIdCampaign());
 
         if (approved.isEmpty()) {
             logger.info("Campaña {} no tiene contributions APPROVED para reembolsar", campaignId);
@@ -79,7 +84,7 @@ public class RefundService {
                 return r;
             });
 
-            processRefund(refund, contribution);
+            processRefund(refund, contribution, campaignTitle);
             results.add(toInfo(refund, contribution.getId()));
         }
 
@@ -96,6 +101,7 @@ public class RefundService {
     @Transactional
     public RefundSummaryResponse retryFailedRefunds(Long campaignId) {
         List<Refund> failedRefunds = refundRepository.findByContribution_IdCampaignAndStatus(campaignId, "FAILED");
+        String campaignTitle = backendClient.getCampaignTitle(campaignId);
 
         if (failedRefunds.isEmpty()) {
             logger.info("Campaña {} no tiene refunds FAILED para reintentar", campaignId);
@@ -106,7 +112,7 @@ public class RefundService {
 
         for (Refund refund : failedRefunds) {
             Contribution contribution = refund.getContribution();
-            processRefund(refund, contribution);
+            processRefund(refund, contribution, campaignTitle);
             results.add(toInfo(refund, contribution.getId()));
         }
 
@@ -128,7 +134,7 @@ public class RefundService {
         return new RefundSummaryResponse(campaignId, reason, infos);
     }
 
-    private void processRefund(Refund refund, Contribution contribution) {
+    private void processRefund(Refund refund, Contribution contribution, String campaignTitle) {
         String transactionId = contribution.getTransaction() != null
                 ? contribution.getTransaction().getIdTransactionExternal()
                 : null;
@@ -148,6 +154,7 @@ public class RefundService {
             refund.setIdRefundExternal(String.valueOf(providerRefund.getId()));
             refund.setStatus("COMPLETED");
             refund.setProcessedAt(LocalDateTime.now());
+            refund.setHashTx(ledgerClient.registerRefundTransaction(refund, campaignTitle));
             refundRepository.save(refund);
             contribution.setStatus("CANCELLED");
             contributionRepository.save(contribution);

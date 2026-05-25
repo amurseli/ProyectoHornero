@@ -1,6 +1,7 @@
 package com.hornero.payments.service;
 
 import com.hornero.payments.client.BackendClient;
+import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.ContributionStatusResponse;
 import com.hornero.payments.dto.InitiateContributionResponse;
 import com.hornero.payments.dto.ProcessContributionRequest;
@@ -34,6 +35,7 @@ class ContributionServiceTest {
     @Mock ContributionRepository contributionRepository;
     @Mock TransactionRepository transactionRepository;
     @Mock BackendClient backendClient;
+    @Mock LedgerClient ledgerClient;
     @Mock MercadoPagoGateway mercadoPagoGateway;
     @Mock PaymentEventLogService paymentEventLogService;
 
@@ -114,15 +116,18 @@ class ContributionServiceTest {
         c.setAmount(new BigDecimal("200"));
         c.setIdCampaign(10L);
         when(contributionRepository.findById(1L)).thenReturn(Optional.of(c));
+        when(backendClient.getCampaignTitle(10L)).thenReturn("Campaña Solar");
 
         Payment mockPayment = mock(Payment.class);
         when(mockPayment.getStatus()).thenReturn("approved");
         when(mockPayment.getId()).thenReturn(111L);
         when(mercadoPagoGateway.create(any(PaymentCreateRequest.class))).thenReturn(mockPayment);
+        when(ledgerClient.registerContributionTransaction(any(), any(), anyString())).thenReturn("0xabc123");
 
         ContributionStatusResponse response = service.process(1L, 1L, buildRequest());
 
         assertThat(response.getStatus()).isEqualTo("APPROVED");
+        assertThat(response.getTransaction().getHashTx()).isEqualTo("0xabc123");
         verify(backendClient).updateCampaignAmount(eq(10L), eq(new BigDecimal("200")));
         verify(contributionRepository, atLeastOnce()).save(argThat(con -> "APPROVED".equals(con.getStatus())));
     }
@@ -133,6 +138,7 @@ class ContributionServiceTest {
         c.setAmount(new BigDecimal("100"));
         c.setIdCampaign(10L);
         when(contributionRepository.findById(1L)).thenReturn(Optional.of(c));
+        when(backendClient.getCampaignTitle(10L)).thenReturn("Campaña Solar");
 
         Payment mockPayment = mock(Payment.class);
         when(mockPayment.getStatus()).thenReturn("rejected");
@@ -142,7 +148,9 @@ class ContributionServiceTest {
         ContributionStatusResponse response = service.process(1L, 1L, buildRequest());
 
         assertThat(response.getStatus()).isEqualTo("REJECTED");
+        assertThat(response.getTransaction().getHashTx()).isNull();
         verify(backendClient, never()).updateCampaignAmount(any(), any());
+        verify(ledgerClient, never()).registerContributionTransaction(any(), any(), anyString());
     }
 
     @Test
