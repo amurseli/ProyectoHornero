@@ -22,6 +22,7 @@ import UserConfig from '$pages/UserConfig/UserConfig';
 import ConfirmEmailChange from '$pages/ConfirmEmailChange/ConfirmEmailChange';
 import CampaignPage from '$pages/CampaignPage/CampaignPage';
 import EditDraftCampaign from '$pages/Campaigns/EditDraftCampaign';
+import TransactionHistory from '$pages/TransactionHistory/TransactionHistory.jsx';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -71,6 +72,7 @@ function App() {
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns/:id" element={<CampaignPage />} />
           <Route path="/for-creators" element={<ForCreators />} />
+          <Route path="/transactions" element={<TransactionHistory />} />
 
           {/* Protected */}
           <Route path="/campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />

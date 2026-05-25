@@ -19,4 +19,24 @@ public interface PaymentContributionRepository extends JpaRepository<PaymentCont
 
     @Query("SELECT COALESCE(SUM(c.amount), 0) FROM PaymentContribution c WHERE c.idCampaign = :campaignId AND c.status = :status")
     BigDecimal sumAmountByCampaignAndStatus(@Param("campaignId") Long campaignId, @Param("status") String status);
+
+    @Query(value = """
+        SELECT
+            c.id AS contributionId,
+            c.id_campaign AS campaignId,
+            cam.title AS campaignTitle,
+            t.amount AS amount,
+            c.status AS contributionStatus,
+            t.id AS transactionId,
+            t.transaction_method AS transactionMethod,
+            t.payment_provider AS paymentProvider,
+            t.id_transaction_external AS externalTransactionId,
+            t.hash_tx AS hashTx,
+            t.created_at AS createdAt
+        FROM payments.transaction t
+        JOIN payments.contribution c ON c.id = t.id_contribution
+        JOIN campaign cam ON cam.id = c.id_campaign
+        ORDER BY t.created_at DESC
+        """, nativeQuery = true)
+    List<TransactionHistoryProjection> findTransactionHistory();
 }
