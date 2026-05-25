@@ -20,32 +20,23 @@ function FeaturedSection({ campaigns, isLoading }) {
 
   if (!campaigns || campaigns.length === 0) return null
 
-  const [hero, side1, side2, ...rest] = campaigns
-  const hasBento = hero && side1 && side2
-
   return (
     <section ref={ref} className={`featured-section ${className}`}>
       <SectionHeader />
       
-      {hasBento && (
-        <div className="featured-bento">
-          <div className="featured-bento-hero">
-            <CampaignCard campaign={hero} variant="featured" />
+      <div className="featured-bento-grid">
+        {campaigns.map((campaign, index) => (
+          <div 
+            key={campaign.id} 
+            className={index === 0 ? "bento-item-hero" : "bento-item-standard"}
+          >
+            <CampaignCard 
+              campaign={campaign} 
+              variant={index === 0 ? "featured" : "standard"} 
+            />
           </div>
-          <div className="featured-bento-stack">
-            <CampaignCard campaign={side1} variant="featured" />
-            <CampaignCard campaign={side2} variant="featured" />
-          </div>
-        </div>
-      )}
-      
-      {rest.length > 0 && (
-        <div className="featured-grid">
-          {rest.map((campaign) => (
-            <CampaignCard key={campaign.id} campaign={campaign} variant="featured" />
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
     </section>
   )
 }

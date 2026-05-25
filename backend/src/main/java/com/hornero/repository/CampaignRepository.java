@@ -118,4 +118,10 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "WHERE c.status = 'CROWDFUNDING' " +
            "ORDER BY c.createdAt DESC")
     List<Long> findRecentIds(Pageable pageable);
+
+    @Query("SELECT c.id FROM Campaign c " +
+           "WHERE c.status = 'CROWDFUNDING' " +
+           "AND c.isSpotlight = true " +
+           "ORDER BY c.updatedAt DESC")
+    List<Long> findSpotlightIds(Pageable pageable);
 }

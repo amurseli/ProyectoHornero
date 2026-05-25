@@ -37,18 +37,21 @@
 
 /* ── Grid principal: main + sidebar ──────────────────────────────── */
 
+/* Contenedor principal que divide el contenido del sidebar */
 .home-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 2.5rem;
-  align-items: start;
+  grid-template-columns: 2fr 1fr; /* O la distribución que tengas configurada */
+  gap: 2rem;
+  
+  align-items: start; 
 }
 
+/* Columna izquierda donde conviven las secciones */
 .home-main-column {
   display: flex;
   flex-direction: column;
-  gap: 3.5rem;
-  min-width: 0; /* clave: permite que el contenido interno se recorte */
+  gap: 2.5rem; /* Ajustá el espacio vertical que quieras entre secciones */
+  width: 100%;
 }
 
 .home-sidebar {

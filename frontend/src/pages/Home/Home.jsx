@@ -13,6 +13,7 @@ import "./Home.css"
 
 function Home() {
   const {
+    spotlightCampaigns, 
     featuredCampaigns,
     endingSoonCampaigns,
     nearGoalCampaigns,
@@ -41,8 +42,8 @@ function Home() {
             />
           ) : (
             <>
-              {/* Carrusel full-width - FUERA del grid */}
-              <SpotlightSection campaigns={recentCampaigns} isLoading={isLoading} />
+              {/* Carrusel full-width - Ahora usa spotlightCampaigns */}
+              <SpotlightSection campaigns={spotlightCampaigns} isLoading={isLoading} />
 
               {/* Grid principal */}
               <div className="home-grid">

@@ -30,16 +30,19 @@ export const campaignService = {
     return data.map(normalizeCampaign)
   },
 
-  // Trae las 4 secciones de la home en un único request. El backend ya filtra
-  // y ordena: featured (por % progreso), endingSoon (≤ 14 días, sin haber
-  // cumplido meta), nearGoal (entre 70% y 99%) y recent (createdAt desc).
+  // Trae las 5 secciones de la home en un único request. El backend ya filtra
+  // y ordena: spotlight (elegidas a mano), featured (por % progreso), 
+  // endingSoon (≤ 14 días, sin haber cumplido meta), nearGoal (entre 70% y 99%) 
+  // y recent (createdAt desc).
   async getHomeSections({
+    spotlight = 6,   // <-- Agregado parámetro por defecto
     featured = 6,
     endingSoon = 4,
     nearGoal = 4,
     recent = 8,
   } = {}) {
     const params = new URLSearchParams()
+    params.set("spotlight", String(spotlight)) // <-- Agregado a los query params
     params.set("featured", String(featured))
     params.set("endingSoon", String(endingSoon))
     params.set("nearGoal", String(nearGoal))
@@ -51,6 +54,7 @@ export const campaignService = {
     }
     const data = await response.json()
     return {
+      spotlight:  (data.spotlight  || []).map(normalizeCampaign), // <-- Mapeo de la nueva sección
       featured:   (data.featured   || []).map(normalizeCampaign),
       endingSoon: (data.endingSoon || []).map(normalizeCampaign),
       nearGoal:   (data.nearGoal   || []).map(normalizeCampaign),
