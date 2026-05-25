@@ -136,120 +136,82 @@
   .spotlight-track { transition: none; }
   .spotlight-item { scroll-snap-align: center; }
 }
+
 /* ==========================================================================
-   Featured Section - Bento Layout
+   Unified Bento Grid Layout (Featured & Ending Soon)
    ========================================================================== */
 
-.featured-section { min-width: 0; }
+.featured-section, .ending-soon-section { 
+  min-width: 0; 
+  margin-bottom: 2.5rem;
+}
+
 .featured-icon { color: var(--color-primary); }
-
-.featured-bento {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
-}
-
-.featured-bento-hero {
-  grid-row: span 2;
-}
-
-.featured-bento-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.featured-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-}
-
-@media (max-width: 1024px) {
-  .featured-bento {
-    grid-template-columns: 1fr;
-  }
-  
-  .featured-bento-hero {
-    grid-row: span 1;
-  }
-  
-  .featured-bento-stack {
-    flex-direction: row;
-  }
-  
-  .featured-bento-stack > * {
-    flex: 1;
-  }
-  
-  .featured-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 640px) {
-  .featured-bento-stack {
-    flex-direction: column;
-  }
-  
-  .featured-grid { grid-template-columns: 1fr; }
-}
-
-/* ==========================================================================
-   Ending Soon Section - Bento Layout
-   ========================================================================== */
-
-.ending-soon-section { min-width: 0; }
 .ending-soon-icon { color: var(--color-primary-light); }
 
-.ending-soon-bento {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
-}
-
-.ending-soon-bento-hero {
-  grid-row: span 2;
-}
-
-.ending-soon-bento-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.ending-soon-grid {
+/* Contenedor unificado de 3 columnas */
+.featured-bento-grid,
+.ending-soon-bento-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.25rem;
 }
 
+/* Tarjeta Gigante 2x2: Ocupa 2 columnas y 2 filas */
+.bento-item-hero {
+  grid-column: span 2;
+  grid-row: span 2;
+  height: 100%;
+}
+
+/* Tarjetas Normales 1x1: Comportamiento por defecto */
+.bento-item-standard {
+  grid-column: span 1;
+  grid-row: span 1;
+  height: 100%;
+}
+
+/* Asegura el estiramiento interno para evitar espacios vacíos */
+.bento-item-hero > *,
+.bento-item-standard > * {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Opcional: Estilo específico para la tarjeta 2x2 para balancear sus proporciones */
+.bento-item-hero .campaign-card-full {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* ==========================================================================
+   Responsive Adaptativo
+   ========================================================================== */
+
 @media (max-width: 1024px) {
-  .ending-soon-bento {
-    grid-template-columns: 1fr;
+  .featured-bento-grid,
+  .ending-soon-bento-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   
-  .ending-soon-bento-hero {
+  .bento-item-hero {
+    grid-column: span 2;
     grid-row: span 1;
   }
-  
-  .ending-soon-bento-stack {
-    flex-direction: row;
-  }
-  
-  .ending-soon-bento-stack > * {
-    flex: 1;
-  }
-  
-  .ending-soon-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 640px) {
-  .ending-soon-bento-stack {
-    flex-direction: column;
+  .featured-bento-grid,
+  .ending-soon-bento-grid {
+    grid-template-columns: 1fr;
   }
   
-  .ending-soon-grid { grid-template-columns: 1fr; }
+  .bento-item-hero {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
 }
 
 /* ==========================================================================

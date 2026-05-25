@@ -2,7 +2,7 @@ import { useState, useRef } from "react"
 import { FiCalendar, FiTrendingUp } from "react-icons/fi"
 import ReactPlayer from "react-player"
 
-function CampaignCard({ campaign, variant = "featured" }) {
+function CampaignCard({ campaign, variant = "standard" }) {
   const goal = campaign.goal || campaign.targetAmount || 0
   const raised = campaign.currentAmount ?? campaign.raised ?? 0
   const progressPercentage = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0
@@ -48,8 +48,14 @@ function CampaignCard({ campaign, variant = "featured" }) {
     )
   }
 
+  // Detectamos si es la variante gigante para asignarle clases estructurales específicas
+  const isHero = variant === "featured"
+
   return (
-    <a href={`/campaigns/${campaign.id}`} className="campaign-card-full">
+    <a 
+      href={`/campaigns/${campaign.id}`} 
+      className={`campaign-card-full ${isHero ? "campaign-card-hero" : ""}`}
+    >
       <div
         className="campaign-thumbnail"
         onMouseEnter={handleMouseEnter}
@@ -83,25 +89,29 @@ function CampaignCard({ campaign, variant = "featured" }) {
       </div>
 
       <div className="campaign-body">
-        {campaign.creator && (
-          <div className="campaign-creator">
-            {campaign.creator.avatar && (
-              <img src={campaign.creator.avatar} alt={campaign.creator.name} className="creator-avatar" />
-            )}
-            <div className="creator-info">
-              <p className="campaign-status">{campaign.status || "Crowdfunding"}</p>
-              {campaign.creator.name && (
-                <p className="creator-name">por {campaign.creator.name}</p>
+        <div className="campaign-main-content">
+          {campaign.creator && (
+            <div className="campaign-creator">
+              {campaign.creator.avatar && (
+                <img src={campaign.creator.avatar} alt={campaign.creator.name} className="creator-avatar" />
               )}
+              <div className="creator-info">
+                <p className="campaign-status">{campaign.status || "Crowdfunding"}</p>
+                {campaign.creator.name && (
+                  <p className="creator-name">por {campaign.creator.name}</p>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <h3 className="campaign-title">{campaign.title}</h3>
+          <h3 className="campaign-title">{campaign.title}</h3>
 
-        {campaign.description && (
-          <p className="campaign-description">{campaign.shortDescription}</p>
-        )}
+          {campaign.description && (
+            <p className="campaign-description">
+              {campaign.shortDescription || campaign.description}
+            </p>
+          )}
+        </div>
 
         <div className="campaign-progress">
           <div className="progress-bar">
@@ -192,13 +202,15 @@ const compactStyles = `
 
 const fullStyles = `
   .campaign-card-full {
-    display: block;
+    display: flex;
+    flex-direction: column;
     background: white;
     border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid var(--color-border);
     text-decoration: none;
     transition: all var(--transition-base);
+    height: 100%;
   }
   .campaign-card-full:hover {
     box-shadow: var(--shadow-xl);
@@ -209,6 +221,7 @@ const fullStyles = `
     aspect-ratio: 16 / 9;
     overflow: hidden;
     background: var(--color-muted);
+    flex-shrink: 0;
   }
   .campaign-image {
     width: 100%;
@@ -227,7 +240,7 @@ const fullStyles = `
     opacity: 0;
     transition: opacity 0.4s ease;
     background: black;
-    pointer-event: none;
+    pointer-events: none;
   }
   .campaign-video-overlay.visible {
     opacity: 1;
@@ -246,9 +259,20 @@ const fullStyles = `
     color: var(--color-text-primary);
     z-index: 3;
   }
+  
   .campaign-body {
     padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-grow: 1;
   }
+  
+  .campaign-main-content {
+    display: flex;
+    flex-direction: column;
+  }
+
   .campaign-creator {
     display: flex;
     align-items: flex-start;
@@ -304,6 +328,7 @@ const fullStyles = `
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    margin-top: auto;
   }
   .progress-bar {
     width: 100%;
@@ -362,6 +387,43 @@ const fullStyles = `
   .icon-small {
     width: 0.875rem;
     height: 0.875rem;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     DISEÑO EXCLUSIVO PARA LA VARIANTE HERO (GIGANTE DE 2x2)
+     ════════════════════════════════════════════════════════════════════ */
+  .campaign-card-hero {
+    box-shadow: var(--shadow-md);
+  }
+  
+  .campaign-card-hero .campaign-thumbnail {
+    aspect-ratio: 16 / 10.5; /* Imagen con mayor desarrollo vertical y jerarquía */
+  }
+  
+  .campaign-card-hero .campaign-body {
+    padding: 2rem; /* Más respiro visual */
+  }
+  
+  .campaign-card-hero .campaign-title {
+    font-size: 1.75rem; /* Título imponente */
+    line-height: 1.25;
+    margin-bottom: 0.75rem;
+    -webkit-line-clamp: 3; /* Permite una línea extra si el título es largo */
+  }
+  
+  .campaign-card-hero .campaign-description {
+    font-size: var(--font-size-base); /* Texto descriptivo más legible */
+    -webkit-line-clamp: 4; /* Rellena el cuerpo de manera elegante sin generar espacios vacíos */
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  
+  .campaign-card-hero .progress-bar {
+    height: 0.625rem; /* Barra de progreso ligeramente más gruesa */
+  }
+
+  .campaign-card-hero .stat-value {
+    font-size: 1.35rem; /* Números clave destacados */
   }
 `
 
