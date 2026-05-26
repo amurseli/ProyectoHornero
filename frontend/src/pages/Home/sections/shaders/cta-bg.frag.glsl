@@ -4,10 +4,10 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec4 u_mousepos;
 
-const vec3 BG   = vec3(0.97, 0.93, 0.88);
-const vec3 WARM = vec3(0.93, 0.52, 0.32);
-const vec3 GOLD = vec3(0.99, 0.82, 0.44);
-const vec3 COOL = vec3(0.62, 0.76, 0.97);
+const vec3 BG   = vec3(0.07, 0.04, 0.03);
+const vec3 WARM = vec3(0.48, 0.12, 0.09);
+const vec3 GOLD = vec3(0.38, 0.20, 0.10);
+const vec3 COOL = vec3(0.32, 0.15, 0.14);
 
 vec4 permute(vec4 x) {
   return mod(((x * 34.0) + 1.0) * x, 289.0);
@@ -63,13 +63,12 @@ void main() {
   vec2 uv = fragUv;
   uv.x *= u_resolution.x / u_resolution.y;
 
-  float t = u_time * 0.07;
+  float t = u_time * 0.05;
 
   vec2 mouseUv  = u_mousepos.xy / u_resolution.xy;
   vec2 toMouse  = (fragUv - mouseUv) * vec2(u_resolution.x / u_resolution.y, 1.0);
-  float mDist   = length(toMouse);
   float mActive = step(0.0, u_mousepos.x);
-  float mStr    = exp(-mDist * mDist * 5.5) * mActive * 0.08;
+  float mStr    = exp(-length(toMouse) * length(toMouse) * 5.5) * mActive * 0.08; // Este ultimo numero modifica la intensidad de el mouse
   vec2  mOffset = normalize(toMouse + vec2(0.001)) * mStr;
 
   vec2 wuv = uv + mOffset;
@@ -87,11 +86,11 @@ void main() {
   float f = fbm(wuv + 2.8 * r);
 
   vec3 color = BG;
-  color = mix(color, WARM, smoothstep(0.20, 0.55, f) * 0.75);
-  color = mix(color, GOLD, smoothstep(0.52, 0.70, f) * 0.60);
-  color = mix(color, COOL, smoothstep(0.25, 0.48, q.x) * 0.40);
+  color = mix(color, WARM, smoothstep(0.20, 0.55, f) * 0.85);
+  color = mix(color, GOLD, smoothstep(0.52, 0.70, f) * 0.70);
+  color = mix(color, COOL, smoothstep(0.25, 0.48, q.x) * 0.45);
 
-  color = mix(color, BG, 0.38);
+  color = mix(color, BG, 0.30);
 
   gl_FragColor = vec4(color, 1.0);
 }

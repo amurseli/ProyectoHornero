@@ -146,7 +146,7 @@ function HeroSection({ search }) {
         }
 
         .hero-eyebrow {
-          font-size: 0.7rem;
+          font-size: 1rem;
           font-weight: 700;
           letter-spacing: 0.18em;
           text-transform: uppercase;
@@ -166,7 +166,7 @@ function HeroSection({ search }) {
         }
 
         .hero-description {
-          font-size: var(--font-size-lg);
+          font-size: var(--font-size-xl);
           color: var(--color-text-secondary);
           line-height: 1.65;
           max-width: 38rem;
