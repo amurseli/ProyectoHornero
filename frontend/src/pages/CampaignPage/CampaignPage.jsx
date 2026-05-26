@@ -894,7 +894,7 @@ export default function CampaignPage() {
 
   function getContributeDisabledReason(c) {
     if (!c) return null
-    if (c.status === 'DRAFT') return 'Esta campaña aún no fue publicada'
+    if (c.status !== 'CROWDFUNDING') return 'Esta campaña no está activa para recibir contribuciones'
     if (user && c.owner?.id === user.userId) return 'No podés patrocinar tu propia campaña'
     return null
   }

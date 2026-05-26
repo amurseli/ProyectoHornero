@@ -88,14 +88,6 @@ public class CampaignService {
         return new PageImpl<>(campaigns, pageable, idPage.getTotalElements());
     }
 
-    /**
-     * Devuelve las 5 secciones que necesita la home:
-     * - spotlight:  elegidas a mano por el staff ("Nuestras favoritas")
-     * - featured:   mayor % de progreso
-     * - endingSoon: menor tiempo restante (≤ 14 días, sin haber cumplido meta)
-     * - nearGoal:   % de progreso entre 70% y 99%
-     * - recent:     más recientes por createdAt
-     */
     public Map<String, List<Campaign>> getHomeSections(int spotlightLimit,
                                                        int featuredLimit,
                                                        int endingSoonLimit,
@@ -115,7 +107,6 @@ public class CampaignService {
         List<Long> recentIds = campaignRepository.findRecentIds(
                 PageRequest.of(0, Math.max(1, recentLimit)));
 
-        // Carga única de todos los IDs distintos con sus relaciones.
         Set<Long> allIds = new LinkedHashSet<>();
         allIds.addAll(spotlightIds);
         allIds.addAll(featuredIds);
@@ -140,17 +131,26 @@ public class CampaignService {
         return result;
     }
 
-    private List<Campaign> mapIdsToCampaigns(List<Long> ids, Map<Long, Campaign> byId) {
-        List<Campaign> out = new ArrayList<>(ids.size());
-        for (Long id : ids) {
-            Campaign c = byId.get(id);
-            if (c != null) out.add(c);
-        }
-        return out;
+    public List<Campaign> getCategorySection(Long categoryId, int limit) {
+        List<Long> ids = campaignRepository.findTopByCategoryIds(
+                categoryId, PageRequest.of(0, Math.max(1, limit)));
+        if (ids.isEmpty()) return List.of();
+        List<Campaign> campaigns = campaignRepository.findAllByIdsWithRelations(ids);
+        Map<Long, Integer> orderMap = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) orderMap.put(ids.get(i), i);
+        campaigns.sort(Comparator.comparingInt(c -> orderMap.get(c.getId())));
+        appImageService.hydrateCampaigns(campaigns);
+        return campaigns;
     }
 
     public List<CampaignCategory> getAllCategories() {
         return campaignCategoryRepository.findAll();
+    }
+
+    public List<CampaignCategory> getCategoriesWithActiveCampaigns() {
+        return campaignCategoryRepository.findAll().stream()
+                .filter(cat -> campaignRepository.countActiveByCategoryId(cat.getId()) > 0)
+                .toList();
     }
 
     public List<Campaign> getCampaignsByOwner(Long ownerId) {
@@ -192,9 +192,6 @@ public class CampaignService {
             existing.setTargetAmount(details.getTargetAmount());
         }
 
-        // Replace the media collection when the request supplies one.
-        // The collection is mutated in place (orphanRemoval handles deletions)
-        // and fresh CampaignMedia rows are inserted from the incoming payload.
         if (details.getMedia() != null) {
             Set<String> previousKeys = existing.getMedia().stream()
                     .filter(media -> "IMAGE".equalsIgnoreCase(media.getMediaType()))
@@ -256,7 +253,6 @@ public class CampaignService {
         return saved;
     }
 
-    // Llamado internamente por el payments service cuando una contribucion es aprobada
     @Transactional
     public void addToCampaignAmount(Long campaignId, BigDecimal amount) {
         Campaign campaign = campaignRepository.findById(campaignId)
@@ -273,8 +269,6 @@ public class CampaignService {
         campaignRepository.save(campaign);
     }
 
-    // Finaliza una campaña vencida: cambia su status según si alcanzó la meta.
-    // Idempotente: si ya no está en CROWDFUNDING, no hace nada.
     @Transactional
     public boolean finalizeCampaign(Campaign campaign) {
         if (!"CROWDFUNDING".equals(campaign.getStatus())) {
@@ -302,6 +296,15 @@ public class CampaignService {
 
     public List<Campaign> findFailedWithPartialRefund() {
         return campaignRepository.findFailedWithPartialRefund();
+    }
+
+    private List<Campaign> mapIdsToCampaigns(List<Long> ids, Map<Long, Campaign> byId) {
+        List<Campaign> out = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            Campaign c = byId.get(id);
+            if (c != null) out.add(c);
+        }
+        return out;
     }
 
     private Set<String> normalizeCampaignMedia(Campaign campaign, List<CampaignMedia> incomingMedia) {
