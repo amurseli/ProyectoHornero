@@ -23,19 +23,13 @@ function EndingSoonSection({ campaigns, isLoading }) {
   return (
     <section ref={ref} className={`ending-soon-section ${className}`}>
       <SectionHeader />
-      
-      {/* 🚀 Grilla continua unificada idéntica a la de recomendados */}
-      <div className="ending-soon-bento-grid">
-        {campaigns.map((campaign, index) => (
-          <div 
-            key={campaign.id} 
-            className={index === 0 ? "bento-item-hero" : "bento-item-standard"}
-          >
-            <CampaignCard 
-              campaign={campaign} 
-              variant={index === 0 ? "featured" : "standard"} 
-            />
-          </div>
+      <div className="ending-soon-list">
+        {campaigns.map((campaign) => (
+          <CampaignCard
+            key={campaign.id}
+            campaign={campaign}
+            variant="horizontal"
+          />
         ))}
       </div>
     </section>

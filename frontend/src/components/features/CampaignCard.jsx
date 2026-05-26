@@ -1,5 +1,5 @@
 import { useState, useRef } from "react"
-import { FiCalendar, FiTrendingUp, FiUsers } from "react-icons/fi"
+import { FiTrendingUp, FiUsers, FiClock } from "react-icons/fi"
 import ReactPlayer from "react-player"
 
 function CampaignCard({ campaign, variant = "standard" }) {
@@ -110,10 +110,10 @@ function CampaignCard({ campaign, variant = "standard" }) {
               <div className="editorial-stats">
                 <div className="editorial-stat">
                   <span className="editorial-stat-value">
-                    ${(raised).toLocaleString()}
+                    ${raised.toLocaleString()}
                   </span>
                   <span className="editorial-stat-label">
-                    de ${(goal).toLocaleString()}
+                    de ${goal.toLocaleString()}
                   </span>
                 </div>
                 <div className="editorial-stat editorial-stat-right">
@@ -137,6 +137,56 @@ function CampaignCard({ campaign, variant = "standard" }) {
         </div>
 
         <style>{editorialStyles}</style>
+      </a>
+    )
+  }
+
+  if (variant === "horizontal") {
+    const countdownClass =
+      daysLeft <= 3 ? "countdown-urgent" :
+      daysLeft <= 7 ? "countdown-warning" : ""
+
+    return (
+      <a href={`/campaigns/${campaign.id}`} className="campaign-card-horizontal">
+        <div className="horizontal-image-wrap">
+          <img
+            src={campaign.imageUrl || campaign.image || "/crowdfunding-campaign.jpg"}
+            alt={campaign.title}
+            className="horizontal-image"
+          />
+          {campaign.category && (
+            <span className="horizontal-badge">{campaign.category}</span>
+          )}
+        </div>
+
+        <div className="horizontal-body">
+          <div className="horizontal-content">
+            {campaign.creator?.name && (
+              <p className="horizontal-creator">por {campaign.creator.name}</p>
+            )}
+            <h3 className="horizontal-title">{campaign.title}</h3>
+
+            <div className="horizontal-progress">
+              <div className="horizontal-progress-bar">
+                <div
+                  className="horizontal-progress-fill"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+              <p className="horizontal-progress-label">
+                ${raised.toLocaleString()} recaudados · {progressPercentage.toFixed(0)}% de la meta
+              </p>
+            </div>
+          </div>
+
+          <div className={`horizontal-countdown ${countdownClass}`}>
+            <FiClock className="countdown-icon" />
+            <span className="countdown-number">{daysLeft > 0 ? daysLeft : "0"}</span>
+            <span className="countdown-label">{daysLeft === 1 ? "día" : "días"}</span>
+          </div>
+        </div>
+
+        <style>{horizontalStyles}</style>
       </a>
     )
   }
@@ -207,14 +257,11 @@ function CampaignCard({ campaign, variant = "standard" }) {
           </div>
           <div className="campaign-stats">
             <div className="stat-item">
-              <p className="stat-value">${(raised).toLocaleString()}</p>
-              <p className="stat-label">de ${(goal).toLocaleString()} meta</p>
+              <p className="stat-value">${raised.toLocaleString()}</p>
+              <p className="stat-label">de ${goal.toLocaleString()} meta</p>
             </div>
             <div className="stat-item stat-right">
-              <p className="stat-value stat-days">
-                <FiCalendar className="icon-inline" />
-                {daysLeft > 0 ? `${daysLeft} días` : "Finalizada"}
-              </p>
+              <p className="stat-value">{daysLeft > 0 ? `${daysLeft} días` : "Finalizada"}</p>
               <p className="stat-label">{daysLeft > 0 ? "restantes" : ""}</p>
             </div>
           </div>
@@ -223,7 +270,7 @@ function CampaignCard({ campaign, variant = "standard" }) {
             <div className="campaign-footer">
               <FiTrendingUp className="icon-small" />
               <span>{campaign.backers} patrocinadores</span>
-              <span>•</span>
+              <span>·</span>
               <span>{progressPercentage.toFixed(0)}% financiado</span>
             </div>
           )}
@@ -359,7 +406,6 @@ const editorialStyles = `
       rgba(0, 0, 0, 0.15) 70%,
       transparent 100%
     );
-    transition: opacity 0.3s ease;
   }
   .campaign-card-editorial:hover .editorial-gradient {
     background: linear-gradient(
@@ -484,6 +530,153 @@ const editorialStyles = `
   .editorial-footer-icon {
     width: 0.875rem;
     height: 0.875rem;
+  }
+`
+
+const horizontalStyles = `
+  .campaign-card-horizontal {
+    display: flex;
+    background: var(--color-background);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    transition: all var(--transition-base);
+    height: 8rem;
+  }
+  .campaign-card-horizontal:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
+  }
+  .horizontal-image-wrap {
+    position: relative;
+    width: 10rem;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .horizontal-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .campaign-card-horizontal:hover .horizontal-image {
+    transform: scale(1.06);
+  }
+  .horizontal-badge {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    border-radius: var(--radius-full);
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .horizontal-body {
+    flex: 1;
+    min-width: 0;
+    padding: 0.875rem 1rem;
+    display: flex;
+    gap: 0.875rem;
+    align-items: stretch;
+  }
+  .horizontal-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .horizontal-creator {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-bottom: 0.2rem;
+  }
+  .horizontal-title {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.35;
+    transition: color var(--transition-fast);
+  }
+  .campaign-card-horizontal:hover .horizontal-title {
+    color: var(--color-primary);
+  }
+  .horizontal-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .horizontal-progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--color-muted);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+  .horizontal-progress-fill {
+    height: 100%;
+    background: var(--gradient-progress);
+    border-radius: var(--radius-full);
+  }
+  .horizontal-progress-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .horizontal-countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-left: 0.875rem;
+    border-left: 1px solid var(--color-border);
+    flex-shrink: 0;
+    min-width: 3.75rem;
+    gap: 0.1rem;
+  }
+  .countdown-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.15rem;
+  }
+  .countdown-number {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--color-text-primary);
+    letter-spacing: -0.03em;
+  }
+  .countdown-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+  .countdown-warning .countdown-icon,
+  .countdown-warning .countdown-number {
+    color: #d97706;
+  }
+  .countdown-urgent .countdown-icon,
+  .countdown-urgent .countdown-number {
+    color: #dc2626;
+  }
+  .countdown-urgent {
+    border-left-color: rgba(220, 38, 38, 0.2);
+  }
+  .countdown-warning {
+    border-left-color: rgba(217, 119, 6, 0.2);
   }
 `
 
@@ -644,11 +837,6 @@ const fullStyles = `
     color: var(--color-text-primary);
     margin-bottom: 0.1rem;
   }
-  .stat-days {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
   .stat-label {
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
@@ -661,11 +849,6 @@ const fullStyles = `
     border-top: 1px solid var(--color-border);
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
-  }
-  .icon-inline {
-    width: 0.875rem;
-    height: 0.875rem;
-    color: var(--color-primary);
   }
   .icon-small {
     width: 0.875rem;
