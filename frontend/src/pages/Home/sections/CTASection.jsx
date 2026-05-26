@@ -1,95 +1,73 @@
-import { SearchBar } from "../../../components/features"
-import { useNavigate } from "react-router-dom"
-import { Button } from "$components/ui"
+import { useNavigate } from 'react-router-dom'
+import { Button } from '$components/ui'
 
-function HeroSection({ search }) {
+function CTASection() {
   const navigate = useNavigate()
 
   return (
-    <section className="hero-section">
-      <div className="hero-content-wrapper">
-        <div className="hero-content">
-          <h1 className="hero-title">Aquí comienzan las ideas</h1>
-          <p className="hero-description">
-            Explora miles de proyectos innovadores y apoya a creadores de todo el mundo
-          </p>
-          <div className="hero-actions">
-            <Button size="lg" onClick={() => navigate('/transactions')}>
-              Ver historial de transacciones
-            </Button>
-          </div>
-        </div>
-
-        <SearchBar search={search} />
+    <section className="cta-section">
+      <div className="cta-content">
+        <h2 className="cta-title">¿Tenés una idea que vale la pena?</h2>
+        <p className="cta-description">
+          Creá tu campaña en minutos y empezá a recibir apoyo de la comunidad.
+        </p>
+        <Button variant="primary" size="lg" onClick={() => navigate('/for-creators')}>
+          Crear campaña
+        </Button>
       </div>
 
       <style>{`
-        .hero-section {
+        .cta-section {
           width: 100%;
-          background: linear-gradient(to right, 
+          background: linear-gradient(to left,
             color-mix(in srgb, var(--color-primary) 10%, transparent),
             color-mix(in srgb, var(--color-secondary) 10%, transparent),
             color-mix(in srgb, var(--color-accent) 10%, transparent)
           );
-          border-bottom: 1px solid var(--color-border);
-          padding: 3rem 0;
+          border-top: 1px solid var(--color-border);
+          padding: 4rem 0;
         }
 
-        .hero-content-wrapper {
+        .cta-content {
           max-width: var(--max-width);
           margin: 0 auto;
           padding: 0 var(--space-xl);
-        }
-
-        .hero-content {
-          max-width: 48rem;
-          margin: 0 auto 2rem;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1.25rem;
         }
 
-        .hero-title {
-          font-size: var(--font-size-3xl);
+        .cta-title {
+          font-size: 2.5rem;
           font-weight: 700;
-          background: var(--color-primary);
+          background: var(--gradient-warm);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          margin-bottom: var(--space-md);
           line-height: 1.2;
+          margin: 0;
         }
 
-        @media (min-width: 768px) {
-          .hero-title {
-            font-size: 3rem;
-          }
-        }
-
-        .hero-description {
+        .cta-description {
           font-size: var(--font-size-lg);
           color: var(--color-text-secondary);
           line-height: 1.6;
-        }
-
-        .hero-actions {
-          margin-top: 1.5rem;
-          display: flex;
-          justify-content: center;
+          margin: 0;
         }
 
         @media (max-width: 768px) {
-          .hero-section {
+          .cta-section {
             padding: var(--space-xl) 0;
           }
-
-          .hero-content-wrapper {
+          .cta-content {
             padding: 0 var(--space-md);
           }
-
-          .hero-title {
+          .cta-title {
             font-size: var(--font-size-2xl);
           }
-
-          .hero-description {
+          .cta-description {
             font-size: var(--font-size-base);
           }
         }
@@ -98,4 +76,4 @@ function HeroSection({ search }) {
   )
 }
 
-export default HeroSection
+export default CTASection
