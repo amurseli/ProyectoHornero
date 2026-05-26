@@ -149,6 +149,8 @@ public class RefundService {
             return;
         }
 
+        // Persistir antes de llamar a MP para garantizar que refund.getId() no sea null en los event logs
+        refundRepository.save(refund);
         eventLog.logRefundInitiated(refund.getId(), contribution.getId(), refund.getReason());
 
         try {
@@ -163,11 +165,22 @@ public class RefundService {
             logger.info("Refund completado para contribution {}: refundId={}", contribution.getId(), providerRefund.getId());
             eventLog.logRefundCompleted(refund.getId(), String.valueOf(providerRefund.getId()));
         } catch (MPApiException e) {
-            refund.setStatus("FAILED");
-            refundRepository.save(refund);
-            logger.error("Error de API MP al reembolsar contribution {}: {} - {}",
-                    contribution.getId(), e.getStatusCode(), e.getApiResponse().getContent());
-            eventLog.logRefundFailed(refund.getId(), "MP API error " + e.getStatusCode() + ": " + e.getMessage());
+            if (e.getStatusCode() == 404) {
+                // Pago no encontrado en MP (ej: pago de prueba en entorno productivo). No hay dinero que devolver.
+                refund.setStatus("COMPLETED");
+                refund.setProcessedAt(LocalDateTime.now());
+                refundRepository.save(refund);
+                contribution.setStatus("CANCELLED");
+                contributionRepository.save(contribution);
+                logger.warn("Contribution {} no encontrada en MP (404) - el pago ya fue reembolsado o no tiene fondos retenidos. Marcando como completado.", contribution.getId());
+                eventLog.logRefundCompleted(refund.getId(), "ALREADY_REFUNDED_OR_NO_FUNDS");
+            } else {
+                refund.setStatus("FAILED");
+                refundRepository.save(refund);
+                logger.error("Error de API MP al reembolsar contribution {}: {} - {}",
+                        contribution.getId(), e.getStatusCode(), e.getApiResponse().getContent());
+                eventLog.logRefundFailed(refund.getId(), "MP API error " + e.getStatusCode() + ": " + e.getMessage());
+            }
         } catch (MPException e) {
             refund.setStatus("FAILED");
             refundRepository.save(refund);
