@@ -38,9 +38,6 @@ public class CampaignController {
     @Value("${app.service-key:internal-secret-dev}")
     private String serviceKey;
 
-    // GET /api/campaigns — solo campañas en CROWDFUNDING (vista pública)
-    // Si se provee ?page (0-based), devuelve un Page<Campaign> con search/categoryId aplicados.
-    // Sin ?page, devuelve la lista completa por compatibilidad con los listados actuales.
     @GetMapping
     public ResponseEntity<?> getPublicCampaigns(
             @RequestParam(required = false) String search,
@@ -56,7 +53,6 @@ public class CampaignController {
         return ResponseEntity.ok(campaignService.getPublicCampaigns());
     }
 
-    // GET /api/campaigns/home — secciones para la home pública.
     @GetMapping("/home")
     public ResponseEntity<Map<String, List<Campaign>>> getHomeSections(
             @RequestParam(required = false, defaultValue = "6") Integer spotlight,
@@ -68,28 +64,35 @@ public class CampaignController {
                 campaignService.getHomeSections(spotlight, featured, endingSoon, nearGoal, recent));
     }
 
-    // GET /api/campaigns/categories — lista de categorías disponibles
+    @GetMapping("/home/category/{categoryId}")
+    public ResponseEntity<List<Campaign>> getCategorySection(
+            @PathVariable Long categoryId,
+            @RequestParam(required = false, defaultValue = "6") Integer limit) {
+        List<Campaign> campaigns = campaignService.getCategorySection(categoryId, limit);
+        if (campaigns.isEmpty()) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(campaigns);
+    }
+
     @GetMapping("/categories")
     public List<CampaignCategory> getCategories() {
         return campaignService.getAllCategories();
     }
 
-    // GET /api/campaigns/countries — lista de países disponibles para crear campañas
+    @GetMapping("/categories/active")
+    public List<CampaignCategory> getCategoriesWithActiveCampaigns() {
+        return campaignService.getCategoriesWithActiveCampaigns();
+    }
+
     @GetMapping("/countries")
     public List<Country> getCountries() {
         return countryRepository.findAll();
     }
 
-    // GET /api/campaigns/currencies — lista de monedas soportadas (incluye minor_unit)
     @GetMapping("/currencies")
     public List<Currency> getCurrencies() {
         return currencyRepository.findAll();
     }
 
-    // GET /api/campaigns/{id}
-    // - Con X-Service-Key: devuelve la campaña en cualquier estado (uso interno entre servicios)
-    // - Sin X-Service-Key: solo visible si es CROWDFUNDING, SUCCESSFUL, o FAILED (pública)
-    //   o si el usuario autenticado es el dueño (cualquier estado)
     @GetMapping("/{id}")
     public ResponseEntity<Campaign> getCampaignById(
             @PathVariable Long id,
@@ -113,14 +116,12 @@ public class CampaignController {
         return isOwner ? ResponseEntity.ok(campaign) : ResponseEntity.notFound().build();
     }
 
-    // POST /api/campaigns
     @PostMapping
     public ResponseEntity<Campaign> createCampaign(@RequestBody Campaign campaign) {
         Campaign newCampaign = campaignService.createCampaign(campaign);
         return ResponseEntity.status(HttpStatus.CREATED).body(newCampaign);
     }
 
-    // PUT /api/campaigns/{id}
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCampaign(@PathVariable Long id, @RequestBody Campaign campaignDetails, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
@@ -140,7 +141,6 @@ public class CampaignController {
         }
     }
 
-    // POST /api/campaigns/{id}/publish
     @PostMapping("/{id}/publish")
     public ResponseEntity<?> publishCampaign(@PathVariable Long id, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
@@ -162,8 +162,6 @@ public class CampaignController {
         }
     }
 
-    // PATCH /api/campaigns/{id}/current-amount
-    // Llamado internamente por el payments service cuando una contribucion es aprobada
     @PatchMapping("/{id}/current-amount")
     public ResponseEntity<Void> addToCurrentAmount(
             @PathVariable Long id,
@@ -183,8 +181,6 @@ public class CampaignController {
         return ResponseEntity.ok().build();
     }
 
-    // PATCH /api/campaigns/{id}/money-status
-    // Llamado internamente por el payments service al completar/fallar un payout o refund
     @PatchMapping("/{id}/money-status")
     public ResponseEntity<Void> updateMoneyStatus(
             @PathVariable Long id,
@@ -208,7 +204,6 @@ public class CampaignController {
         }
     }
 
-    // DELETE /api/campaigns/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCampaign(@PathVariable Long id) {
         try {

@@ -23,43 +23,52 @@ function normalizeCampaign(campaign) {
 export const campaignService = {
   async getAllCampaigns() {
     const response = await fetch(`${API_URL}/api/campaigns`)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     const data = await response.json()
     return data.map(normalizeCampaign)
   },
 
-  // Trae las 5 secciones de la home en un único request. El backend ya filtra
-  // y ordena: spotlight (elegidas a mano), featured (por % progreso), 
-  // endingSoon (≤ 14 días, sin haber cumplido meta), nearGoal (entre 70% y 99%) 
-  // y recent (createdAt desc).
   async getHomeSections({
-    spotlight = 6,   // <-- Agregado parámetro por defecto
+    spotlight = 6,
     featured = 6,
     endingSoon = 4,
     nearGoal = 4,
     recent = 8,
   } = {}) {
     const params = new URLSearchParams()
-    params.set("spotlight", String(spotlight)) // <-- Agregado a los query params
+    params.set("spotlight", String(spotlight))
     params.set("featured", String(featured))
     params.set("endingSoon", String(endingSoon))
     params.set("nearGoal", String(nearGoal))
     params.set("recent", String(recent))
 
     const response = await fetch(`${API_URL}/api/campaigns/home?${params.toString()}`)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     const data = await response.json()
     return {
-      spotlight:  (data.spotlight  || []).map(normalizeCampaign), // <-- Mapeo de la nueva sección
+      spotlight:  (data.spotlight  || []).map(normalizeCampaign),
       featured:   (data.featured   || []).map(normalizeCampaign),
       endingSoon: (data.endingSoon || []).map(normalizeCampaign),
       nearGoal:   (data.nearGoal   || []).map(normalizeCampaign),
       recent:     (data.recent     || []).map(normalizeCampaign),
     }
+  },
+
+  async getActiveCategories() {
+    const response = await fetch(`${API_URL}/api/campaigns/categories/active`)
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    return response.json()
+  },
+
+  async getCategorySection(categoryId, limit = 6) {
+    const params = new URLSearchParams({ limit: String(limit) })
+    const response = await fetch(
+      `${API_URL}/api/campaigns/home/category/${categoryId}?${params.toString()}`
+    )
+    if (response.status === 204) return []
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    const data = await response.json()
+    return data.map(normalizeCampaign)
   },
 
   async getCampaignById(id) {
@@ -72,7 +81,7 @@ export const campaignService = {
   async getCategories() {
     const response = await fetch(`${API_URL}/api/campaigns/categories`)
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    return await response.json()
+    return response.json()
   },
 
   async searchCampaigns({ search = "", categoryId = null, page = 1, size = 12, signal } = {}) {

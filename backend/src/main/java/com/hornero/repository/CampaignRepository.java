@@ -48,8 +48,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "WHERE c.id = :id")
     Optional<Campaign> findByIdWithRelations(Long id);
 
-    // Paginar por IDs primero evita el problema de paginación en memoria
-    // cuando se usa JOIN FETCH sobre colecciones (c.media)
     @Query(value = "SELECT c.id FROM Campaign c " +
                    "WHERE c.status = 'CROWDFUNDING' " +
                    "AND (:search IS NULL OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
@@ -78,11 +76,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     @Query("SELECT c FROM Campaign c LEFT JOIN FETCH c.owner WHERE c.status = 'FAILED' AND c.moneyStatus = 'REFUND_PARTIAL'")
     List<Campaign> findFailedWithPartialRefund();
 
-    // ═══════ Home sections — IDs ordenados por criterio, con limit via Pageable ═══════
-    // Cada query devuelve solo IDs; la carga con relaciones se hace en bloque vía
-    // findAllByIdsWithRelations en el service, para evitar N+1 y respetar el orden.
-
-    // Recomendados: campañas con mejor % de progreso (cuanto más cerca de la meta, mejor)
     @Query("SELECT c.id FROM Campaign c " +
            "WHERE c.status = 'CROWDFUNDING' " +
            "AND c.targetAmount IS NOT NULL AND c.targetAmount > 0 " +
@@ -90,8 +83,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "ORDER BY (c.currentAmount / c.targetAmount) DESC")
     List<Long> findFeaturedIds(Pageable pageable);
 
-    // Por terminar: status CROWDFUNDING, queda poco tiempo (ventana de ≤ 14 días),
-    // y todavía no llegaron a la meta (si llegó, ya no hay urgencia que comunicar)
     @Query("SELECT c.id FROM Campaign c " +
            "WHERE c.status = 'CROWDFUNDING' " +
            "AND c.endDate IS NOT NULL " +
@@ -103,7 +94,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
                                  @Param("cutoff") LocalDate cutoff,
                                  Pageable pageable);
 
-    // Cerca de la meta: progreso entre 70% y 99% (excluye las que ya cumplieron)
     @Query("SELECT c.id FROM Campaign c " +
            "WHERE c.status = 'CROWDFUNDING' " +
            "AND c.targetAmount IS NOT NULL AND c.targetAmount > 0 " +
@@ -113,7 +103,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "ORDER BY (c.currentAmount / c.targetAmount) DESC")
     List<Long> findNearGoalIds(Pageable pageable);
 
-    // Recientes: campañas activas, más nuevas primero
     @Query("SELECT c.id FROM Campaign c " +
            "WHERE c.status = 'CROWDFUNDING' " +
            "ORDER BY c.createdAt DESC")
@@ -124,4 +113,17 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "AND c.isSpotlight = true " +
            "ORDER BY c.updatedAt DESC")
     List<Long> findSpotlightIds(Pageable pageable);
+
+    @Query("SELECT c.id FROM Campaign c " +
+           "WHERE c.status = 'CROWDFUNDING' " +
+           "AND c.category.id = :categoryId " +
+           "AND c.targetAmount IS NOT NULL AND c.targetAmount > 0 " +
+           "AND c.currentAmount IS NOT NULL " +
+           "ORDER BY (c.currentAmount / c.targetAmount) DESC")
+    List<Long> findTopByCategoryIds(@Param("categoryId") Long categoryId, Pageable pageable);
+
+    @Query("SELECT COUNT(c) FROM Campaign c " +
+           "WHERE c.status = 'CROWDFUNDING' " +
+           "AND c.category.id = :categoryId")
+    long countActiveByCategoryId(@Param("categoryId") Long categoryId);
 }
