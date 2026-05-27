@@ -69,7 +69,7 @@ void main() {
   vec2 toMouse  = (fragUv - mouseUv) * vec2(u_resolution.x / u_resolution.y, 1.0);
   float mDist   = length(toMouse);
   float mActive = step(0.0, u_mousepos.x);
-  float mStr    = exp(-mDist * mDist * 5.5) * mActive * 0.08;
+  float mStr    = exp(-mDist * mDist * 5.5) * mActive * 0.02;
   vec2  mOffset = normalize(toMouse + vec2(0.001)) * mStr;
 
   vec2 wuv = uv + mOffset;
