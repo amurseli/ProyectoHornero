@@ -57,6 +57,9 @@ function Navbar() {
         <NavbarSearchBar />
 
         <div className="navbar-actions">
+          <Link to="/explorar" className="navbar-creators-link">
+            <Button variant="ghost" className="navbar-creators-btn">Explorar</Button>
+          </Link>
           <Link to="/for-creators" className="navbar-creators-link">
             <Button variant="ghost" className="navbar-creators-btn">Para creadores</Button>
           </Link>
@@ -148,6 +151,9 @@ function Navbar() {
 
       {mobileMenuOpen && (
         <div className="navbar-mobile-menu">
+          <Link to="/explorar" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+            Explorar
+          </Link>
           <Link to="/for-creators" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
             Para creadores
           </Link>

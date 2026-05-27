@@ -43,14 +43,30 @@ public class CampaignController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false, defaultValue = "12") Integer size) {
+            @RequestParam(required = false, defaultValue = "12") Integer size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String sort) {
         if (page != null) {
             int safePage = Math.max(0, page);
             int safeSize = (size == null || size <= 0) ? 12 : size;
+            if (status != null || sort != null) {
+                Sort springSort = resolveSort(sort);
+                Pageable pageable = PageRequest.of(safePage, safeSize, springSort);
+                return ResponseEntity.ok(campaignService.getBrowseCampaignsPaged(search, categoryId, status, sort, pageable));
+            }
             Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("id").ascending());
             return ResponseEntity.ok(campaignService.getPublicCampaignsPaged(search, categoryId, pageable));
         }
         return ResponseEntity.ok(campaignService.getPublicCampaigns());
+    }
+
+    private Sort resolveSort(String sort) {
+        if (sort == null) return Sort.by("createdAt").descending();
+        return switch (sort) {
+            case "funded"  -> Sort.by("currentAmount").descending();
+            case "ending"  -> Sort.by("endDate").ascending();
+            default        -> Sort.by("createdAt").descending();
+        };
     }
 
     @GetMapping("/home")

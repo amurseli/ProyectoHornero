@@ -1,5 +1,6 @@
 import { CampaignCard } from "$components/features"
 import { FiTrendingUp } from "react-icons/fi"
+import { Link } from "react-router-dom"
 import { useFadeInOnScroll } from "../../../hooks/useFadeInOnScroll"
 import "./home-sections.css"
 
@@ -44,11 +45,14 @@ function FeaturedSection({ campaigns, isLoading }) {
 function SectionHeader() {
   return (
     <div className="section-header">
-      <h2 className="section-title">
-        <FiTrendingUp className="section-title-icon featured-icon" />
-        Recomendados
-      </h2>
-      <p className="section-subtitle">Los mas populares de la comunidad</p>
+      <div>
+        <h2 className="section-title">
+          <FiTrendingUp className="section-title-icon featured-icon" />
+          Recomendados
+        </h2>
+        <p className="section-subtitle">Los mas populares de la comunidad</p>
+      </div>
+      <Link to="/explorar" className="section-see-all">Ver todo</Link>
     </div>
   )
 }

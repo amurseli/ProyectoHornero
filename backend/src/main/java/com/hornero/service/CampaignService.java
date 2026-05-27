@@ -88,6 +88,26 @@ public class CampaignService {
         return new PageImpl<>(campaigns, pageable, idPage.getTotalElements());
     }
 
+    private static final List<String> PUBLIC_STATUSES = List.of("CROWDFUNDING", "FUNDED", "FAILED");
+
+    public Page<Campaign> getBrowseCampaignsPaged(String search, Long categoryId, String status, String sort, Pageable pageable) {
+        String normalizedSearch = (search == null || search.isBlank()) ? "" : search.trim();
+        List<String> statuses = (status == null || status.isBlank()) ? PUBLIC_STATUSES : List.of(status.toUpperCase());
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        Page<Long> idPage = switch (sort == null ? "recent" : sort) {
+            case "funded" -> campaignRepository.findBrowseIdsPagedByFunded(normalizedSearch, categoryId, statuses, unsorted);
+            case "ending" -> campaignRepository.findBrowseIdsPagedByEnding(normalizedSearch, categoryId, statuses, unsorted);
+            default       -> campaignRepository.findBrowseIdsPagedByRecent(normalizedSearch, categoryId, statuses, unsorted);
+        };
+        List<Long> ids = idPage.getContent();
+        if (ids.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
+        }
+        List<Campaign> campaigns = campaignRepository.findAllByIdsWithRelations(ids);
+        appImageService.hydrateCampaigns(campaigns);
+        return new PageImpl<>(campaigns, pageable, idPage.getTotalElements());
+    }
+
     public Map<String, List<Campaign>> getHomeSections(int spotlightLimit,
                                                        int featuredLimit,
                                                        int endingSoonLimit,

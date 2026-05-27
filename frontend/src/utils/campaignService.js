@@ -103,4 +103,26 @@ export const campaignService = {
       size: data.size ?? size,
     }
   },
+
+  async browseCampaigns({ search = "", categoryId = null, status = null, sort = "recent", page = 1, size = 18, signal } = {}) {
+    const params = new URLSearchParams()
+    params.set("page", String(Math.max(0, page - 1)))
+    params.set("size", String(size))
+    params.set("sort", sort)
+    if (search && search.trim() !== "") params.set("search", search.trim())
+    if (categoryId != null) params.set("categoryId", String(categoryId))
+    if (status != null) params.set("status", status)
+
+    const response = await fetch(`${API_URL}/api/campaigns?${params.toString()}`, { signal })
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    const data = await response.json()
+    const content = Array.isArray(data.content) ? data.content : []
+    return {
+      campaigns: content.map(normalizeCampaign),
+      totalElements: data.totalElements ?? content.length,
+      totalPages: data.totalPages ?? 1,
+      page: (data.number ?? 0) + 1,
+      size: data.size ?? size,
+    }
+  },
 }

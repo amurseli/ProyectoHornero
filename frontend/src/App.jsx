@@ -24,7 +24,8 @@ import CampaignPage from '$pages/CampaignPage/CampaignPage';
 import EditDraftCampaign from '$pages/Campaigns/EditDraftCampaign';
 import CreatorCampaignDashboard from '$pages/Campaigns/CreatorCampaignDashboard';
 import TransactionHistory from '$pages/TransactionHistory/TransactionHistory.jsx';
-import PaymentReturn from '$pages/PaymentReturn/PaymentReturn.jsx';
+import PaymentReturn from '$pages/PaymentReturn/PaymentReturn.jsx'
+import BrowseCampaigns from '$pages/Browse/BrowseCampaigns.jsx';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -73,6 +74,7 @@ function App() {
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns/:id" element={<CampaignPage />} />
+          <Route path="/explorar" element={<BrowseCampaigns />} />
           <Route path="/for-creators" element={<ForCreators />} />
           <Route path="/transactions" element={<TransactionHistory />} />
           <Route path="/payment/return" element={<PaymentReturn />} />
