@@ -126,4 +126,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "WHERE c.status = 'CROWDFUNDING' " +
            "AND c.category.id = :categoryId")
     long countActiveByCategoryId(@Param("categoryId") Long categoryId);
+
+    List<Campaign> findByIsTest(boolean isTest);
 }

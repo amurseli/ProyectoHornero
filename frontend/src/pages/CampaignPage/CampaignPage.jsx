@@ -894,6 +894,7 @@ export default function CampaignPage() {
 
   function getContributeDisabledReason(c) {
     if (!c) return null
+    if (c.isTest) return 'Esta es una campaña de demostración y no acepta contribuciones'
     if (c.status !== 'CROWDFUNDING') return 'Esta campaña no está activa para recibir contribuciones'
     if (user && c.owner?.id === user.userId) return 'No podés patrocinar tu propia campaña'
     return null
