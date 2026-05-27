@@ -56,6 +56,9 @@ public class Campaign {
     @Column(name = "is_spotlight", nullable = false)
     private boolean isSpotlight = false;
 
+    @Column(name = "is_test", nullable = false)
+    private boolean isTest = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_owner")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "campaigns"})
@@ -114,6 +117,7 @@ public class Campaign {
     public List<Reward> getRewards() { return rewards; }
     public List<CampaignFaq> getFaqs() { return faqs; }
     public boolean getIsSpotlight() { return isSpotlight; }
+    public boolean getIsTest() { return isTest; }
 
 
     // Setters
@@ -130,4 +134,5 @@ public class Campaign {
     public void setCountry(String country) { this.country = country; }
     public void setMoneyStatus(String moneyStatus) { this.moneyStatus = moneyStatus; }
     public void setIsSpotlight(boolean isSpotlight) { this.isSpotlight = isSpotlight; }
+    public void setIsTest(boolean isTest) { this.isTest = isTest; }
 }

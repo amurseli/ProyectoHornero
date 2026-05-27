@@ -27,4 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRole_Name(String roleName);
 
     long countByEnabledFalse();
+
+    @Query("SELECT u FROM User u WHERE u.email LIKE :pattern")
+    List<User> findByEmailLike(@Param("pattern") String pattern);
 }

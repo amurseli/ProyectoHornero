@@ -96,6 +96,8 @@ app:
       - ${FRONTEND_URL:http://localhost:5173}/oauth2/redirect
   testing-mode:
     enabled: ${TEST_MODE_ENABLED:false}
+  seed:
+    test-campaigns-users: ${CREATE_TEST_CAMPAIGNS_USERS:false}
 
 logging:
   level:
