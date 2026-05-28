@@ -74,18 +74,19 @@ function App() {
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns/:id" element={<CampaignPage />} />
+          <Route path="/campaign/:username/:titleSlug" element={<CampaignPage />} />
           <Route path="/explorar" element={<BrowseCampaigns />} />
           <Route path="/for-creators" element={<ForCreators />} />
           <Route path="/transactions" element={<TransactionHistory />} />
           <Route path="/payment/return" element={<PaymentReturn />} />
 
           {/* Protected */}
-          <Route path="/campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
-          <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+          <Route path="/my-campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
+          <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
-          <Route path="/campaigns/:id/manage" element={<ProtectedRoute><CreatorCampaignDashboard /></ProtectedRoute>} />
-          <Route path="/campaigns/:id/edit" element={<ProtectedRoute><EditDraftCampaign /></ProtectedRoute>} />
+          <Route path="/my-campaigns/:id/manage" element={<ProtectedRoute><CreatorCampaignDashboard /></ProtectedRoute>} />
+          <Route path="/my-campaigns/:id/edit" element={<ProtectedRoute><EditDraftCampaign /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

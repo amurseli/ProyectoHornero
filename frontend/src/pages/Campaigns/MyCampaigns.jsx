@@ -156,7 +156,7 @@ function MyCampaigns() {
           <div className="mc-empty-icon"><Rocket size={40} /></div>
           <h2>Todavía no tenés campañas</h2>
           <p>Creá tu primera campaña y empezá a recibir apoyo de la comunidad.</p>
-          <Button variant="primary" size="lg" onClick={() => navigate('/campaigns/new')}>
+          <Button variant="primary" size="lg" onClick={() => navigate('/my-campaigns/new')}>
             <Plus size={18} /> Crear mi primera campaña
           </Button>
         </div>
@@ -210,7 +210,7 @@ function MyCampaigns() {
 
       {active && (
         <section className="container mc-featured-section">
-          <a href={`/campaigns/${active.id}/manage`} className="mc-featured">
+          <a href={`/my-campaigns/${active.id}/manage`} className="mc-featured">
             <div className="mc-featured-image">
               <img src={active.imageUrl} alt={active.title} />
               <span className="mc-featured-status">
@@ -261,14 +261,14 @@ function MyCampaigns() {
           renderItem={(item) => {
             if (item === '__create__') {
               return (
-                <button key="create" className="mc-mini-card mc-create-card" onClick={() => navigate('/campaigns/new')}>
+                <button key="create" className="mc-mini-card mc-create-card" onClick={() => navigate('/my-campaigns/new')}>
                   <div className="mc-create-icon"><Plus size={32} /></div>
                   <span className="mc-create-label">Nueva Campaña</span>
                 </button>
               )
             }
             return (
-              <a key={item.id} href={`/campaigns/${item.id}/manage`} className="mc-mini-card mc-draft-card">
+              <a key={item.id} href={`/my-campaigns/${item.id}/manage`} className="mc-mini-card mc-draft-card">
                 <div className="mc-mini-image">
                   <img src={item.imageUrl} alt={item.title} />
                   <span className="mc-draft-badge"><Pencil size={12} /> Borrador</span>
@@ -301,7 +301,7 @@ function MyCampaigns() {
             renderItem={(c) => {
               const p = c.goal > 0 ? Math.min((c.raised / c.goal) * 100, 100) : 0
               return (
-                <a key={c.id} href={`/campaigns/${c.id}/manage`} className="mc-mini-card">
+                <a key={c.id} href={`/my-campaigns/${c.id}/manage`} className="mc-mini-card">
                   <div className="mc-mini-image">
                     <img src={c.imageUrl} alt={c.title} />
                   </div>

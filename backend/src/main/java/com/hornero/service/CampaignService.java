@@ -88,7 +88,7 @@ public class CampaignService {
         return new PageImpl<>(campaigns, pageable, idPage.getTotalElements());
     }
 
-    private static final List<String> PUBLIC_STATUSES = List.of("CROWDFUNDING", "FUNDED", "FAILED");
+    private static final List<String> PUBLIC_STATUSES = List.of("CROWDFUNDING", "SUCCESSFUL", "FAILED");
 
     public Page<Campaign> getBrowseCampaignsPaged(String search, Long categoryId, String status, String sort, Pageable pageable) {
         String normalizedSearch = (search == null || search.isBlank()) ? "" : search.trim();
@@ -183,6 +183,27 @@ public class CampaignService {
         Optional<Campaign> campaign = campaignRepository.findByIdWithRelations(id);
         campaign.ifPresent(appImageService::hydrateCampaign);
         return campaign;
+    }
+
+    public Optional<Campaign> getCampaignBySlug(String username, String titleSlug) {
+        if (username == null || username.isBlank() || titleSlug == null || titleSlug.isBlank()) {
+            return Optional.empty();
+        }
+        List<Campaign> campaigns = campaignRepository.findByOwnerUsernameWithRelations(username);
+        Optional<Campaign> match = campaigns.stream()
+                .filter(c -> titleSlug.equalsIgnoreCase(slugify(c.getTitle())))
+                .findFirst();
+        match.ifPresent(appImageService::hydrateCampaign);
+        return match;
+    }
+
+    public static String slugify(String text) {
+        if (text == null) return "";
+        String normalized = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        return normalized.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
     }
 
     @Transactional

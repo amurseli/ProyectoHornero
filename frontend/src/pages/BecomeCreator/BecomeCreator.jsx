@@ -475,7 +475,7 @@ function BecomeCreator() {
 
   return (
     <div className="become-creator-page">
-      <BecomeCreatorModule onSuccess={() => navigate('/campaigns')} />
+      <BecomeCreatorModule onSuccess={() => navigate('/my-campaigns')} />
     </div>
   )
 }

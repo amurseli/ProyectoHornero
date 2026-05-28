@@ -115,6 +115,20 @@ public class CampaignController {
             @RequestHeader(value = "X-Service-Key", required = false) String incomingKey,
             HttpServletRequest request) {
         Campaign campaign = campaignService.getCampaignById(id).orElse(null);
+        return resolveVisibleCampaign(campaign, incomingKey, request);
+    }
+
+    @GetMapping("/by-slug/{username}/{titleSlug}")
+    public ResponseEntity<Campaign> getCampaignBySlug(
+            @PathVariable String username,
+            @PathVariable String titleSlug,
+            @RequestHeader(value = "X-Service-Key", required = false) String incomingKey,
+            HttpServletRequest request) {
+        Campaign campaign = campaignService.getCampaignBySlug(username, titleSlug).orElse(null);
+        return resolveVisibleCampaign(campaign, incomingKey, request);
+    }
+
+    private ResponseEntity<Campaign> resolveVisibleCampaign(Campaign campaign, String incomingKey, HttpServletRequest request) {
         if (campaign == null) return ResponseEntity.notFound().build();
 
         if (serviceKey.equals(incomingKey)) return ResponseEntity.ok(campaign);

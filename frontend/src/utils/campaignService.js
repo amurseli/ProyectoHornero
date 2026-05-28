@@ -2,6 +2,25 @@ import { getMediaImageSrc } from './imageSources'
 
 const API_URL = import.meta.env.VITE_API_URL || ""
 
+export function slugify(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+export function getCampaignPath(campaign) {
+  const username = campaign?.owner?.userName || campaign?.owner?.username
+  const titleSlug = slugify(campaign?.title)
+  if (username && titleSlug) {
+    return `/campaign/${encodeURIComponent(username)}/${titleSlug}`
+  }
+  if (campaign?.id != null) return `/campaigns/${campaign.id}`
+  return '/explorar'
+}
+
 function normalizeCampaign(campaign) {
   return {
     ...campaign,
@@ -73,6 +92,15 @@ export const campaignService = {
 
   async getCampaignById(id) {
     const response = await fetch(`${API_URL}/api/campaigns/${id}`, { credentials: 'include' })
+    if (response.status === 404) return null
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    return normalizeCampaign(await response.json())
+  },
+
+  async getCampaignBySlug(username, titleSlug) {
+    const u = encodeURIComponent(username)
+    const t = encodeURIComponent(titleSlug)
+    const response = await fetch(`${API_URL}/api/campaigns/by-slug/${u}/${t}`, { credentials: 'include' })
     if (response.status === 404) return null
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     return normalizeCampaign(await response.json())

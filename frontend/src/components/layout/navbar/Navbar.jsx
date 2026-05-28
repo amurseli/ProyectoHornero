@@ -94,7 +94,7 @@ function Navbar() {
                     Configuración
                   </Link>
                   <Link
-                    to="/campaigns"
+                    to="/my-campaigns"
                     className="navbar-dropdown-item"
                     onClick={() => setUserDropdownOpen(false)}
                   >
@@ -162,7 +162,7 @@ function Navbar() {
               <Link to="/configuracion" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
                 Configuración
               </Link>
-              <Link to="/campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+              <Link to="/my-campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
                 Mis campañas
               </Link>
               {user.role === 'ADMIN' && (

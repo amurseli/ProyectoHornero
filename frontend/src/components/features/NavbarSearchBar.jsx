@@ -4,14 +4,12 @@ import {
   FiSearch,
   FiX,
   FiLoader,
-  FiChevronLeft,
-  FiChevronRight,
   FiCalendar,
+  FiArrowRight,
 } from "react-icons/fi"
 import ReactPlayer from "react-player"
 import { useCampaignSearch } from "../../hooks/useCampaignSearch"
-
-const VIDEO_DELAY_MS = 1000
+import { getCampaignPath } from "../../utils/campaignService"
 
 function SearchResultRow({ campaign, showCategory, onMouseEnter, onMouseLeave, onClick }) {
   const goal = campaign.goal || campaign.targetAmount || 0
@@ -51,13 +49,9 @@ function CampaignPreview({ campaign }) {
   const daysLeft = campaign.daysLeft ?? 0
   const videoUrl = campaign.videoUrl || null
 
-  // Restart the 3-second timer whenever the previewed campaign changes
   useEffect(() => {
-    setVideoActive(false)
     setVideoReady(false)
-    if (!videoUrl) return
-    const timer = setTimeout(() => setVideoActive(true), VIDEO_DELAY_MS)
-    return () => clearTimeout(timer)
+    setVideoActive(Boolean(videoUrl))
   }, [campaign.id, videoUrl])
 
   return (
@@ -122,17 +116,13 @@ function NavbarSearchBar() {
     query,
     selectedCategory,
     categories,
-    page,
     results,
-    totalPages,
     totalElements,
     isLoading,
     hasActiveQuery,
     setQuery,
     toggleCategory,
     clearCategory,
-    goNext,
-    goPrev,
   } = search
 
   const [isOpen, setIsOpen] = useState(false)
@@ -153,8 +143,20 @@ function NavbarSearchBar() {
   const handleSelectCampaign = (campaign) => {
     setIsOpen(false)
     setHoveredCampaign(null)
-    navigate(`/campaigns/${campaign.id}`)
+    navigate(getCampaignPath(campaign))
   }
+
+  const goToExplorar = () => {
+    const params = new URLSearchParams()
+    if (query.trim()) params.set("search", query.trim())
+    if (selectedCategory?.id != null) params.set("categoryId", String(selectedCategory.id))
+    const qs = params.toString()
+    setIsOpen(false)
+    setHoveredCampaign(null)
+    navigate(qs ? `/explorar?${qs}` : "/explorar")
+  }
+
+  const hasMoreResults = totalElements > results.length
 
   return (
     <div className="navsearch" ref={containerRef}>
@@ -228,31 +230,15 @@ function NavbarSearchBar() {
                     ))}
                   </ul>
 
-                  {totalPages > 1 && (
-                    <div className="navsearch-pagination">
-                      <button
-                        type="button"
-                        className="navsearch-pagination-btn"
-                        onClick={goPrev}
-                        disabled={page <= 1}
-                        aria-label="Página anterior"
-                      >
-                        <FiChevronLeft />
-                      </button>
-                      <span className="navsearch-pagination-info">
-                        Página {page} de {totalPages}
-                        {totalElements > 0 && ` · ${totalElements}`}
-                      </span>
-                      <button
-                        type="button"
-                        className="navsearch-pagination-btn"
-                        onClick={goNext}
-                        disabled={page >= totalPages}
-                        aria-label="Página siguiente"
-                      >
-                        <FiChevronRight />
-                      </button>
-                    </div>
+                  {hasMoreResults && (
+                    <button
+                      type="button"
+                      className="navsearch-see-all"
+                      onClick={goToExplorar}
+                    >
+                      Ver los {totalElements} Proyectos
+                      <FiArrowRight className="navsearch-see-all-icon" />
+                    </button>
                   )}
                 </>
               )}
@@ -523,43 +509,30 @@ const styles = `
     margin: 0;
   }
 
-  .navsearch-pagination {
+  .navsearch-see-all {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.625rem;
-    padding: 0.5rem;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
     border-top: 1px solid var(--color-border, #e5e7eb);
-  }
-
-  .navsearch-pagination-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.875rem;
-    height: 1.875rem;
-    border: 1px solid var(--color-border, #e5e7eb);
-    background: white;
-    color: var(--color-text-primary, #111827);
-    border-radius: 50%;
+    background: var(--color-primary, #d94f30);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease;
   }
 
-  .navsearch-pagination-btn:hover:not(:disabled) {
-    border-color: var(--color-primary, #d94f30);
-    color: var(--color-primary, #d94f30);
+  .navsearch-see-all:hover {
+    background: color-mix(in srgb, var(--color-primary, #d94f30) 88%, black);
   }
 
-  .navsearch-pagination-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .navsearch-pagination-info {
-    font-size: 0.8rem;
-    color: var(--color-text-muted, #6b7280);
-    font-weight: 500;
+  .navsearch-see-all-icon {
+    width: 1rem;
+    height: 1rem;
   }
 
   /* Hover preview to the right of the dropdown */

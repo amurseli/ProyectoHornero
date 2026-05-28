@@ -219,7 +219,7 @@ export default function CreatorCampaignDashboard() {
         <div className="ccd-error">
           <h2>No se pudo cargar la campaña</h2>
           <p>{error || 'La campaña no existe o no tenés acceso.'}</p>
-          <Button variant="secondary" onClick={() => navigate('/campaigns')}>
+          <Button variant="secondary" onClick={() => navigate('/my-campaigns')}>
             <ArrowLeft size={16} /> Volver a mis campañas
           </Button>
         </div>
@@ -229,7 +229,7 @@ export default function CreatorCampaignDashboard() {
 
   return (
     <div className="ccd-page">
-      <button className="ccd-back" onClick={() => navigate('/campaigns')}>
+      <button className="ccd-back" onClick={() => navigate('/my-campaigns')}>
         <ArrowLeft size={16} /> Mis campañas
       </button>
 

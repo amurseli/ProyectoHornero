@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useCampaigns } from "../../hooks/useCampaigns"
-import { useCampaignSearch } from "../../hooks/useCampaignSearch"
+import { useHeroSearch } from "../../hooks/useHeroSearch"
 import { campaignService } from "../../utils/campaignService"
-import { SearchResultsGrid } from "../../components/features"
 import HeroSection from "./sections/HeroSection"
 import FeaturedSection from "./sections/FeaturedSection"
 import EndingSoonSection from "./sections/EndingSoonSection"
@@ -22,7 +21,7 @@ function Home() {
     nearGoalCampaigns,
     isLoading,
   } = useCampaigns()
-  const search = useCampaignSearch()
+  const search = useHeroSearch()
 
   const [activeCategories, setActiveCategories] = useState([])
 
@@ -37,40 +36,28 @@ function Home() {
       <main className="home-main">
         <HeroSection search={search} />
 
-        {search.hasActiveQuery ? (
-          <div className="container home-content">
-            <SearchResultsGrid
-              results={search.results}
-              page={search.page}
-              totalPages={search.totalPages}
-              totalElements={search.totalElements}
-              isLoading={search.isLoading}
-              query={search.query}
-              selectedCategory={search.selectedCategory}
-              onPrev={search.goPrev}
-              onNext={search.goNext}
-            />
-          </div>
-        ) : (
-          <>
-            <div className="container home-content">
-              <SpotlightSection campaigns={spotlightCampaigns} isLoading={isLoading} />
-            </div>
+        <div className="container home-content">
+          <SpotlightSection campaigns={spotlightCampaigns} isLoading={isLoading} />
+        </div>
 
-            <div className="home-body">
-              <div className="home-main-column">
-                <FeaturedSection campaigns={featuredCampaigns} isLoading={isLoading} />
-                <EndingSoonSection campaigns={endingSoonCampaigns} isLoading={isLoading} />
-                {activeCategories.map(category => (
-                  <CategorySection key={category.id} category={category} />
-                ))}
-              </div>
-              <aside className="home-sidebar">
-                <NearGoalSection campaigns={nearGoalCampaigns} isLoading={isLoading} />
-              </aside>
-            </div>
-          </>
-        )}
+        <div className="container home-content home-content--wide">
+          <FeaturedSection campaigns={featuredCampaigns} isLoading={isLoading} />
+        </div>
+
+        <div className="home-body">
+          <div className="home-main-column">
+            <EndingSoonSection campaigns={endingSoonCampaigns} isLoading={isLoading} />
+          </div>
+          <aside className="home-sidebar">
+            <NearGoalSection campaigns={nearGoalCampaigns} isLoading={isLoading} />
+          </aside>
+        </div>
+
+        <div className="container home-content home-content--wide">
+          {activeCategories.map(category => (
+            <CategorySection key={category.id} category={category} />
+          ))}
+        </div>
       </main>
 
       <CTASection />

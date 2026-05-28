@@ -3,7 +3,7 @@ import { campaignService } from "../utils/campaignService"
 
 const PAGE_SIZE = 18
 
-export function useBrowseCampaigns() {
+export function useBrowseCampaigns(initialFilters = {}) {
   const [campaigns, setCampaigns] = useState([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
@@ -12,17 +12,34 @@ export function useBrowseCampaigns() {
   const [totalElements, setTotalElements] = useState(0)
 
   const [categories, setCategories] = useState([])
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  const [selectedStatus, setSelectedStatus] = useState(null)
-  const [selectedSort, setSelectedSort] = useState("recent")
+  const [selectedCategory, setSelectedCategory] = useState(initialFilters.category ?? null)
+  const [selectedStatus, setSelectedStatus] = useState(initialFilters.status ?? null)
+  const [selectedSort, setSelectedSort] = useState(initialFilters.sort ?? "recent")
+  const [searchInput, setSearchInput] = useState(initialFilters.search ?? "")
+  const [search, setSearch] = useState(initialFilters.search ?? "")
 
   const abortRef = useRef(null)
-  const filtersRef = useRef({ selectedCategory, selectedStatus, selectedSort })
+  const filtersRef = useRef({ selectedCategory, selectedStatus, selectedSort, search })
   const isFetchingRef = useRef(false)
 
   useEffect(() => {
-    campaignService.getCategories().then(setCategories).catch(() => {})
+    campaignService.getCategories()
+      .then(cats => {
+        setCategories(cats)
+        if (initialFilters.categoryId != null && !selectedCategory) {
+          const match = cats.find(c => String(c.id) === String(initialFilters.categoryId))
+          if (match) setSelectedCategory(match)
+        }
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const commitSearch = useCallback((value) => {
+    const next = (value !== undefined ? value : searchInput).trim()
+    setSearchInput(next)
+    setSearch(next)
+  }, [searchInput])
 
   const fetchPage = useCallback(async (pageNum, reset, filters) => {
     if (abortRef.current) abortRef.current.abort()
@@ -35,6 +52,7 @@ export function useBrowseCampaigns() {
 
     try {
       const data = await campaignService.browseCampaigns({
+        search: filters.search,
         categoryId: filters.selectedCategory?.id ?? null,
         status: filters.selectedStatus,
         sort: filters.selectedSort,
@@ -57,12 +75,12 @@ export function useBrowseCampaigns() {
   }, [])
 
   useEffect(() => {
-    const filters = { selectedCategory, selectedStatus, selectedSort }
+    const filters = { selectedCategory, selectedStatus, selectedSort, search }
     filtersRef.current = filters
     setPage(1)
     setHasMore(true)
     fetchPage(1, true, filters)
-  }, [selectedCategory, selectedStatus, selectedSort, fetchPage])
+  }, [selectedCategory, selectedStatus, selectedSort, search, fetchPage])
 
   const loadingRef = useRef({ hasMore: true, page: 1 })
   loadingRef.current = { hasMore, page }
@@ -82,7 +100,7 @@ export function useBrowseCampaigns() {
   const clearCategory = () => setSelectedCategory(null)
 
   const toggleCategory = (cat) =>
-    setSelectedCategory(prev => prev?.id === cat.id ? null : cat)
+    setSelectedCategory(prev => prev?.id === cat?.id ? null : cat)
 
   const setStatus = (status) =>
     setSelectedStatus(prev => prev === status ? null : status)
@@ -101,11 +119,19 @@ export function useBrowseCampaigns() {
     selectedCategory,
     selectedStatus,
     selectedSort,
+    searchInput,
+    search,
+    setSearchInput,
+    setSearch,
+    commitSearch,
     loadMore,
     clearCategory,
     toggleCategory,
     clearStatus,
     setStatus,
     setSort,
+    selectCategory: setSelectedCategory,
+    selectStatus: setSelectedStatus,
+    selectSort: setSelectedSort,
   }
 }

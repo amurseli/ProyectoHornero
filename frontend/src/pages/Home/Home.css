@@ -23,9 +23,14 @@
 }
 
 .home-content {
-  padding: 3rem 0 0;
+  padding: 3rem max(1.5rem, 2rem) 0;
   max-width: var(--max-width);
   margin: 0 auto;
+}
+
+.home-content--wide {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 }
 
 .home-body {

@@ -48,6 +48,13 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "WHERE c.id = :id")
     Optional<Campaign> findByIdWithRelations(Long id);
 
+    @Query("SELECT c FROM Campaign c " +
+           "LEFT JOIN FETCH c.media " +
+           "LEFT JOIN FETCH c.category " +
+           "LEFT JOIN FETCH c.owner o " +
+           "WHERE LOWER(o.userName) = LOWER(:username)")
+    List<Campaign> findByOwnerUsernameWithRelations(@Param("username") String username);
+
     @Query(value = "SELECT c.id FROM Campaign c " +
                    "WHERE c.status = 'CROWDFUNDING' " +
                    "AND (:search IS NULL OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
