@@ -437,7 +437,7 @@ function CreateCampaign() {
         media,
       })
 
-      navigate(created?.id ? `/campaigns/${created.id}/edit` : '/campaigns')
+      navigate(created?.id ? `/my-campaigns/${created.id}/edit` : '/my-campaigns')
     } catch (err) {
       console.error('Error al crear campaña:', err)
       setError('Hubo un error al crear la campaña. Intentá de nuevo.')

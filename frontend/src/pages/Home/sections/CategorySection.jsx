@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { Link } from "react-router-dom"
 import { CampaignCard } from "$components/features"
 import { FiTag, FiArrowRight } from "react-icons/fi"
 import { campaignService } from "../../../utils/campaignService"
@@ -34,7 +35,7 @@ function CategorySection({ category }) {
   const fetchCampaigns = async () => {
     setIsLoading(true)
     try {
-      const data = await campaignService.getCategorySection(category.id)
+      const data = await campaignService.getCategorySection(category.id, 9)
       setCampaigns(data || [])
     } catch {
       setCampaigns([])
@@ -55,18 +56,18 @@ function CategorySection({ category }) {
           <FiTag className="category-section-icon" />
           <h2 className="category-section-title">{category.name}</h2>
         </div>
-        <a
-          href={`/campaigns?categoryId=${category.id}`}
+        <Link
+          to={`/explorar?categoryId=${category.id}`}
           className="category-section-link"
         >
           Ver todos
           <FiArrowRight className="category-section-link-icon" />
-        </a>
+        </Link>
       </div>
 
       {isLoading && (
         <div className="category-grid">
-          {[0, 1, 2].map(i => (
+          {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="category-skeleton" />
           ))}
         </div>

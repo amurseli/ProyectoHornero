@@ -9,10 +9,16 @@ function SearchBar({ search }) {
     setQuery,
     toggleCategory,
     clearCategory,
+    submit,
   } = search
 
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (typeof submit === "function") submit()
+  }
+
   return (
-    <div className="search-bar-container">
+    <form className="search-bar-container" onSubmit={handleSubmit}>
       <div className="search-input-wrapper">
         <FiSearch className="search-input-icon" />
         {selectedCategory && (
@@ -56,7 +62,7 @@ function SearchBar({ search }) {
       )}
 
       <style>{styles}</style>
-    </div>
+    </form>
   )
 }
 

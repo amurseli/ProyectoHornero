@@ -1,43 +1,23 @@
 package com.hornero.model.payments;
 
-import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "contribution", schema = "payments")
+// Read-only POJO mirroring rows from the payments.contribution table, which is
+// owned by the payments microservice. Not a JPA entity — populated by
+// PaymentContributionRepository via native SQL so the hornero backend can boot
+// without that schema existing locally.
 public class PaymentContribution {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "id_user", nullable = false)
     private Long idUser;
-
-    @Column(name = "id_campaign", nullable = false)
     private Long idCampaign;
-
-    @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
-
-    @Column(name = "reward_id")
     private Long rewardId;
-
-    @Column(name = "reward_price", precision = 15, scale = 2)
     private BigDecimal rewardPrice;
-
-    @Column(nullable = false, length = 20)
     private String status;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    @OneToOne(mappedBy = "contribution", fetch = FetchType.LAZY)
     private PaymentTransaction transaction;
 
     public Long getId() { return id; }
@@ -50,4 +30,15 @@ public class PaymentContribution {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public PaymentTransaction getTransaction() { return transaction; }
+
+    public void setId(Long id) { this.id = id; }
+    public void setIdUser(Long idUser) { this.idUser = idUser; }
+    public void setIdCampaign(Long idCampaign) { this.idCampaign = idCampaign; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public void setRewardId(Long rewardId) { this.rewardId = rewardId; }
+    public void setRewardPrice(BigDecimal rewardPrice) { this.rewardPrice = rewardPrice; }
+    public void setStatus(String status) { this.status = status; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setTransaction(PaymentTransaction transaction) { this.transaction = transaction; }
 }

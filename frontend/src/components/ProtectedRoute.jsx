@@ -1,5 +1,6 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useUser } from '../store/useUser'
+import { savePostLoginRedirect } from '../utils/auth/postLoginRedirect'
 
 /**
  * ProtectedRoute - Simple authentication guard
@@ -7,6 +8,7 @@ import { useUser } from '../store/useUser'
  */
 export function ProtectedRoute({ children }) {
   const { user, loading } = useUser()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -20,6 +22,8 @@ export function ProtectedRoute({ children }) {
   }
 
   if (!user) {
+    // Remember where the user was trying to go so login can return them here.
+    savePostLoginRedirect(`${location.pathname}${location.search || ''}`)
     return <Navigate to="/login" replace />
   }
 

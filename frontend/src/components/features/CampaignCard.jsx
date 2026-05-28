@@ -1,31 +1,43 @@
-import { useState, useRef } from "react"
-import { FiTrendingUp, FiUsers, FiClock } from "react-icons/fi"
+import { useState } from "react"
+import { FiTrendingUp, FiUsers, FiClock, FiTag, FiMapPin } from "react-icons/fi"
 import ReactPlayer from "react-player"
+import { getCampaignPath } from "../../utils/campaignService"
 
-function CampaignCard({ campaign, variant = "standard" }) {
+function stripMarkdown(text) {
+  return String(text || "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[*_~>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function CampaignCard({ campaign, variant = "standard", size = "default" }) {
   const goal = campaign.goal || campaign.targetAmount || 0
   const raised = campaign.currentAmount ?? campaign.raised ?? 0
   const progressPercentage = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0
   const daysLeft = campaign.daysLeft ?? 0
   const videoUrl = campaign.videoUrl || null
+  const campaignPath = getCampaignPath(campaign)
 
   const [hovered, setHovered] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
-  const hoverTimer = useRef(null)
 
   const handleMouseEnter = () => {
     if (!videoUrl) return
-    hoverTimer.current = setTimeout(() => setHovered(true), 1000)
+    setHovered(true)
   }
 
   const handleMouseLeave = () => {
-    clearTimeout(hoverTimer.current)
     setHovered(false)
   }
 
   if (variant === "compact") {
     return (
-      <a href={`/campaigns/${campaign.id}`} className="campaign-card-compact">
+      <a href={campaignPath} className="campaign-card-compact">
         <img
           src={campaign.imageUrl || campaign.image || "/crowdfunding-campaign.jpg"}
           alt={campaign.title}
@@ -51,7 +63,7 @@ function CampaignCard({ campaign, variant = "standard" }) {
   if (variant === "featured") {
     return (
       <a
-        href={`/campaigns/${campaign.id}`}
+        href={campaignPath}
         className="campaign-card-editorial"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -147,7 +159,7 @@ function CampaignCard({ campaign, variant = "standard" }) {
       daysLeft <= 7 ? "countdown-warning" : ""
 
     return (
-      <a href={`/campaigns/${campaign.id}`} className="campaign-card-horizontal">
+      <a href={campaignPath} className="campaign-card-horizontal">
         <div className="horizontal-image-wrap">
           <img
             src={campaign.imageUrl || campaign.image || "/crowdfunding-campaign.jpg"}
@@ -191,10 +203,18 @@ function CampaignCard({ campaign, variant = "standard" }) {
     )
   }
 
+  const isLarge = size === "large"
+  const longBlurb = isLarge
+    ? stripMarkdown(campaign.description || campaign.shortDescription || "")
+    : ""
+  const ownerName = campaign.owner
+    ? [campaign.owner.firstName, campaign.owner.lastName].filter(Boolean).join(" ").trim() || campaign.owner.userName
+    : null
+
   return (
     <a
-      href={`/campaigns/${campaign.id}`}
-      className="campaign-card-full"
+      href={campaignPath}
+      className={`campaign-card-full ${isLarge ? "campaign-card-full--large" : ""}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -242,12 +262,41 @@ function CampaignCard({ campaign, variant = "standard" }) {
             </div>
           )}
 
+          {isLarge && !campaign.creator && ownerName && (
+            <p className="creator-name campaign-byline">por {ownerName}</p>
+          )}
+
           <h3 className="campaign-title">{campaign.title}</h3>
 
-          {campaign.description && (
+          {isLarge && campaign.shortDescription && (
+            <p className="campaign-tagline">{campaign.shortDescription}</p>
+          )}
+
+          {longBlurb && (
+            <p className="campaign-description campaign-description--long">{longBlurb}</p>
+          )}
+
+          {!isLarge && campaign.description && (
             <p className="campaign-description">
               {campaign.shortDescription || campaign.description}
             </p>
+          )}
+
+          {isLarge && (campaign.category || campaign.country) && (
+            <div className="campaign-tags">
+              {campaign.category && (
+                <span className="campaign-tag">
+                  <FiTag className="campaign-tag-icon" />
+                  {campaign.category}
+                </span>
+              )}
+              {campaign.country && (
+                <span className="campaign-tag">
+                  <FiMapPin className="campaign-tag-icon" />
+                  {campaign.country}
+                </span>
+              )}
+            </div>
           )}
         </div>
 
@@ -853,6 +902,72 @@ const fullStyles = `
   .icon-small {
     width: 0.875rem;
     height: 0.875rem;
+  }
+
+  /* Large-size variant used in the FeaturedSection hero slot. Expanded copy
+     + tag row so the card fills the available vertical space gracefully. */
+  .campaign-card-full--large .campaign-body {
+    padding: 1.75rem;
+    gap: 1rem;
+  }
+  .campaign-card-full--large .campaign-main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .campaign-card-full--large .campaign-title {
+    font-size: 1.4rem;
+    line-height: 1.25;
+    margin-bottom: 0;
+    -webkit-line-clamp: 3;
+  }
+  .campaign-card-full--large .campaign-byline {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+  .campaign-card-full--large .campaign-tagline {
+    margin: 0;
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .campaign-card-full--large .campaign-description--long {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .campaign-card-full--large .campaign-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+  .campaign-card-full--large .campaign-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 9999px;
+    background: var(--color-muted);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+  }
+  .campaign-card-full--large .campaign-tag-icon {
+    width: 0.85rem;
+    height: 0.85rem;
+    color: var(--color-primary);
   }
 `
 

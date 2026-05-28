@@ -4,6 +4,7 @@ import './App.css'
 import { UserProvider } from './store/UserProvider';
 import { useUser } from './store/useUser';
 import api from './utils/api/api';
+import { clearPostLoginRedirect } from './utils/auth/postLoginRedirect';
 
 // Pages
 import Home from '$pages/Home/Home.jsx';
@@ -24,7 +25,8 @@ import CampaignPage from '$pages/CampaignPage/CampaignPage';
 import EditDraftCampaign from '$pages/Campaigns/EditDraftCampaign';
 import CreatorCampaignDashboard from '$pages/Campaigns/CreatorCampaignDashboard';
 import TransactionHistory from '$pages/TransactionHistory/TransactionHistory.jsx';
-import PaymentReturn from '$pages/PaymentReturn/PaymentReturn.jsx';
+import PaymentReturn from '$pages/PaymentReturn/PaymentReturn.jsx'
+import BrowseCampaigns from '$pages/Browse/BrowseCampaigns.jsx';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -54,11 +56,26 @@ function ScrollToTop() {
   return null
 }
 
+// Drops any pending post-login redirect target when the user leaves the auth funnel.
+// /oauth2/redirect is included because Google bounces through it before landing on the target.
+function AuthRedirectCleaner() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    const inAuthFunnel =
+      pathname.startsWith('/login') ||
+      pathname.startsWith('/register') ||
+      pathname.startsWith('/oauth2/redirect')
+    if (!inAuthFunnel) clearPostLoginRedirect()
+  }, [pathname])
+  return null
+}
+
 function App() {
   return (
     <UserProvider>
       <Router>
         <AuthVerifier />
+        <AuthRedirectCleaner />
         <ScrollToTop />
         <Navbar />
         <Routes>
@@ -73,17 +90,19 @@ function App() {
           <Route path="/email-sent" element={<EmailSent />} />
           <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
           <Route path="/campaigns/:id" element={<CampaignPage />} />
+          <Route path="/campaign/:username/:titleSlug" element={<CampaignPage />} />
+          <Route path="/explorar" element={<BrowseCampaigns />} />
           <Route path="/for-creators" element={<ForCreators />} />
           <Route path="/transactions" element={<TransactionHistory />} />
           <Route path="/payment/return" element={<PaymentReturn />} />
 
           {/* Protected */}
-          <Route path="/campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
-          <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+          <Route path="/my-campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
+          <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />
-          <Route path="/campaigns/:id/manage" element={<ProtectedRoute><CreatorCampaignDashboard /></ProtectedRoute>} />
-          <Route path="/campaigns/:id/edit" element={<ProtectedRoute><EditDraftCampaign /></ProtectedRoute>} />
+          <Route path="/my-campaigns/:id/manage" element={<ProtectedRoute><CreatorCampaignDashboard /></ProtectedRoute>} />
+          <Route path="/my-campaigns/:id/edit" element={<ProtectedRoute><EditDraftCampaign /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

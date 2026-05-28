@@ -1,5 +1,6 @@
 import { CampaignCard } from "$components/features"
 import { FiTrendingUp } from "react-icons/fi"
+import { Link } from "react-router-dom"
 import { useFadeInOnScroll } from "../../../hooks/useFadeInOnScroll"
 import "./home-sections.css"
 
@@ -20,20 +21,20 @@ function FeaturedSection({ campaigns, isLoading }) {
 
   if (!campaigns || campaigns.length === 0) return null
 
+  const hero = campaigns[0]
+  const sideCards = campaigns.slice(1, 5)
+
   return (
     <section ref={ref} className={`featured-section ${className}`}>
       <SectionHeader />
-      
+
       <div className="featured-bento-grid">
-        {campaigns.map((campaign, index) => (
-          <div 
-            key={campaign.id} 
-            className={index === 0 ? "bento-item-hero" : "bento-item-standard"}
-          >
-            <CampaignCard 
-              campaign={campaign} 
-              variant={index === 0 ? "featured" : "standard"} 
-            />
+        <div className="bento-item-hero">
+          <CampaignCard campaign={hero} variant="standard" size="large" />
+        </div>
+        {sideCards.map(campaign => (
+          <div key={campaign.id} className="bento-item-standard">
+            <CampaignCard campaign={campaign} variant="standard" />
           </div>
         ))}
       </div>
@@ -44,11 +45,14 @@ function FeaturedSection({ campaigns, isLoading }) {
 function SectionHeader() {
   return (
     <div className="section-header">
-      <h2 className="section-title">
-        <FiTrendingUp className="section-title-icon featured-icon" />
-        Recomendados
-      </h2>
-      <p className="section-subtitle">Los mas populares de la comunidad</p>
+      <div>
+        <h2 className="section-title">
+          <FiTrendingUp className="section-title-icon featured-icon" />
+          Recomendados
+        </h2>
+        <p className="section-subtitle">Los mas populares de la comunidad</p>
+      </div>
+      <Link to="/explorar" className="section-see-all">Ver todo</Link>
     </div>
   )
 }

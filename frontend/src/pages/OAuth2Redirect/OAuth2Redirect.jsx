@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { handleOAuth2Redirect } from "../../utils/auth/oauth"
+import { consumePostLoginRedirect } from "../../utils/auth/postLoginRedirect"
 import { useUser } from "../../store/useUser"
 import { AnimatedCheck } from "../../components/ui"
 import "../auth.css"
@@ -20,9 +21,9 @@ function OAuth2Redirect() {
           login(result.user)
           setStatus("success")
 
-          // Redirect to home page after showing the checkmark
+          const target = consumePostLoginRedirect() || "/"
           setTimeout(() => {
-            navigate("/")
+            navigate(target, { replace: true })
           }, 2500)
         } else if (result && result.error) {
           setStatus("error")

@@ -4,8 +4,8 @@ const COLUMNS = [
   {
     title: 'Plataforma',
     links: [
-      { label: 'Explorar campañas', href: '/campaigns' },
-      { label: 'Crear campaña', href: '/campaigns/new' },
+      { label: 'Explorar campañas', href: '/explorar' },
+      { label: 'Crear campaña', href: '/my-campaigns/new' },
       { label: 'Cómo funciona', href: '/how-it-works' },
       { label: 'Transparencia blockchain', href: '/blockchain' },
     ]

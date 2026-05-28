@@ -10,11 +10,8 @@ import com.hornero.dto.ErrorResponse;
 import com.hornero.model.Campaign;
 import com.hornero.model.CreatorBankInfo;
 import com.hornero.model.User;
-import com.hornero.model.payments.PaymentContribution;
-import com.hornero.model.payments.PaymentTransaction;
 import com.hornero.repository.CampaignRepository;
 import com.hornero.repository.CreatorBankInfoRepository;
-import com.hornero.repository.PaymentContributionRepository;
 import com.hornero.repository.UserRepository;
 import com.hornero.service.CampaignService;
 import com.hornero.service.EncryptionService;
@@ -49,9 +46,6 @@ public class AdminCampaignController {
     private PaymentsServiceClient paymentsServiceClient;
 
     @Autowired
-    private PaymentContributionRepository paymentContributionRepository;
-
-    @Autowired
     private UserRepository userRepository;
 
     @GetMapping
@@ -62,11 +56,14 @@ public class AdminCampaignController {
         }
 
         LocalDate today = LocalDate.now();
-        List<AdminCampaignSummaryResponse> items = campaignRepository.findAllAdminWithOwner().stream()
+        List<Campaign> campaigns = campaignRepository.findAllAdminWithOwner();
+        Map<Long, PaymentsServiceClient.PaymentCampaignSummary> paymentSummaries =
+                paymentsServiceClient.fetchCampaignSummaries(campaigns.stream().map(Campaign::getId).toList());
+        List<AdminCampaignSummaryResponse> items = campaigns.stream()
                 .map(campaign -> AdminCampaignSummaryResponse.fromEntity(
                         campaign,
                         today,
-                        paymentContributionRepository.countByIdCampaignAndStatus(campaign.getId(), "APPROVED")))
+                        paymentSummaries.getOrDefault(campaign.getId(), new PaymentsServiceClient.PaymentCampaignSummary()).getApprovedContributionCount()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(items);
@@ -83,18 +80,18 @@ public class AdminCampaignController {
             Campaign campaign = campaignRepository.findByIdWithRelations(id)
                     .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
 
-            List<PaymentContribution> contributions = paymentContributionRepository.findDetailedByCampaignId(id);
+            AdminCampaignDetailResponse paymentDetail = paymentsServiceClient.fetchCampaignDetail(id);
+            List<AdminCampaignContributionResponse> contributions = paymentDetail.getContributions();
             Map<Long, User> usersById = userRepository.findAllById(
-                    contributions.stream().map(PaymentContribution::getIdUser).distinct().toList()
+                    contributions.stream().map(AdminCampaignContributionResponse::getContributorUserId).filter(java.util.Objects::nonNull).distinct().toList()
             ).stream().collect(Collectors.toMap(User::getId, user -> user));
 
-            long approvedCount = contributions.stream().filter(c -> "APPROVED".equals(c.getStatus())).count();
             AdminCampaignDetailResponse response = new AdminCampaignDetailResponse();
-            response.setCampaign(AdminCampaignSummaryResponse.fromEntity(campaign, LocalDate.now(), approvedCount));
-            response.setApprovedContributionCount(approvedCount);
-            response.setApprovedAmount(paymentContributionRepository.sumAmountByCampaignAndStatus(id, "APPROVED"));
+            response.setCampaign(AdminCampaignSummaryResponse.fromEntity(campaign, LocalDate.now(), paymentDetail.getApprovedContributionCount()));
+            response.setApprovedContributionCount(paymentDetail.getApprovedContributionCount());
+            response.setApprovedAmount(paymentDetail.getApprovedAmount());
             response.setContributions(contributions.stream()
-                    .map(contribution -> toContributionResponse(contribution, usersById.get(contribution.getIdUser())))
+                    .map(contribution -> enrichContribution(contribution, usersById.get(contribution.getContributorUserId())))
                     .collect(Collectors.toList()));
 
             return ResponseEntity.ok(response);
@@ -186,7 +183,10 @@ public class AdminCampaignController {
         if (campaign.getCurrentAmount() == null || campaign.getCurrentAmount().compareTo(campaign.getTargetAmount()) < 0) {
             throw new IllegalStateException("La campaña no alcanzó la meta, no corresponde transferir al creador");
         }
-        if (paymentContributionRepository.countByIdCampaignAndStatus(campaign.getId(), "APPROVED") == 0) {
+        PaymentsServiceClient.PaymentCampaignSummary paymentSummary = paymentsServiceClient
+                .fetchCampaignSummaries(List.of(campaign.getId()))
+                .get(campaign.getId());
+        if (paymentSummary == null || paymentSummary.getApprovedContributionCount() == 0) {
             throw new IllegalStateException("La campaña no tiene contribuciones aprobadas en payments para transferir");
         }
     }
@@ -210,7 +210,7 @@ public class AdminCampaignController {
         response.setCampaign(AdminCampaignSummaryResponse.fromEntity(
                 campaign,
                 LocalDate.now(),
-                paymentContributionRepository.countByIdCampaignAndStatus(campaign.getId(), "APPROVED")));
+                resolveApprovedContributionCount(campaign.getId())));
         response.setPayout(payout);
         response.setCreatorId(campaign.getOwner().getId());
         response.setCreatorName(campaign.getOwner().getFirstName() != null || campaign.getOwner().getLastName() != null
@@ -226,31 +226,16 @@ public class AdminCampaignController {
         return response;
     }
 
-    private AdminCampaignContributionResponse toContributionResponse(PaymentContribution contribution, User user) {
-        AdminCampaignContributionResponse response = new AdminCampaignContributionResponse();
-        response.setContributionId(contribution.getId());
-        response.setContributorUserId(contribution.getIdUser());
+    private long resolveApprovedContributionCount(Long campaignId) {
+        PaymentsServiceClient.PaymentCampaignSummary paymentSummary = paymentsServiceClient
+                .fetchCampaignSummaries(List.of(campaignId))
+                .get(campaignId);
+        return paymentSummary != null ? paymentSummary.getApprovedContributionCount() : 0;
+    }
+
+    private AdminCampaignContributionResponse enrichContribution(AdminCampaignContributionResponse response, User user) {
         response.setContributorName(buildUserName(user));
         response.setContributorEmail(user != null ? user.getEmail() : null);
-        response.setAmount(contribution.getAmount());
-        response.setRewardId(contribution.getRewardId());
-        response.setRewardPrice(contribution.getRewardPrice());
-        response.setStatus(contribution.getStatus());
-        response.setCreatedAt(contribution.getCreatedAt());
-        response.setUpdatedAt(contribution.getUpdatedAt());
-
-        PaymentTransaction transaction = contribution.getTransaction();
-        if (transaction != null) {
-            AdminCampaignContributionResponse.TransactionInfo tx = new AdminCampaignContributionResponse.TransactionInfo();
-            tx.setTransactionId(transaction.getId());
-            tx.setAmount(transaction.getAmount());
-            tx.setTransactionMethod(transaction.getTransactionMethod());
-            tx.setPaymentProvider(transaction.getPaymentProvider());
-            tx.setExternalTransactionId(transaction.getIdTransactionExternal());
-            tx.setHashTx(transaction.getHashTx());
-            tx.setCreatedAt(transaction.getCreatedAt());
-            response.setTransaction(tx);
-        }
         return response;
     }
 

@@ -48,6 +48,13 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "WHERE c.id = :id")
     Optional<Campaign> findByIdWithRelations(Long id);
 
+    @Query("SELECT c FROM Campaign c " +
+           "LEFT JOIN FETCH c.media " +
+           "LEFT JOIN FETCH c.category " +
+           "LEFT JOIN FETCH c.owner o " +
+           "WHERE LOWER(o.userName) = LOWER(:username)")
+    List<Campaign> findByOwnerUsernameWithRelations(@Param("username") String username);
+
     @Query(value = "SELECT c.id FROM Campaign c " +
                    "WHERE c.status = 'CROWDFUNDING' " +
                    "AND (:search IS NULL OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
@@ -59,6 +66,50 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     Page<Long> findPublicIdsPaged(@Param("search") String search,
                                   @Param("categoryId") Long categoryId,
                                   Pageable pageable);
+
+    @Query(value = "SELECT c.id FROM Campaign c " +
+                   "WHERE c.status IN :statuses " +
+                   "AND (:search = '' OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+                   "AND (:categoryId IS NULL OR c.category.id = :categoryId) " +
+                   "ORDER BY c.createdAt DESC",
+           countQuery = "SELECT COUNT(c) FROM Campaign c " +
+                        "WHERE c.status IN :statuses " +
+                        "AND (:search = '' OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+                        "AND (:categoryId IS NULL OR c.category.id = :categoryId)")
+    Page<Long> findBrowseIdsPagedByRecent(@Param("search") String search,
+                                          @Param("categoryId") Long categoryId,
+                                          @Param("statuses") List<String> statuses,
+                                          Pageable pageable);
+
+    @Query(value = "SELECT c.id FROM Campaign c " +
+                   "WHERE c.status IN :statuses " +
+                   "AND (:search = '' OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+                   "AND (:categoryId IS NULL OR c.category.id = :categoryId) " +
+                   "ORDER BY c.currentAmount DESC",
+           countQuery = "SELECT COUNT(c) FROM Campaign c " +
+                        "WHERE c.status IN :statuses " +
+                        "AND (:search = '' OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+                        "AND (:categoryId IS NULL OR c.category.id = :categoryId)")
+    Page<Long> findBrowseIdsPagedByFunded(@Param("search") String search,
+                                          @Param("categoryId") Long categoryId,
+                                          @Param("statuses") List<String> statuses,
+                                          Pageable pageable);
+
+    @Query(value = "SELECT c.id FROM Campaign c " +
+                   "WHERE c.status IN :statuses " +
+                   "AND c.endDate IS NOT NULL " +
+                   "AND (:search = '' OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+                   "AND (:categoryId IS NULL OR c.category.id = :categoryId) " +
+                   "ORDER BY c.endDate ASC",
+           countQuery = "SELECT COUNT(c) FROM Campaign c " +
+                        "WHERE c.status IN :statuses " +
+                        "AND c.endDate IS NOT NULL " +
+                        "AND (:search = '' OR LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+                        "AND (:categoryId IS NULL OR c.category.id = :categoryId)")
+    Page<Long> findBrowseIdsPagedByEnding(@Param("search") String search,
+                                          @Param("categoryId") Long categoryId,
+                                          @Param("statuses") List<String> statuses,
+                                          Pageable pageable);
 
     @Query("SELECT DISTINCT c FROM Campaign c " +
            "LEFT JOIN FETCH c.media " +
@@ -126,4 +177,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "WHERE c.status = 'CROWDFUNDING' " +
            "AND c.category.id = :categoryId")
     long countActiveByCategoryId(@Param("categoryId") Long categoryId);
+
+    List<Campaign> findByIsTest(boolean isTest);
 }

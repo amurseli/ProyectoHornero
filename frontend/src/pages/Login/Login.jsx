@@ -3,6 +3,7 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom"
 import { Button } from "../../components/ui"
 import { useUser } from "../../store/useUser"
 import { initiateGoogleLogin } from "../../utils/auth/oauth"
+import { consumePostLoginRedirect } from "../../utils/auth/postLoginRedirect"
 import api from "../../utils/api/api"
 import "../auth.css"
 
@@ -31,7 +32,7 @@ function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      navigate("/")
+      navigate(consumePostLoginRedirect() || "/", { replace: true })
     }
   }, [user, navigate])
 
@@ -68,9 +69,8 @@ function Login() {
 
       // Set user data in context
       login(response)
-      
-      // Navigate to home
-      navigate("/")
+
+      navigate(consumePostLoginRedirect() || "/", { replace: true })
     } catch (err) {
       console.error("Error al iniciar sesion:", err)
       setError(err.message || "Credenciales inválidas. Verificá tu email y contraseña.")

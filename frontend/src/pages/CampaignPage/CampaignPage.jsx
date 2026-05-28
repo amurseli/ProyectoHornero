@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { savePostLoginRedirect } from '../../utils/auth/postLoginRedirect'
 import { campaignService } from '$utils/campaignService'
 import { contributionService } from '$utils/contributionService'
 import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
@@ -851,10 +852,12 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
 /* ─── Page (orquestador) ─── */
 
 export default function CampaignPage() {
-  const { id } = useParams()
+  const { id: idParam, username, titleSlug } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useUser()
   const [campaign, setCampaign] = useState(null)
+  const id = campaign?.id ?? idParam
   const [rewards, setRewards] = useState([])
   const [team, setTeam] = useState([])
   const [faqs, setFaqs] = useState([])
@@ -871,6 +874,11 @@ export default function CampaignPage() {
   })
 
   function openModal(selection = {}) {
+    if (!user) {
+      savePostLoginRedirect(`${location.pathname}${location.search || ''}`)
+      navigate('/login')
+      return
+    }
     if (typeof selection === 'number') {
       setModalConfig({ amount: selection, reward: null })
     } else {
@@ -883,7 +891,7 @@ export default function CampaignPage() {
   }
 
   function refreshContributionSummary() {
-    if (!user) {
+    if (!user || !id) {
       setContributionSummary(null)
       return
     }
@@ -894,23 +902,36 @@ export default function CampaignPage() {
 
   function getContributeDisabledReason(c) {
     if (!c) return null
+    if (c.isTest) return 'Esta es una campaña de demostración y no acepta contribuciones'
     if (c.status !== 'CROWDFUNDING') return 'Esta campaña no está activa para recibir contribuciones'
     if (user && c.owner?.id === user.userId) return 'No podés patrocinar tu propia campaña'
     return null
   }
 
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([
-      campaignService.getCampaignById(id),
-      api.get(`/api/campaigns/${id}/rewards`).catch(() => []),
-      api.get(`/api/campaigns/${id}/team`).catch(() => []),
-      api.get(`/api/campaigns/${id}/faqs`).catch(() => []),
-    ])
-      .then(([data, rewardsData, teamData, faqsData]) => {
+    setCampaign(null)
+
+    const fetchPrimary = (username && titleSlug)
+      ? campaignService.getCampaignBySlug(username, titleSlug)
+      : campaignService.getCampaignById(idParam)
+
+    fetchPrimary
+      .then(data => {
+        if (cancelled) return null
         if (!data) throw new Error('Campaña no encontrada')
         setCampaign(data)
+        return Promise.all([
+          api.get(`/api/campaigns/${data.id}/rewards`).catch(() => []),
+          api.get(`/api/campaigns/${data.id}/team`).catch(() => []),
+          api.get(`/api/campaigns/${data.id}/faqs`).catch(() => []),
+        ])
+      })
+      .then(extras => {
+        if (cancelled || !extras) return
+        const [rewardsData, teamData, faqsData] = extras
         setRewards(normalizeRewards(rewardsData))
         setTeam([...(Array.isArray(teamData) ? teamData : [])].sort(
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
@@ -919,9 +940,11 @@ export default function CampaignPage() {
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
         ))
       })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [id])
+      .catch(err => { if (!cancelled) setError(err.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
+  }, [idParam, username, titleSlug])
 
   useEffect(() => {
     if (activeTab === 'faq' && faqs.length === 0) {
@@ -955,8 +978,8 @@ export default function CampaignPage() {
         <div className="cp-error">
           <h2>Campaña no encontrada</h2>
           <p>{error || 'La campaña que buscás no existe o fue eliminada.'}</p>
-          <Button variant="secondary" onClick={() => navigate('/campaigns')}>
-            <ArrowLeft size={16} /> Volver a campañas
+          <Button variant="secondary" onClick={() => navigate('/explorar')}>
+            <ArrowLeft size={16} /> Explorar otros proyectos
           </Button>
         </div>
       </div>
@@ -966,8 +989,8 @@ export default function CampaignPage() {
   return (
     <div className="cp-page">
       <div className="cp-container">
-        <button className="cp-back" onClick={() => navigate('/campaigns')}>
-          <ArrowLeft size={16} /> Campañas
+        <button className="cp-back" onClick={() => navigate('/explorar')}>
+          <ArrowLeft size={16} /> Explorar otros proyectos
         </button>
 
         {(() => {

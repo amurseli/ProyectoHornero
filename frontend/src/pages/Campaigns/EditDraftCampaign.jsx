@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ChevronDown, Check, AlertCircle, FileText, Image, Film, Gift, HelpCircle, Users, Send, ShieldCheck } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
+import { getCampaignPath } from '$utils/campaignService'
 import { useUser } from '../../store/useUser'
 import SectionBasicos from './DraftSections/BasicSection'
 import SectionHistoria from './DraftSections/HistoriaSection'
@@ -270,7 +271,7 @@ export default function EditDraftCampaign({ campaignId: campaignIdProp = null, e
     setPublishing(true)
     try {
       await api.post(`/api/campaigns/${id}/publish`)
-      navigate(`/campaigns/${id}`)
+      navigate(getCampaignPath(campaign))
     } catch (err) {
       alert(err.message || 'Error al publicar la campaña')
     } finally {
@@ -295,7 +296,7 @@ export default function EditDraftCampaign({ campaignId: campaignIdProp = null, e
         <div className="edc-error">
           <h2>No se pudo cargar la campaña</h2>
           <p>{error || 'La campaña no existe o fue eliminada.'}</p>
-          <Button variant="secondary" onClick={() => navigate('/campaigns')}>
+          <Button variant="secondary" onClick={() => navigate('/my-campaigns')}>
             <ArrowLeft size={16} /> Volver a campañas
           </Button>
         </div>
@@ -307,7 +308,7 @@ export default function EditDraftCampaign({ campaignId: campaignIdProp = null, e
     <div className={`edc-page ${embedded ? 'edc-page--embedded' : ''}`}>
       <div className="edc-container">
         {!embedded && (
-          <button className="edc-back" onClick={() => navigate('/campaigns')}>
+          <button className="edc-back" onClick={() => navigate('/my-campaigns')}>
             <ArrowLeft size={16} /> Mis campañas
           </button>
         )}
