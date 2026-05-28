@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { savePostLoginRedirect } from '../../utils/auth/postLoginRedirect'
 import { campaignService } from '$utils/campaignService'
 import { contributionService } from '$utils/contributionService'
 import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
@@ -853,6 +854,7 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
 export default function CampaignPage() {
   const { id: idParam, username, titleSlug } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useUser()
   const [campaign, setCampaign] = useState(null)
   const id = campaign?.id ?? idParam
@@ -872,6 +874,11 @@ export default function CampaignPage() {
   })
 
   function openModal(selection = {}) {
+    if (!user) {
+      savePostLoginRedirect(`${location.pathname}${location.search || ''}`)
+      navigate('/login')
+      return
+    }
     if (typeof selection === 'number') {
       setModalConfig({ amount: selection, reward: null })
     } else {

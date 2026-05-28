@@ -4,6 +4,7 @@ import './App.css'
 import { UserProvider } from './store/UserProvider';
 import { useUser } from './store/useUser';
 import api from './utils/api/api';
+import { clearPostLoginRedirect } from './utils/auth/postLoginRedirect';
 
 // Pages
 import Home from '$pages/Home/Home.jsx';
@@ -55,11 +56,26 @@ function ScrollToTop() {
   return null
 }
 
+// Drops any pending post-login redirect target when the user leaves the auth funnel.
+// /oauth2/redirect is included because Google bounces through it before landing on the target.
+function AuthRedirectCleaner() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    const inAuthFunnel =
+      pathname.startsWith('/login') ||
+      pathname.startsWith('/register') ||
+      pathname.startsWith('/oauth2/redirect')
+    if (!inAuthFunnel) clearPostLoginRedirect()
+  }, [pathname])
+  return null
+}
+
 function App() {
   return (
     <UserProvider>
       <Router>
         <AuthVerifier />
+        <AuthRedirectCleaner />
         <ScrollToTop />
         <Navbar />
         <Routes>

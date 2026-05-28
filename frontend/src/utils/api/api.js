@@ -2,6 +2,8 @@
 // Single interceptor for all requests - handles JWT refresh automatically
 // Similar to SvelteKit's hooks.server.ts
 
+import { savePostLoginRedirect } from '../auth/postLoginRedirect'
+
 const BASE_URL = import.meta.env.VITE_API_URL
 
 function backendUnavailableMessage() {
@@ -52,6 +54,8 @@ function handleSessionExpired() {
                         currentPath.includes('/oauth2/redirect')
 
   if (!isPublicRoute) {
+    // Remember the page the user was on so they return there after re-login.
+    savePostLoginRedirect(`${currentPath}${window.location.search || ''}`)
     window.location.href = '/login'
   }
 }
