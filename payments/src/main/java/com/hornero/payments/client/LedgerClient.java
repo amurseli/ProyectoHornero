@@ -44,7 +44,7 @@ public class LedgerClient {
                 username,
                 HORNERO_MAIN_ACCOUNT,
                 transaction.getAmount(),
-                "campaign:" + campaignTitle
+                buildReference("campaign:" + campaignTitle, "mpOperation", transaction.getIdTransactionExternal())
         );
     }
 
@@ -53,7 +53,7 @@ public class LedgerClient {
                 HORNERO_MAIN_ACCOUNT,
                 "CREATOR_" + creatorUsername,
                 payout.getNetAmount(),
-                "campaign:" + campaignTitle
+                buildReference("campaign:" + campaignTitle, "mpOperation", payout.getIdPayoutExternal())
         );
     }
 
@@ -62,7 +62,7 @@ public class LedgerClient {
                 HORNERO_MAIN_ACCOUNT,
                 username,
                 refund.getAmount(),
-                "refund campaign:" + campaignTitle
+                buildReference("refund campaign:" + campaignTitle, "mpOperation", refund.getIdRefundExternal())
         );
     }
 
@@ -118,6 +118,14 @@ public class LedgerClient {
                 || normalized.contains("fund wallet")
                 || normalized.contains("balancewei");
     }
+
+    private String buildReference(String baseReference, String fieldName, String fieldValue) {
+        if (fieldValue == null || fieldValue.isBlank()) {
+            return baseReference;
+        }
+        return baseReference + " | " + fieldName + ":" + fieldValue;
+    }
+
     private record LedgerRegisterRequest(
             String emisor,
             String receptor,
