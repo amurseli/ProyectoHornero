@@ -12,6 +12,7 @@ RUN mvn clean package -DskipTests
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jre
+ENV TZ=America/Argentina/Buenos_Aires
 WORKDIR /app
 
 # Copiar JAR desde stage anterior
