@@ -125,6 +125,26 @@ public class InternalController {
         ));
     }
 
+    // POST /internal/cleanup-contributions
+    // Resuelve contribuciones PENDING (>24h) e IN_PROCESS (>48h) consultando estado real en MercadoPago.
+    @PostMapping("/cleanup-contributions")
+    public ResponseEntity<Map<String, Object>> cleanupContributions(
+            @RequestHeader("X-Service-Key") String incomingKey) {
+
+        if (!serviceKey.equals(incomingKey)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        try {
+            int resolved = paymentsServiceClient.triggerCleanupStalePending();
+            logger.info("Cleanup de contribuciones abandonadas: {} resueltas", resolved);
+            return ResponseEntity.ok(Map.of("resolved", resolved));
+        } catch (Exception e) {
+            logger.error("Error al ejecutar cleanup de contribuciones abandonadas: {}", e.getMessage());
+            return ResponseEntity.ok(Map.of("resolved", 0, "error", e.getMessage()));
+        }
+    }
+
     // GET /internal/users/{id}
     // Usado por el servicio de payments para obtener el userName sin JWT.
     @GetMapping("/users/{id}")
