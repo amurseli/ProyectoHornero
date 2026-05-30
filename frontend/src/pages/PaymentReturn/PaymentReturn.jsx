@@ -9,6 +9,12 @@ export default function PaymentReturn() {
   const navigate = useNavigate()
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState(null)
+  const campaignId = searchParams.get('campaignId')
+
+  function goBack() {
+    if (campaignId) navigate(`/campaigns/${campaignId}`)
+    else navigate('/')
+  }
 
   useEffect(() => {
     async function processReturn() {
@@ -70,8 +76,8 @@ export default function PaymentReturn() {
             </div>
             <h1 className="pr-title">¡Contribución exitosa!</h1>
             <p className="pr-subtitle">Tu pago fue aprobado por Mercado Pago. ¡Gracias por apoyar la campaña!</p>
-            <button className="pr-btn pr-btn--primary" onClick={() => navigate('/')}>
-              Volver al inicio
+            <button className="pr-btn pr-btn--primary" onClick={goBack}>
+              Volver a la campaña
             </button>
           </>
         )}
@@ -83,8 +89,8 @@ export default function PaymentReturn() {
             </div>
             <h1 className="pr-title">Pago en proceso</h1>
             <p className="pr-subtitle">Tu pago está siendo verificado. Te notificaremos cuando se confirme.</p>
-            <button className="pr-btn pr-btn--primary" onClick={() => navigate('/')}>
-              Volver al inicio
+            <button className="pr-btn pr-btn--primary" onClick={goBack}>
+              Volver a la campaña
             </button>
           </>
         )}
@@ -96,7 +102,7 @@ export default function PaymentReturn() {
             </div>
             <h1 className="pr-title">No se pudo procesar el pago</h1>
             <p className="pr-subtitle">Mercado Pago rechazó o canceló la transacción. Podés intentarlo de nuevo.</p>
-            <button className="pr-btn pr-btn--secondary" onClick={() => navigate(-1)}>
+            <button className="pr-btn pr-btn--secondary" onClick={goBack}>
               Volver e intentar de nuevo
             </button>
           </>
@@ -109,8 +115,8 @@ export default function PaymentReturn() {
             </div>
             <h1 className="pr-title">Ocurrió un error</h1>
             <p className="pr-subtitle">{error || 'No pudimos procesar el resultado del pago.'}</p>
-            <button className="pr-btn pr-btn--secondary" onClick={() => navigate('/')}>
-              Volver al inicio
+            <button className="pr-btn pr-btn--secondary" onClick={goBack}>
+              Volver a la campaña
             </button>
           </>
         )}

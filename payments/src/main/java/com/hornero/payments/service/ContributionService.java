@@ -340,10 +340,13 @@ public class ContributionService {
         try {
             String returnBase = frontendUrl + "/payment/return";
 
+            Contribution contribution = contributionRepository.findById(contributionId).orElseThrow();
+            String campaignParam = "&campaignId=" + contribution.getIdCampaign();
+
             PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                    .success(returnBase + "?status=success&contributionId=" + contributionId)
-                    .failure(returnBase + "?status=failure&contributionId=" + contributionId)
-                    .pending(returnBase + "?status=pending&contributionId=" + contributionId)
+                    .success(returnBase + "?status=success&contributionId=" + contributionId + campaignParam)
+                    .failure(returnBase + "?status=failure&contributionId=" + contributionId + campaignParam)
+                    .pending(returnBase + "?status=pending&contributionId=" + contributionId + campaignParam)
                     .build();
 
             PreferenceItemRequest item = PreferenceItemRequest.builder()
