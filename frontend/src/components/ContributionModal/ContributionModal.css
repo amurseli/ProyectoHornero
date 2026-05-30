@@ -169,9 +169,9 @@
   background: color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 .cm-chip--active {
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-primary);
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #16a34a;
 }
 
 /* ── Amount input ── */
@@ -270,8 +270,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border: 1.5px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
   border-radius: var(--radius-md);
   padding: 0.625rem 1rem;
 }
@@ -285,7 +285,7 @@
 .cm-payment-summary__amount {
   font-size: var(--font-size-lg);
   font-weight: 700;
-  color: var(--color-primary);
+  color: #16a34a;
 }
 
 /* ── Buttons ── */
