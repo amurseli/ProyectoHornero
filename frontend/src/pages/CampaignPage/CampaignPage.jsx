@@ -900,6 +900,18 @@ export default function CampaignPage() {
       .catch(() => setContributionSummary(null))
   }
 
+  function refreshCampaign() {
+    const fetchPrimary = (username && titleSlug)
+      ? campaignService.getCampaignBySlug(username, titleSlug)
+      : campaignService.getCampaignById(idParam)
+    fetchPrimary.then(data => { if (data) setCampaign(data) }).catch(() => {})
+  }
+
+  function handleContributionCompleted() {
+    refreshCampaign()
+    refreshContributionSummary()
+  }
+
   function getContributeDisabledReason(c) {
     if (!c) return null
     if (c.isTest) return 'Esta es una campaña de demostración y no acepta contribuciones'
@@ -1021,7 +1033,7 @@ export default function CampaignPage() {
             campaignId={Number(id)}
             initialAmount={modalConfig.amount}
             reward={modalConfig.reward}
-            onCompleted={refreshContributionSummary}
+            onCompleted={handleContributionCompleted}
             onClose={() => setModalOpen(false)}
           />
         )}
