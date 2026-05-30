@@ -115,6 +115,25 @@ public class PaymentsServiceClient {
         }
     }
 
+    public int triggerCleanupStalePending() {
+        String url = paymentsUrl + "/api/internal/payments/contributions/cleanup-stale";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Service-Key", serviceKey);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
+            Map<?, ?> body = response.getBody();
+            Object resolved = body != null ? body.get("resolved") : null;
+            int count = resolved instanceof Number n ? n.intValue() : 0;
+            logger.info("Cleanup de contribuciones abandonadas: {} resueltas", count);
+            return count;
+        } catch (Exception e) {
+            logger.error("Error al ejecutar cleanup de contribuciones abandonadas: {}", e.getMessage());
+            throw new RuntimeException("Error al ejecutar cleanup de contribuciones abandonadas", e);
+        }
+    }
+
     public void triggerRetryFailedRefunds(Long campaignId) {
         String url = paymentsUrl + "/api/payments/campaigns/" + campaignId + "/retry-failed-refunds";
         HttpHeaders headers = new HttpHeaders();
