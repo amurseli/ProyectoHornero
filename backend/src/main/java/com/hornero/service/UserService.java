@@ -36,6 +36,9 @@ public class UserService {
 
     @Autowired
     private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private AppImageService appImageService;
     
     @Transactional
     public User createUser(User user) {        
@@ -178,13 +181,15 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        String previousAvatarKey = user.getAvatarS3Key();
+
         // Check username uniqueness if changed
         if (req.getUserName() != null && !req.getUserName().isBlank()
                 && !req.getUserName().equals(user.getUserName())) {
             if (userRepository.existsByUserName(req.getUserName())) {
                 throw new RuntimeException("El nombre de usuario ya está en uso");
             }
-            user.setUserName(req.getUserName());
+            user.setUserName(req.getUserName().trim());
         }
 
         if (req.getFirstName() != null) {
@@ -200,7 +205,21 @@ public class UserService {
             user.setPhone(req.getPhone());
         }
 
-        return userRepository.save(user);
+        if (Boolean.TRUE.equals(req.getRemoveAvatar())) {
+            user.setAvatarS3Key(null);
+        } else if (req.getAvatarBase64() != null && !req.getAvatarBase64().isBlank()) {
+            String nextAvatarKey = appImageService.persistBase64Image("usuarios/user-" + userId, req.getAvatarBase64());
+            user.setAvatarS3Key(nextAvatarKey);
+        }
+
+        User savedUser = userRepository.save(user);
+        String nextAvatarKey = savedUser.getAvatarS3Key();
+        if (previousAvatarKey != null && !previousAvatarKey.isBlank()
+                && (nextAvatarKey == null || !previousAvatarKey.equals(nextAvatarKey))) {
+            appImageService.deleteImage(previousAvatarKey);
+        }
+
+        return savedUser;
     }
 
     /**

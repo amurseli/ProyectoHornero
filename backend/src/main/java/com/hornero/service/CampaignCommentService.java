@@ -31,17 +31,20 @@ public class CampaignCommentService {
     private final CampaignRepository campaignRepository;
     private final UserRepository userRepository;
     private final UserConnectionRepository userConnectionRepository;
+    private final AppImageService appImageService;
 
     public CampaignCommentService(
             CampaignCommentRepository campaignCommentRepository,
             CampaignRepository campaignRepository,
             UserRepository userRepository,
-            UserConnectionRepository userConnectionRepository
+            UserConnectionRepository userConnectionRepository,
+            AppImageService appImageService
     ) {
         this.campaignCommentRepository = campaignCommentRepository;
         this.campaignRepository = campaignRepository;
         this.userRepository = userRepository;
         this.userConnectionRepository = userConnectionRepository;
+        this.appImageService = appImageService;
     }
 
     @Transactional(readOnly = true)
@@ -173,6 +176,16 @@ public class CampaignCommentService {
         if (userIds == null || userIds.isEmpty()) return Map.of();
 
         Map<Long, String> avatars = new HashMap<>();
+        List<User> users = userRepository.findAllById(userIds);
+        for (User user : users) {
+            if (user == null || user.getId() == null) continue;
+            String avatarS3Key = user.getAvatarS3Key();
+            if (avatarS3Key == null || avatarS3Key.isBlank()) continue;
+            String avatarUrl = appImageService.resolveImageUrl(avatarS3Key);
+            if (avatarUrl == null || avatarUrl.isBlank()) continue;
+            avatars.put(user.getId(), avatarUrl);
+        }
+
         List<UserConnection> connections = userConnectionRepository.findByUserIdInOrderByUserIdAscIdAsc(userIds);
         for (UserConnection connection : connections) {
             if (connection.getUser() == null || connection.getUser().getId() == null) continue;

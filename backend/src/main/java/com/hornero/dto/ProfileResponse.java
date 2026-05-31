@@ -11,12 +11,14 @@ public class ProfileResponse {
     private String phone;
     private String role;
     private String oauthProvider;
+    private String avatarUrl;
+    private String avatarSource;
 
     public ProfileResponse() {}
 
     public ProfileResponse(Long userId, String email, String pendingEmail, String userName,
                            String firstName, String lastName, String gender, String phone,
-                           String role, String oauthProvider) {
+                           String role, String oauthProvider, String avatarUrl, String avatarSource) {
         this.userId = userId;
         this.email = email;
         this.pendingEmail = pendingEmail;
@@ -27,6 +29,8 @@ public class ProfileResponse {
         this.phone = phone;
         this.role = role;
         this.oauthProvider = oauthProvider;
+        this.avatarUrl = avatarUrl;
+        this.avatarSource = avatarSource;
     }
 
     public Long getUserId() { return userId; }
@@ -58,4 +62,10 @@ public class ProfileResponse {
 
     public String getOauthProvider() { return oauthProvider; }
     public void setOauthProvider(String oauthProvider) { this.oauthProvider = oauthProvider; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getAvatarSource() { return avatarSource; }
+    public void setAvatarSource(String avatarSource) { this.avatarSource = avatarSource; }
 }

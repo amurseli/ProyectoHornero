@@ -23,7 +23,8 @@ export function UserProvider({ children }) {
         email: userData.email,
         userName: userData.userName,
         firstName: userData.firstName,
-        role: userData.role
+        role: userData.role,
+        avatarUrl: userData.avatarUrl || null,
       })
     } catch (error) {
       console.error('Failed to fetch user:', error)
@@ -54,7 +55,8 @@ export function UserProvider({ children }) {
         email: userData.email,
         userName: userData.userName,
         firstName: userData.firstName,
-        role: userData.role
+        role: userData.role,
+        avatarUrl: userData.avatarUrl || null,
       })
     } catch (error) {
       console.error('Failed to refresh user:', error)
@@ -70,7 +72,8 @@ export function UserProvider({ children }) {
       email: userData.email,
       userName: userData.userName,
       firstName: userData.firstName,
-      role: userData.role
+      role: userData.role,
+      avatarUrl: userData.avatarUrl || null,
     })
   }
 
