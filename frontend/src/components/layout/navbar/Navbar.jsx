@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Menu, ChevronDown, Settings, FolderOpen, LogOut, ShieldCheck, Bookmark } from "lucide-react"
+import { User, Menu, ChevronDown, Settings, FolderOpen, LogOut, ShieldCheck, Bookmark, Blocks } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../ui"
@@ -109,6 +109,14 @@ function Navbar() {
                     <Bookmark size={16} aria-hidden="true" />
                     Mis guardados
                   </Link>
+                  <Link
+                    to="/transactions"
+                    className="navbar-dropdown-item"
+                    onClick={() => setUserDropdownOpen(false)}
+                  >
+                    <Blocks size={16} aria-hidden="true" />
+                    Transacciones
+                  </Link>
                   {user.role === 'ADMIN' && (
                     <a
                       href={backofficeUrl}
@@ -175,6 +183,9 @@ function Navbar() {
               </Link>
               <Link to="/my-saved-campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
                 Mis guardados
+              </Link>
+              <Link to="/transactions" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+                Transacciones
               </Link>
               {user.role === 'ADMIN' && (
                 <a

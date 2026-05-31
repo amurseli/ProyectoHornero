@@ -70,7 +70,6 @@ function TransactionHistory() {
     <main className="transaction-history-page">
       <section className="transaction-history-hero">
         <div className="transaction-history-shell">
-          <span className="transaction-history-kicker">Transparencia financiera</span>
           <h1>Historial de transacciones</h1>
           <p>
             Consultá todos los pagos registrados en la aplicación y, cuando exista hash on-chain,
