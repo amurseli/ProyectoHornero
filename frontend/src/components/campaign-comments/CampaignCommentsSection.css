@@ -133,7 +133,10 @@
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
   gap: 0.85rem;
-  margin-left: calc(var(--comment-depth, 0) * 1.25rem);
+}
+
+.cc-item--nested {
+  margin-left: 1.25rem;
 }
 
 .cc-avatar-wrap {
@@ -255,7 +258,10 @@
 
   .cc-item {
     grid-template-columns: 40px minmax(0, 1fr);
-    margin-left: calc(var(--comment-depth, 0) * 0.8rem);
+  }
+
+  .cc-item--nested {
+    margin-left: 0.8rem;
   }
 
   .cc-avatar {

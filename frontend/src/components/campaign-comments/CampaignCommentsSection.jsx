@@ -109,9 +109,11 @@ function CommentItem({
   const authorName = comment.author?.userName || 'Usuario'
   const avatarUrl = comment.author?.avatarUrl || ''
   const replies = Array.isArray(comment.replies) ? comment.replies : []
+  const isNested = depth > 0
+  const threadRootId = comment.parentCommentId ?? comment.id
 
   return (
-    <article className="cc-item" style={{ '--comment-depth': depth }}>
+    <article className={`cc-item ${isNested ? 'cc-item--nested' : ''}`}>
       <div className="cc-avatar-wrap">
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="cc-avatar" />
@@ -131,31 +133,33 @@ function CommentItem({
 
         <p className="cc-content">{comment.content}</p>
 
-        <div className="cc-item-actions">
-          <button
-            type="button"
-            className="cc-reply-btn"
-            onClick={() => {
-              if (!canReply) {
-                onRequireLogin()
-                return
-              }
-              onReplyToggle(isReplying ? null : comment.id)
-            }}
-          >
-            <Reply size={14} />
-            Responder
-          </button>
-        </div>
+        {!isNested && (
+          <div className="cc-item-actions">
+            <button
+              type="button"
+              className="cc-reply-btn"
+              onClick={() => {
+                if (!canReply) {
+                  onRequireLogin()
+                  return
+                }
+                onReplyToggle(isReplying ? null : comment.id)
+              }}
+            >
+              <Reply size={14} />
+              Responder
+            </button>
+          </div>
+        )}
 
         {isReplying && (
           <CommentComposer
             value={replyDraft}
             onChange={onReplyDraftChange}
-            onSubmit={() => onReplySubmit(comment.id)}
+            onSubmit={() => onReplySubmit(threadRootId)}
             onCancel={() => onReplyToggle(null)}
             loading={replyLoading}
-            placeholder={`Responder a ${authorName}`}
+            placeholder="Responder en el hilo"
             submitLabel="Responder"
             compact
           />
