@@ -28,6 +28,8 @@ import CreatorCampaignDashboard from '$pages/Campaigns/CreatorCampaignDashboard'
 import TransactionHistory from '$pages/TransactionHistory/TransactionHistory.jsx';
 import PaymentReturn from '$pages/PaymentReturn/PaymentReturn.jsx'
 import BrowseCampaigns from '$pages/Browse/BrowseCampaigns.jsx';
+import UnderConstruction from '$pages/UnderConstruction/UnderConstruction.jsx';
+import HowItWorks from '$pages/HowItWorks/HowItWorks.jsx';
 
 // Components
 import Footer from '$components/layout/footer/Footer'
@@ -94,8 +96,15 @@ function App() {
           <Route path="/campaign/:username/:titleSlug" element={<CampaignPage />} />
           <Route path="/explorar" element={<BrowseCampaigns />} />
           <Route path="/for-creators" element={<ForCreators />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/transactions" element={<TransactionHistory />} />
           <Route path="/payment/return" element={<PaymentReturn />} />
+          <Route path="/help" element={<UnderConstruction />} />
+          <Route path="/contact" element={<UnderConstruction />} />
+          <Route path="/about" element={<UnderConstruction />} />
+          <Route path="/terms" element={<UnderConstruction />} />
+          <Route path="/privacy" element={<UnderConstruction />} />
+          <Route path="/cookies" element={<UnderConstruction />} />
 
           {/* Protected */}
           <Route path="/my-campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
