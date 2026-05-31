@@ -18,12 +18,14 @@ import com.hornero.model.User;
 import com.hornero.model.UserConnection;
 import com.hornero.repository.CreatorBankInfoRepository;
 import com.hornero.repository.UserConnectionRepository;
+import com.hornero.service.AppImageService;
 import com.hornero.service.CampaignService;
 import com.hornero.service.EncryptionService;
 import com.hornero.service.EmailVerificationService;
 import com.hornero.service.EmailChangeService;
 import com.hornero.service.PasswordResetService;
 import com.hornero.service.RefreshTokenService;
+import com.hornero.service.SavedCampaignService;
 import com.hornero.service.UserService;
 import com.hornero.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
@@ -55,6 +57,9 @@ public class UserController {
     private CampaignService campaignService;
 
     @Autowired
+    private SavedCampaignService savedCampaignService;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
@@ -77,6 +82,9 @@ public class UserController {
 
     @Autowired
     private EncryptionService encryptionService;
+
+    @Autowired
+    private AppImageService appImageService;
 
     @Value("${app.service-key:internal-secret-dev}")
     private String serviceKey;
@@ -110,15 +118,7 @@ public class UserController {
                     .orElseThrow(() -> new RuntimeException("User not found"));
             String roleName = user.getRole() != null ? user.getRole().getName() : "USER";
 
-            // Create response with user info
-            AuthResponse authResponse = new AuthResponse(
-                null, // No token in response body
-                user.getId(),
-                user.getEmail(),
-                user.getUsername(),
-                user.getFirstName(),
-                roleName
-            );
+            AuthResponse authResponse = buildAuthResponse(user, roleName);
 
             return ResponseEntity.ok(authResponse);
         } catch (Exception e) {
@@ -260,14 +260,7 @@ public class UserController {
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
             
             // Create response without tokens (user info only)
-            AuthResponse authResponse = new AuthResponse(
-                null, // No token in response body
-                user.getId(),
-                user.getEmail(),
-                user.getUsername(),
-                user.getFirstName(),
-                roleName
-            );
+            AuthResponse authResponse = buildAuthResponse(user, roleName);
             
             return ResponseEntity.ok(authResponse);
         } catch (RuntimeException e) {
@@ -429,22 +422,8 @@ public class UserController {
 
             String roleName = user.getRole() != null ? user.getRole().getName() : "USER";
 
-            // Determine OAuth provider from connections table
             List<UserConnection> connections = userConnectionRepository.findByUserId(userId);
-            String oauthProvider = connections.isEmpty() ? null : connections.get(0).getProvider();
-
-            ProfileResponse profile = new ProfileResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getPendingEmail(),
-                user.getUserName(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getGender(),
-                user.getPhone(),
-                roleName,
-                oauthProvider
-            );
+            ProfileResponse profile = buildProfileResponse(user, roleName, connections);
 
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
@@ -467,20 +446,7 @@ public class UserController {
             String roleName = updatedUser.getRole() != null ? updatedUser.getRole().getName() : "USER";
 
             List<UserConnection> connections = userConnectionRepository.findByUserId(userId);
-            String oauthProvider = connections.isEmpty() ? null : connections.get(0).getProvider();
-
-            ProfileResponse profile = new ProfileResponse(
-                updatedUser.getId(),
-                updatedUser.getEmail(),
-                updatedUser.getPendingEmail(),
-                updatedUser.getUserName(),
-                updatedUser.getFirstName(),
-                updatedUser.getLastName(),
-                updatedUser.getGender(),
-                updatedUser.getPhone(),
-                roleName,
-                oauthProvider
-            );
+            ProfileResponse profile = buildProfileResponse(updatedUser, roleName, connections);
 
             return ResponseEntity.ok(profile);
         } catch (RuntimeException e) {
@@ -537,14 +503,7 @@ public class UserController {
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
 
-            AuthResponse authResponse = new AuthResponse(
-                null,
-                updatedUser.getId(),
-                updatedUser.getEmail(),
-                updatedUser.getUsername(),
-                updatedUser.getFirstName(),
-                roleName
-            );
+            AuthResponse authResponse = buildAuthResponse(updatedUser, roleName);
 
             return ResponseEntity.ok(authResponse);
         } catch (RuntimeException e) {
@@ -624,6 +583,48 @@ public class UserController {
         }
         List<Campaign> campaigns = campaignService.getCampaignsByOwner(userId);
         return ResponseEntity.ok(campaigns);
+    }
+
+    @GetMapping("/me/saved-campaigns")
+    public ResponseEntity<?> getMySavedCampaigns(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        return ResponseEntity.ok(savedCampaignService.getSavedCampaigns(userId));
+    }
+
+    @GetMapping("/me/saved-campaigns/{campaignId}")
+    public ResponseEntity<?> isCampaignSaved(@PathVariable Long campaignId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        return ResponseEntity.ok(Map.of("saved", savedCampaignService.isCampaignSaved(userId, campaignId)));
+    }
+
+    @PostMapping("/me/saved-campaigns/{campaignId}")
+    public ResponseEntity<?> saveCampaign(@PathVariable Long campaignId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        savedCampaignService.saveCampaign(userId, campaignId);
+        return ResponseEntity.ok(Map.of("saved", true));
+    }
+
+    @DeleteMapping("/me/saved-campaigns/{campaignId}")
+    public ResponseEntity<?> unsaveCampaign(@PathVariable Long campaignId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        savedCampaignService.unsaveCampaign(userId, campaignId);
+        return ResponseEntity.ok(Map.of("saved", false));
     }
 
     // ═══════ Connections Endpoints ═══════
@@ -711,5 +712,56 @@ public class UserController {
             return ResponseEntity.badRequest()
                     .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
         }
+    }
+
+    private AuthResponse buildAuthResponse(User user, String roleName) {
+        String oauthAvatarUrl = userConnectionRepository.findByUserId(user.getId()).stream()
+                .map(UserConnection::getProfileImageUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .findFirst()
+                .orElse(null);
+        return new AuthResponse(
+                null,
+                user.getId(),
+                user.getEmail(),
+                user.getUserName(),
+                user.getFirstName(),
+                roleName,
+                resolveAvatarUrl(user, oauthAvatarUrl)
+        );
+    }
+
+    private ProfileResponse buildProfileResponse(User user, String roleName, List<UserConnection> connections) {
+        String oauthProvider = connections.isEmpty() ? null : connections.get(0).getProvider();
+        String oauthAvatarUrl = connections.stream()
+                .map(UserConnection::getProfileImageUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .findFirst()
+                .orElse(null);
+        String avatarSource = user.getAvatarS3Key() != null && !user.getAvatarS3Key().isBlank()
+                ? "CUSTOM"
+                : (oauthAvatarUrl != null ? "OAUTH" : "NONE");
+
+        return new ProfileResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getPendingEmail(),
+                user.getUserName(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getGender(),
+                user.getPhone(),
+                roleName,
+                oauthProvider,
+                resolveAvatarUrl(user, oauthAvatarUrl),
+                avatarSource
+        );
+    }
+
+    private String resolveAvatarUrl(User user, String oauthAvatarUrl) {
+        if (user.getAvatarS3Key() != null && !user.getAvatarS3Key().isBlank()) {
+            return appImageService.resolveImageUrl(user.getAvatarS3Key());
+        }
+        return oauthAvatarUrl;
     }
 }

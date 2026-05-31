@@ -56,6 +56,9 @@ public class User {
 
     @Column(name = "pending_email")
     private String pendingEmail;
+
+    @Column(name = "avatar_s3_key", length = 500)
+    private String avatarS3Key;
     
     @PrePersist
     protected void onCreate() {
@@ -196,6 +199,14 @@ public class User {
 
     public void setPendingEmail(String pendingEmail) {
         this.pendingEmail = pendingEmail;
+    }
+
+    public String getAvatarS3Key() {
+        return avatarS3Key;
+    }
+
+    public void setAvatarS3Key(String avatarS3Key) {
+        this.avatarS3Key = avatarS3Key;
     }
 
     // Helper methods for compatibility with UserService

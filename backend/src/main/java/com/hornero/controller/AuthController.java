@@ -4,6 +4,9 @@ import com.hornero.dto.AuthResponse;
 import com.hornero.dto.ErrorResponse;
 import com.hornero.model.RefreshToken;
 import com.hornero.model.User;
+import com.hornero.model.UserConnection;
+import com.hornero.repository.UserConnectionRepository;
+import com.hornero.service.AppImageService;
 import com.hornero.service.RefreshTokenService;
 import com.hornero.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
@@ -24,6 +27,12 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserConnectionRepository userConnectionRepository;
+
+    @Autowired
+    private AppImageService appImageService;
 
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
@@ -75,7 +84,8 @@ public class AuthController {
                 user.getEmail(),
                 user.getUsername(),
                 user.getFirstName(),
-                roleName
+                roleName,
+                resolveAvatarUrl(user)
             );
 
             return ResponseEntity.ok(authResponse);
@@ -99,5 +109,17 @@ public class AuthController {
             }
         }
         return null;
+    }
+
+    private String resolveAvatarUrl(User user) {
+        if (user.getAvatarS3Key() != null && !user.getAvatarS3Key().isBlank()) {
+            return appImageService.resolveImageUrl(user.getAvatarS3Key());
+        }
+
+        return userConnectionRepository.findByUserId(user.getId()).stream()
+                .map(UserConnection::getProfileImageUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 }

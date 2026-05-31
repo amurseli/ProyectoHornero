@@ -3,6 +3,7 @@ package com.hornero.payments.controller;
 import com.hornero.payments.dto.AdminCampaignPaymentDetailResponse;
 import com.hornero.payments.dto.AdminCampaignPaymentSummaryResponse;
 import com.hornero.payments.service.AdminPaymentQueryService;
+import com.hornero.payments.service.ContributionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,12 +16,14 @@ import java.util.Map;
 public class AdminPaymentsController {
 
     private final AdminPaymentQueryService adminPaymentQueryService;
+    private final ContributionService contributionService;
 
     @Value("${app.service-key}")
     private String serviceKey;
 
-    public AdminPaymentsController(AdminPaymentQueryService adminPaymentQueryService) {
+    public AdminPaymentsController(AdminPaymentQueryService adminPaymentQueryService, ContributionService contributionService) {
         this.adminPaymentQueryService = adminPaymentQueryService;
+        this.contributionService = contributionService;
     }
 
     @PostMapping("/campaigns/summary")
@@ -39,6 +42,14 @@ public class AdminPaymentsController {
 
         validateServiceKey(incomingKey);
         return ResponseEntity.ok(adminPaymentQueryService.getCampaignDetail(id));
+    }
+
+    @PostMapping("/contributions/cleanup-stale")
+    public ResponseEntity<Map<String, Integer>> cleanupStaleContributions(
+            @RequestHeader("X-Service-Key") String incomingKey) {
+        validateServiceKey(incomingKey);
+        int resolved = contributionService.cleanupStalePending();
+        return ResponseEntity.ok(Map.of("resolved", resolved));
     }
 
     private void validateServiceKey(String incomingKey) {

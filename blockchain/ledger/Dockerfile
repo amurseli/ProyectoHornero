@@ -7,6 +7,7 @@ COPY src src
 RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:17-jre
+ENV TZ=America/Argentina/Buenos_Aires
 WORKDIR /app
 
 COPY --from=build /workspace/target/ledger-1.0-SNAPSHOT.jar app.jar

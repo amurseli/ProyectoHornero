@@ -11,6 +11,8 @@ COPY .env.backoffice .env.production
 RUN npm run build
 
 FROM nginx:1.27-alpine
+ENV TZ=America/Argentina/Buenos_Aires
+RUN apk add --no-cache tzdata
 
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html

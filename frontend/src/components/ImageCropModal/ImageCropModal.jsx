@@ -32,6 +32,7 @@ export default function ImageCropModal({
   onCancel,
   onConfirm,
 }) {
+  const isSquare = Math.abs(aspect - 1) < 0.001
   const stageRef = useRef(null)
   const imgRef   = useRef(null)
   const dragRef  = useRef(null)
@@ -155,14 +156,14 @@ export default function ImageCropModal({
 
   return (
     <div className="crop-overlay" onClick={onCancel}>
-      <div className="crop-modal" onClick={e => e.stopPropagation()}>
+      <div className={`crop-modal ${isSquare ? 'crop-modal--square' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="crop-header">
           <h3>Recortá tu imagen</h3>
           <p>Arrastrá y usá el zoom para encuadrar la imagen — así se verá igual en todo el sitio.</p>
         </div>
 
         <div
-          className="crop-stage"
+          className={`crop-stage ${isSquare ? 'crop-stage--square' : ''}`}
           ref={stageRef}
           style={{ aspectRatio: String(aspect) }}
           onPointerDown={onPointerDown}

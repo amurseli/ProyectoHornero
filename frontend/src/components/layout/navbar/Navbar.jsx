@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Menu, ChevronDown, Settings, FolderOpen, LogOut, ShieldCheck } from "lucide-react"
+import { User, Menu, ChevronDown, CircleUserRound, FolderOpen, LogOut, ShieldCheck, Bookmark, Blocks } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../ui"
@@ -90,8 +90,8 @@ function Navbar() {
                     className="navbar-dropdown-item"
                     onClick={() => setUserDropdownOpen(false)}
                   >
-                    <Settings size={16} aria-hidden="true" />
-                    Configuración
+                    <CircleUserRound size={16} aria-hidden="true" />
+                    Mi perfil
                   </Link>
                   <Link
                     to="/my-campaigns"
@@ -100,6 +100,22 @@ function Navbar() {
                   >
                     <FolderOpen size={16} aria-hidden="true" />
                     Mis campañas
+                  </Link>
+                  <Link
+                    to="/my-saved-campaigns"
+                    className="navbar-dropdown-item"
+                    onClick={() => setUserDropdownOpen(false)}
+                  >
+                    <Bookmark size={16} aria-hidden="true" />
+                    Mis guardados
+                  </Link>
+                  <Link
+                    to="/transactions"
+                    className="navbar-dropdown-item"
+                    onClick={() => setUserDropdownOpen(false)}
+                  >
+                    <Blocks size={16} aria-hidden="true" />
+                    Transacciones
                   </Link>
                   {user.role === 'ADMIN' && (
                     <a
@@ -160,10 +176,16 @@ function Navbar() {
           {user ? (
             <>
               <Link to="/configuracion" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
-                Configuración
+                Mi perfil
               </Link>
               <Link to="/my-campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
                 Mis campañas
+              </Link>
+              <Link to="/my-saved-campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+                Mis guardados
+              </Link>
+              <Link to="/transactions" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+                Transacciones
               </Link>
               {user.role === 'ADMIN' && (
                 <a

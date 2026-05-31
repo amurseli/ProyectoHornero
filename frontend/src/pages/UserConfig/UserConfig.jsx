@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Mail, X, AlertTriangle, Rocket, ShieldCheck, Info, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, Mail, X, AlertTriangle, Rocket, ShieldCheck, Info, CheckCircle, Upload, User as UserIcon, CircleUserRound } from 'lucide-react'
 import { useUser } from '../../store/useUser'
 import { Button } from '../../components/ui'
+import ImageCropModal from '../../components/ImageCropModal/ImageCropModal'
 import api from '../../utils/api/api'
+import { getEntityImageSrc } from '../../utils/imageSources'
 import './UserConfig.css'
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 const GENDER_OPTIONS = [
   { value: '', label: 'Seleccionar...' },
@@ -24,6 +28,15 @@ const GoogleIcon = () => (
   </svg>
 )
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 function UserConfig() {
   const navigate = useNavigate()
   const { user, refreshUser } = useUser()
@@ -35,6 +48,10 @@ function UserConfig() {
     lastName: '',
     gender: '',
     phone: '',
+    avatarUrl: '',
+    avatarSource: 'NONE',
+    avatarBase64: null,
+    removeAvatar: false,
   })
   const [currentEmail, setCurrentEmail] = useState('')
   const [pendingEmail, setPendingEmail] = useState(null)
@@ -67,6 +84,7 @@ function UserConfig() {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [verification, setVerification] = useState(undefined)
+  const [avatarCropSrc, setAvatarCropSrc] = useState(null)
 
   // Load full profile on mount
   useEffect(() => {
@@ -79,6 +97,10 @@ function UserConfig() {
           lastName: data.lastName || '',
           gender: data.gender || '',
           phone: data.phone || '',
+          avatarUrl: data.avatarUrl || '',
+          avatarSource: data.avatarSource || 'NONE',
+          avatarBase64: null,
+          removeAvatar: false,
         })
         setCurrentEmail(data.email || '')
         setPendingEmail(data.pendingEmail || null)
@@ -89,6 +111,7 @@ function UserConfig() {
             ...prev,
             userName: user.userName || '',
             firstName: user.firstName || '',
+            avatarUrl: user.avatarUrl || '',
           }))
         }
       } finally {
@@ -124,6 +147,34 @@ function UserConfig() {
     setProfile({ ...profile, [e.target.name]: e.target.value })
   }
 
+  const handleAvatarPick = (files) => {
+    const file = files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setProfileMsg({ type: 'error', text: 'La foto de perfil tiene que ser una imagen.' })
+      return
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setProfileMsg({ type: 'error', text: 'La foto de perfil no puede superar los 10 MB.' })
+      return
+    }
+
+    setProfileMsg(null)
+    setAvatarCropSrc(URL.createObjectURL(file))
+  }
+
+  const handleAvatarRemove = () => {
+    setProfile(prev => ({
+      ...prev,
+      avatarBase64: null,
+      avatarUrl: prev.avatarSource === 'OAUTH' ? prev.avatarUrl : '',
+      removeAvatar: prev.avatarSource === 'CUSTOM',
+      avatarSource: prev.avatarSource === 'CUSTOM' ? 'NONE' : prev.avatarSource,
+    }))
+  }
+
   const handlePasswordChange = (e) => {
     setPasswords({ ...passwords, [e.target.name]: e.target.value })
   }
@@ -134,7 +185,26 @@ function UserConfig() {
     setProfileLoading(true)
 
     try {
-      await api.put('/api/users/me/profile', profile)
+      const data = await api.put('/api/users/me/profile', {
+        userName: profile.userName,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        gender: profile.gender,
+        phone: profile.phone,
+        avatarBase64: profile.avatarBase64,
+        removeAvatar: profile.removeAvatar,
+      })
+      setProfile({
+        userName: data.userName || '',
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        gender: data.gender || '',
+        phone: data.phone || '',
+        avatarUrl: data.avatarUrl || '',
+        avatarSource: data.avatarSource || 'NONE',
+        avatarBase64: null,
+        removeAvatar: false,
+      })
       if (refreshUser) await refreshUser()
       setProfileMsg({ type: 'success', text: 'Perfil actualizado correctamente.' })
     } catch (err) {
@@ -234,10 +304,19 @@ function UserConfig() {
     }
   }
 
+  const avatarSrc = getEntityImageSrc({
+    imageUrl: profile.avatarUrl,
+    imageBase64: profile.avatarBase64,
+  })
+  const hasAvatar = Boolean(avatarSrc)
+  const avatarHelpText = hasAvatar
+    ? 'Actualizá tu foto de perfil cuando quieras.'
+    : 'Subí una foto de perfil para completar tu cuenta.'
+
   if (initialLoading) {
     return (
       <div className="config-page">
-        <div className="config-loading">Cargando configuración...</div>
+        <div className="config-loading">Cargando perfil...</div>
       </div>
     )
   }
@@ -246,20 +325,61 @@ function UserConfig() {
     <div className="config-page">
       <div className="config-container">
         <div className="config-header">
-          <h1>Configuración</h1>
-          <p>Administrá la información de tu cuenta</p>
+          <div className="config-header-icon">
+            <CircleUserRound size={22} aria-hidden="true" />
+          </div>
+          <div>
+            <h1>Mi perfil</h1>
+            <p>Editá tu foto, tu nombre de usuario y la información principal de tu cuenta.</p>
+          </div>
         </div>
 
         {/* ═══════ Profile Section ═══════ */}
         <form onSubmit={handleProfileSubmit}>
           <div className="config-section">
-            <h2 className="config-section-title">Información personal</h2>
+            <h2 className="config-section-title">Edición de perfil</h2>
 
             {profileMsg && (
               <div className={`config-message config-message--${profileMsg.type}`}>
                 {profileMsg.text}
               </div>
             )}
+
+            <div className="config-avatar-row">
+              <div className="config-avatar">
+                {hasAvatar ? <img src={avatarSrc} alt="" /> : <UserIcon size={34} />}
+              </div>
+
+              <div className="config-avatar-content">
+                <div className="config-avatar-copy">
+                  <strong>Foto de perfil</strong>
+                  <span>{avatarHelpText}</span>
+                </div>
+
+                <div className="config-avatar-actions">
+                  <label className="config-avatar-btn">
+                    <Upload size={14} /> {hasAvatar ? 'Cambiar foto' : 'Subir foto'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        handleAvatarPick(e.target.files)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+
+                  {profile.avatarSource === 'CUSTOM' && (
+                    <button type="button" className="config-avatar-link" onClick={handleAvatarRemove}>
+                      <X size={14} /> Quitar foto
+                    </button>
+                  )}
+                </div>
+
+                <span className="config-avatar-hint">Cuadrada, hasta 10 MB y con recorte 1:1.</span>
+              </div>
+            </div>
 
             <div className="config-form-grid config-form-grid--two">
               <div className="config-field">
@@ -621,6 +741,26 @@ function UserConfig() {
             </div>
           </div>
         </form>
+
+        {avatarCropSrc && (
+          <ImageCropModal
+            src={avatarCropSrc}
+            aspect={1}
+            fileName="avatar.jpg"
+            onCancel={() => setAvatarCropSrc(null)}
+            onConfirm={async ({ file }) => {
+              const avatarBase64 = await fileToBase64(file)
+              setProfile(prev => ({
+                ...prev,
+                avatarBase64,
+                avatarUrl: '',
+                removeAvatar: false,
+                avatarSource: 'CUSTOM',
+              }))
+              setAvatarCropSrc(null)
+            }}
+          />
+        )}
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import { savePostLoginRedirect } from '../../utils/auth/postLoginRedirect'
 import { campaignService } from '$utils/campaignService'
 import { contributionService } from '$utils/contributionService'
 import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
+import savedCampaignService from '$utils/savedCampaignService'
 import { Button } from '$components/ui'
 import ContributionModal from '$components/ContributionModal/ContributionModal'
 import api from '$utils/api/api'
@@ -11,6 +12,8 @@ import { useUser } from '../../store/useUser'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Users, Tag, Gift, X } from 'lucide-react'
+import CampaignUpdatesTab from '$components/campaign-updates/CampaignUpdatesTab'
+import CampaignCommentsSection from '$components/campaign-comments/CampaignCommentsSection'
 import './CampaignPage.css'
 
 const PUBLIC_DESC_LIMIT = 100
@@ -271,7 +274,31 @@ function toEmbedUrl(url) {
   return null
 }
 
-function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.setAttribute('readonly', '')
+  textArea.style.position = 'fixed'
+  textArea.style.opacity = '0'
+  document.body.appendChild(textArea)
+  textArea.select()
+
+  try {
+    const copied = document.execCommand('copy')
+    if (!copied) {
+      throw new Error('Clipboard copy command failed')
+    }
+  } finally {
+    document.body.removeChild(textArea)
+  }
+}
+
+function CampaignHero({ campaign, onContribute, contributeDisabledReason, savedCampaign, savingSavedCampaign, onToggleSave }) {
   // ─── Build the media manifest ────────────────────────────────────────
   // 1. The video (if any) is shown first, with the primary image as poster.
   // 2. After the video comes a carousel of the *other* images (max 6).
@@ -306,15 +333,31 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
 
   const [mediaIndex, setMediaIndex] = useState(0)
   const [videoPlaying, setVideoPlaying] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
 
   // Reset video playback when the user navigates away from the video slot
   useEffect(() => { if (mediaIndex !== 0) setVideoPlaying(false) }, [mediaIndex])
+
+  useEffect(() => {
+    if (!shareCopied) return undefined
+    const timeoutId = window.setTimeout(() => setShareCopied(false), 2000)
+    return () => window.clearTimeout(timeoutId)
+  }, [shareCopied])
 
   const progress = getProgress(campaign.currentAmount, campaign.goal)
 
   const prev = () => setMediaIndex(i => (i - 1 + mediaItems.length) % mediaItems.length)
   const next = () => setMediaIndex(i => (i + 1) % mediaItems.length)
   const current = mediaItems[mediaIndex]
+
+  const handleShare = async () => {
+    try {
+      await copyTextToClipboard(window.location.href)
+      setShareCopied(true)
+    } catch {
+      setShareCopied(false)
+    }
+  }
 
   return (
     <section className="cp-hero">
@@ -409,8 +452,17 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
           )}
 
           <div className="cp-secondary-actions">
-            <button className="cp-sec-btn"><Bookmark size={14} /> Recordarme</button>
-            <button className="cp-sec-btn"><Share2 size={14} /> Compartir</button>
+            <button
+              type="button"
+              className={`cp-sec-btn ${savedCampaign ? 'cp-sec-btn--active' : ''}`}
+              onClick={onToggleSave}
+              disabled={savingSavedCampaign}
+            >
+              <Bookmark size={14} /> {savingSavedCampaign ? 'Guardando...' : savedCampaign ? 'Guardado' : 'Recordarme'}
+            </button>
+            <button type="button" className="cp-sec-btn" onClick={handleShare}>
+              <Share2 size={14} /> {shareCopied ? 'Link copiado' : 'Compartir'}
+            </button>
           </div>
 
           <p className="cp-funding-note">
@@ -487,7 +539,7 @@ function TeamMemberCard({ member }) {
   )
 }
 
-function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribute, contributeDisabledReason, contributionSummary }) {
+function CampaignContent({ campaign, rewards, team, faqs, updates, comments, activeTab, onContribute, contributeDisabledReason, contributionSummary, onCommentsChange }) {
   const storyHeadings = useMemo(() => extractMarkdownHeadings(campaign.description), [campaign.description])
   const tocItems = useMemo(() => (
     storyHeadings.length > 0
@@ -698,16 +750,12 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
     )
   }
 
-  if (['updates', 'comments'].includes(activeTab)) {
-    const labels = { updates: 'Actualizaciones', comments: 'Comentarios' }
-    return (
-      <div className="cp-content-grid">
-        <div className="cp-main cp-main--full">
-          <h2>{labels[activeTab]}</h2>
-          <p className="cp-placeholder-text">Esta sección estará disponible próximamente.</p>
-        </div>
-      </div>
-    )
+  if (activeTab === 'updates') {
+    return <CampaignUpdatesTab updates={updates} />
+  }
+
+  if (activeTab === 'comments') {
+    return <CampaignCommentsSection campaignId={campaign.id} comments={comments} onCommentsChange={onCommentsChange} />
   }
 
   // Tab "history" (default)
@@ -861,12 +909,16 @@ export default function CampaignPage() {
   const [rewards, setRewards] = useState([])
   const [team, setTeam] = useState([])
   const [faqs, setFaqs] = useState([])
+  const [updates, setUpdates] = useState([])
+  const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('history')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalConfig, setModalConfig] = useState({ amount: 1, reward: null })
   const [contributionSummary, setContributionSummary] = useState(null)
+  const [savedCampaign, setSavedCampaign] = useState(false)
+  const [savingSavedCampaign, setSavingSavedCampaign] = useState(false)
 
   const tabs = TABS.filter(tab => {
     if (tab.key === 'faq') return faqs.length > 0
@@ -900,6 +952,41 @@ export default function CampaignPage() {
       .catch(() => setContributionSummary(null))
   }
 
+  function refreshCampaign() {
+    const fetchPrimary = (username && titleSlug)
+      ? campaignService.getCampaignBySlug(username, titleSlug)
+      : campaignService.getCampaignById(idParam)
+    fetchPrimary.then(data => { if (data) setCampaign(data) }).catch(() => {})
+  }
+
+  function handleContributionCompleted() {
+    refreshCampaign()
+    refreshContributionSummary()
+  }
+
+  async function handleToggleSave() {
+    if (!campaign?.id) return
+
+    if (!user) {
+      savePostLoginRedirect(`${location.pathname}${location.search || ''}`)
+      navigate('/login')
+      return
+    }
+
+    setSavingSavedCampaign(true)
+    try {
+      if (savedCampaign) {
+        await savedCampaignService.unsaveCampaign(campaign.id)
+        setSavedCampaign(false)
+      } else {
+        await savedCampaignService.saveCampaign(campaign.id)
+        setSavedCampaign(true)
+      }
+    } finally {
+      setSavingSavedCampaign(false)
+    }
+  }
+
   function getContributeDisabledReason(c) {
     if (!c) return null
     if (c.isTest) return 'Esta es una campaña de demostración y no acepta contribuciones'
@@ -927,11 +1014,13 @@ export default function CampaignPage() {
           api.get(`/api/campaigns/${data.id}/rewards`).catch(() => []),
           api.get(`/api/campaigns/${data.id}/team`).catch(() => []),
           api.get(`/api/campaigns/${data.id}/faqs`).catch(() => []),
+          api.get(`/api/campaigns/${data.id}/updates`).catch(() => []),
+          api.get(`/api/campaigns/${data.id}/comments`).catch(() => []),
         ])
       })
       .then(extras => {
         if (cancelled || !extras) return
-        const [rewardsData, teamData, faqsData] = extras
+        const [rewardsData, teamData, faqsData, updatesData, commentsData] = extras
         setRewards(normalizeRewards(rewardsData))
         setTeam([...(Array.isArray(teamData) ? teamData : [])].sort(
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
@@ -939,6 +1028,8 @@ export default function CampaignPage() {
         setFaqs([...(Array.isArray(faqsData) ? faqsData : [])].sort(
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
         ))
+        setUpdates(Array.isArray(updatesData) ? updatesData : [])
+        setComments(Array.isArray(commentsData) ? commentsData : [])
       })
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
@@ -960,6 +1051,24 @@ export default function CampaignPage() {
     refreshContributionSummary()
     return undefined
   }, [id, user])
+
+  useEffect(() => {
+    if (!campaign?.id || !user) {
+      setSavedCampaign(false)
+      return undefined
+    }
+
+    let cancelled = false
+    savedCampaignService.getSavedStatus(campaign.id)
+      .then((data) => {
+        if (!cancelled) setSavedCampaign(!!data?.saved)
+      })
+      .catch(() => {
+        if (!cancelled) setSavedCampaign(false)
+      })
+
+    return () => { cancelled = true }
+  }, [campaign?.id, user])
 
   if (loading) {
     return (
@@ -1001,6 +1110,9 @@ export default function CampaignPage() {
                 campaign={campaign}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
+                savedCampaign={savedCampaign}
+                savingSavedCampaign={savingSavedCampaign}
+                onToggleSave={handleToggleSave}
               />
               <CampaignTabs active={activeTab} onChange={setActiveTab} tabs={tabs} />
               <CampaignContent
@@ -1008,10 +1120,13 @@ export default function CampaignPage() {
                 rewards={rewards}
                 team={team}
                 faqs={faqs}
+                updates={updates}
+                comments={comments}
                 activeTab={activeTab}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
                 contributionSummary={contributionSummary}
+                onCommentsChange={setComments}
               />
             </>
           )
@@ -1021,7 +1136,7 @@ export default function CampaignPage() {
             campaignId={Number(id)}
             initialAmount={modalConfig.amount}
             reward={modalConfig.reward}
-            onCompleted={refreshContributionSummary}
+            onCompleted={handleContributionCompleted}
             onClose={() => setModalOpen(false)}
           />
         )}

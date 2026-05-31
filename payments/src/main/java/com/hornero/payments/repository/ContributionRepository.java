@@ -8,12 +8,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
 public interface ContributionRepository extends JpaRepository<Contribution, Long> {
 
     List<Contribution> findByIdCampaignAndStatus(Long idCampaign, String status);
+
+    List<Contribution> findByStatusAndCreatedAtBefore(String status, LocalDateTime before);
 
     List<Contribution> findByIdUserAndIdCampaign(Long idUser, Long idCampaign);
 

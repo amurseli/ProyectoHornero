@@ -1,8 +1,6 @@
 .ccd-page {
   min-height: calc(100vh - var(--navbar-height));
-  background:
-    radial-gradient(circle at top left, rgba(245, 158, 11, 0.08), transparent 26%),
-    linear-gradient(180deg, #fcfbf7 0%, #f6f3ed 100%);
+  background: var(--color-bg-primary, #fafafa);
   padding: 1.5rem;
 }
 
@@ -42,9 +40,9 @@
 .ccd-table-card,
 .ccd-stat-card,
 .ccd-panel-header {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+  background: var(--creator-panel-surface);
+  border: 1px solid var(--creator-panel-border);
+  box-shadow: 0 18px 40px var(--creator-panel-shadow);
   backdrop-filter: blur(10px);
 }
 
@@ -59,7 +57,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #b45309;
+  color: var(--creator-panel-accent);
   margin-bottom: 0.75rem;
 }
 
@@ -67,12 +65,12 @@
   margin: 0;
   font-size: 1.5rem;
   line-height: 1.2;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .ccd-campaign-card p {
   margin: 0.75rem 0 0;
-  color: #6b7280;
+  color: var(--color-text-muted);
   line-height: 1.55;
 }
 
@@ -93,7 +91,7 @@
   background: transparent;
   padding: 0.85rem 0.95rem;
   border-radius: 16px;
-  color: #4b5563;
+  color: var(--color-text-secondary);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -101,8 +99,8 @@
 }
 
 .ccd-nav-item.is-active {
-  background: linear-gradient(135deg, #fff4db 0%, #ffe4b0 100%);
-  color: #92400e;
+  background: linear-gradient(135deg, var(--creator-panel-accent-soft) 0%, var(--creator-panel-accent-soft-strong) 100%);
+  color: var(--creator-panel-accent-strong);
 }
 
 .ccd-main {
@@ -123,12 +121,12 @@
 .ccd-block-title {
   margin: 0;
   font-size: 1.55rem;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .ccd-block-subtitle {
   margin: 0.35rem 0 0;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .ccd-stats-grid {
@@ -152,23 +150,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff4db;
-  color: #b45309;
+  background: var(--creator-panel-accent-soft);
+  color: var(--creator-panel-accent);
 }
 
 .ccd-stat-label {
   font-size: 0.88rem;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .ccd-stat-value {
   font-size: 2rem;
   line-height: 1;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .ccd-stat-helper {
-  color: #4b5563;
+  color: var(--color-text-secondary);
   font-size: 0.92rem;
 }
 
@@ -197,7 +195,7 @@
 .ccd-table th,
 .ccd-table td {
   padding: 0.9rem 0.85rem;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  border-bottom: 1px solid var(--creator-panel-border);
   text-align: left;
 }
 
@@ -205,11 +203,11 @@
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .ccd-table td {
-  color: #111827;
+  color: var(--color-text-primary);
   vertical-align: top;
 }
 
@@ -223,26 +221,26 @@
 }
 
 .ccd-pill--approved {
-  background: #edfdf3;
-  color: #166534;
+  background: var(--creator-panel-success-bg);
+  color: var(--creator-panel-success-fg);
 }
 
 .ccd-pill--pending,
 .ccd-pill--in_process {
-  background: #fff7e6;
-  color: #92400e;
+  background: var(--creator-panel-warning-bg);
+  color: var(--creator-panel-warning-fg);
 }
 
 .ccd-pill--rejected,
 .ccd-pill--cancelled {
-  background: #fef2f2;
-  color: #991b1b;
+  background: var(--creator-panel-danger-bg);
+  color: var(--creator-panel-danger-fg);
 }
 
 .ccd-empty,
 .ccd-error p,
 .ccd-loading p {
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .ccd-loading,
@@ -258,8 +256,8 @@
 .ccd-spinner {
   width: 2.5rem;
   height: 2.5rem;
-  border: 3px solid rgba(15, 23, 42, 0.1);
-  border-top-color: #d97706;
+  border: 3px solid var(--creator-panel-spinner-track);
+  border-top-color: var(--creator-panel-spinner-top);
   border-radius: 50%;
   animation: ccd-spin 0.8s linear infinite;
 }

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +25,9 @@ public interface UserConnectionRepository extends JpaRepository<UserConnection, 
     @Query("SELECT uc FROM UserConnection uc WHERE uc.user.id = :userId AND uc.provider = :provider")
     Optional<UserConnection> findByUserIdAndProvider(@Param("userId") Long userId,
                                                       @Param("provider") String provider);
+
+    @Query("SELECT uc FROM UserConnection uc JOIN FETCH uc.user u WHERE u.id IN :userIds ORDER BY u.id ASC, uc.id ASC")
+    List<UserConnection> findByUserIdInOrderByUserIdAscIdAsc(@Param("userIds") Collection<Long> userIds);
 
     @Modifying
     @Transactional

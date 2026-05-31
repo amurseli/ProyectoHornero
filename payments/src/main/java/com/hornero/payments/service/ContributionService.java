@@ -23,7 +23,9 @@ import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -271,6 +273,49 @@ public class ContributionService {
         return buildStatusResponse(contribution, transaction);
     }
 
+    @Transactional
+    public int cleanupStalePending() {
+        List<Contribution> stale = new ArrayList<>();
+        stale.addAll(contributionRepository.findByStatusAndCreatedAtBefore("PENDING", LocalDateTime.now().minusHours(24)));
+        stale.addAll(contributionRepository.findByStatusAndCreatedAtBefore("IN_PROCESS", LocalDateTime.now().minusHours(48)));
+
+        int resolved = 0;
+        for (Contribution c : stale) {
+            Transaction tx = c.getTransaction();
+            if (tx == null || tx.getIdTransactionExternal() == null) {
+                c.setStatus("CANCELLED");
+                contributionRepository.save(c);
+                resolved++;
+            } else {
+                try {
+                    Payment mp = mercadoPagoGateway.get(Long.valueOf(tx.getIdTransactionExternal()));
+                    String newStatus = mapProviderStatus(mp.getStatus().toString());
+                    if (!"PENDING".equals(newStatus) && !"IN_PROCESS".equals(newStatus)) {
+                        c.setStatus(newStatus);
+                        contributionRepository.save(c);
+                        if ("APPROVED".equals(newStatus)) {
+                            try { backendClient.updateCampaignAmount(c.getIdCampaign(), c.getAmount()); }
+                            catch (Exception ex) { logger.error("Error actualizando monto campaña {} por cleanup: {}", c.getIdCampaign(), ex.getMessage()); }
+                        }
+                        resolved++;
+                    }
+                } catch (MPApiException e) {
+                    if (e.getStatusCode() == 404) {
+                        c.setStatus("CANCELLED");
+                        contributionRepository.save(c);
+                        resolved++;
+                    } else {
+                        logger.error("Error MP al consultar contribution {} en cleanup: {} - {}", c.getId(), e.getStatusCode(), e.getApiResponse().getContent());
+                    }
+                } catch (Exception e) {
+                    logger.error("Error inesperado consultando MP para contribution {} en cleanup: {}", c.getId(), e.getMessage());
+                }
+            }
+        }
+        logger.info("Cleanup stale contributions: {} resueltas de {} encontradas", resolved, stale.size());
+        return resolved;
+    }
+
     public CampaignContributionSummaryResponse getCampaignContributionSummary(Long campaignId, Long userId) {
         ContributionSnapshot snapshot = getContributionSnapshot(userId, campaignId);
         return new CampaignContributionSummaryResponse(
@@ -340,10 +385,13 @@ public class ContributionService {
         try {
             String returnBase = frontendUrl + "/payment/return";
 
+            Contribution contribution = contributionRepository.findById(contributionId).orElseThrow();
+            String campaignParam = "&campaignId=" + contribution.getIdCampaign();
+
             PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                    .success(returnBase + "?status=success&contributionId=" + contributionId)
-                    .failure(returnBase + "?status=failure&contributionId=" + contributionId)
-                    .pending(returnBase + "?status=pending&contributionId=" + contributionId)
+                    .success(returnBase + "?status=success&contributionId=" + contributionId + campaignParam)
+                    .failure(returnBase + "?status=failure&contributionId=" + contributionId + campaignParam)
+                    .pending(returnBase + "?status=pending&contributionId=" + contributionId + campaignParam)
                     .build();
 
             PreferenceItemRequest item = PreferenceItemRequest.builder()

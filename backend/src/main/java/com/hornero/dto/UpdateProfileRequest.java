@@ -6,6 +6,8 @@ public class UpdateProfileRequest {
     private String lastName;
     private String gender;
     private String phone;
+    private String avatarBase64;
+    private Boolean removeAvatar;
 
     public UpdateProfileRequest() {}
 
@@ -23,4 +25,10 @@ public class UpdateProfileRequest {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getAvatarBase64() { return avatarBase64; }
+    public void setAvatarBase64(String avatarBase64) { this.avatarBase64 = avatarBase64; }
+
+    public Boolean getRemoveAvatar() { return removeAvatar; }
+    public void setRemoveAvatar(Boolean removeAvatar) { this.removeAvatar = removeAvatar; }
 }

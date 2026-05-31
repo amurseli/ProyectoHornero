@@ -18,6 +18,10 @@
   --color-bg-primary: #FAFAFA;
   --color-bg-secondary: #F5F3FF;
   --color-bg-accent: #F0F9FF;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F4F4F2;
   --color-foreground: #111827;
   --color-muted: #F3F4F6;
   --color-muted-foreground: #6B7280;
@@ -79,4 +83,61 @@
   --gradient-cool: linear-gradient(to right, var(--color-secondary), var(--color-accent));
   --gradient-full: linear-gradient(to right, var(--color-primary), var(--color-secondary), var(--color-accent));
   --gradient-progress: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+
+  /* === CAMPAIGN CREATOR PANEL === */
+  --creator-panel-bg-glow: rgba(245, 158, 11, 0.08);
+  --creator-panel-bg-start: #FCFBF7;
+  --creator-panel-bg-end: #F6F3ED;
+  --creator-panel-surface: rgba(255, 255, 255, 0.9);
+  --creator-panel-border: rgba(15, 23, 42, 0.08);
+  --creator-panel-shadow: rgba(15, 23, 42, 0.06);
+  --creator-panel-accent: #B45309;
+  --creator-panel-accent-strong: #92400E;
+  --creator-panel-accent-soft: #FFF4DB;
+  --creator-panel-accent-soft-strong: #FFE4B0;
+  --creator-panel-success-bg: #EDFDF3;
+  --creator-panel-success-fg: #166534;
+  --creator-panel-warning-bg: #FFF7E6;
+  --creator-panel-warning-fg: #92400E;
+  --creator-panel-danger-bg: #FEF2F2;
+  --creator-panel-danger-fg: #991B1B;
+  --creator-panel-spinner-track: rgba(15, 23, 42, 0.1);
+  --creator-panel-spinner-top: #D97706;
+
+  /* === CAMPAIGN PUBLIC VIEW === */
+  --campaign-overlay: rgba(18, 16, 24, 0.46);
+  --campaign-white-98: rgba(255, 255, 255, 0.98);
+  --campaign-white-96: rgba(255, 255, 255, 0.96);
+  --campaign-white-95: rgba(255, 255, 255, 0.95);
+  --campaign-white-92: rgba(255, 255, 255, 0.92);
+  --campaign-white-85: rgba(255, 255, 255, 0.85);
+  --campaign-white-70: rgba(255, 255, 255, 0.7);
+  --campaign-white-40: rgba(255, 255, 255, 0.4);
+  --campaign-focus-surface-bottom: rgba(255, 252, 250, 0.98);
+  --campaign-focus-border-start: rgba(210, 141, 167, 0.42);
+  --campaign-focus-border-end: rgba(244, 188, 163, 0.32);
+  --campaign-shadow-heavy: rgba(24, 20, 34, 0.24);
+  --campaign-shadow-soft: rgba(176, 103, 131, 0.12);
+  --campaign-shadow-card: rgba(16, 24, 40, 0.04);
+  --campaign-shadow-close: rgba(24, 20, 34, 0.12);
+  --campaign-code-bg: #17171A;
+  --campaign-code-fg: #F5F5F7;
+  --campaign-current-tier-border: #B7E4C7;
+  --campaign-current-tier-bg: #EDFDF3;
+  --campaign-current-tier-fg: #166534;
+  --campaign-video-bg: var(--color-black);
+  --campaign-primary-tint-04: color-mix(in srgb, var(--color-primary) 4%, var(--color-white));
+  --campaign-primary-tint-08: color-mix(in srgb, var(--color-primary) 8%, var(--color-white));
+  --campaign-primary-tint-10: color-mix(in srgb, var(--color-primary) 10%, var(--color-white));
+  --campaign-primary-tint-30: color-mix(in srgb, var(--color-primary) 30%, var(--color-white));
+  --campaign-focus-ring: color-mix(in srgb, var(--color-primary) 70%, var(--color-white));
+
+  /* === CAMPAIGN UPDATES === */
+  --campaign-update-surface-highlight: rgba(255, 248, 236, 0.56);
+  --campaign-update-surface-base: rgba(255, 255, 255, 0.92);
+  --campaign-update-more: #B45309;
+  --campaign-update-danger: #B91C1C;
+  --campaign-update-modal-border: rgba(251, 191, 36, 0.18);
+  --campaign-update-modal-glow: rgba(255, 244, 219, 0.8);
+  --campaign-update-focus-ring: var(--campaign-focus-ring);
 }
