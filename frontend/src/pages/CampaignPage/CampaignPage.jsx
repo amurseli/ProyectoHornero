@@ -271,6 +271,30 @@ function toEmbedUrl(url) {
   return null
 }
 
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.setAttribute('readonly', '')
+  textArea.style.position = 'fixed'
+  textArea.style.opacity = '0'
+  document.body.appendChild(textArea)
+  textArea.select()
+
+  try {
+    const copied = document.execCommand('copy')
+    if (!copied) {
+      throw new Error('Clipboard copy command failed')
+    }
+  } finally {
+    document.body.removeChild(textArea)
+  }
+}
+
 function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
   // ─── Build the media manifest ────────────────────────────────────────
   // 1. The video (if any) is shown first, with the primary image as poster.
@@ -306,15 +330,31 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
 
   const [mediaIndex, setMediaIndex] = useState(0)
   const [videoPlaying, setVideoPlaying] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
 
   // Reset video playback when the user navigates away from the video slot
   useEffect(() => { if (mediaIndex !== 0) setVideoPlaying(false) }, [mediaIndex])
+
+  useEffect(() => {
+    if (!shareCopied) return undefined
+    const timeoutId = window.setTimeout(() => setShareCopied(false), 2000)
+    return () => window.clearTimeout(timeoutId)
+  }, [shareCopied])
 
   const progress = getProgress(campaign.currentAmount, campaign.goal)
 
   const prev = () => setMediaIndex(i => (i - 1 + mediaItems.length) % mediaItems.length)
   const next = () => setMediaIndex(i => (i + 1) % mediaItems.length)
   const current = mediaItems[mediaIndex]
+
+  const handleShare = async () => {
+    try {
+      await copyTextToClipboard(window.location.href)
+      setShareCopied(true)
+    } catch {
+      setShareCopied(false)
+    }
+  }
 
   return (
     <section className="cp-hero">
@@ -409,8 +449,10 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
           )}
 
           <div className="cp-secondary-actions">
-            <button className="cp-sec-btn"><Bookmark size={14} /> Recordarme</button>
-            <button className="cp-sec-btn"><Share2 size={14} /> Compartir</button>
+            <button type="button" className="cp-sec-btn"><Bookmark size={14} /> Recordarme</button>
+            <button type="button" className="cp-sec-btn" onClick={handleShare}>
+              <Share2 size={14} /> {shareCopied ? 'Link copiado' : 'Compartir'}
+            </button>
           </div>
 
           <p className="cp-funding-note">
