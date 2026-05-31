@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Users, Tag, Gift, X } from 'lucide-react'
 import CampaignUpdatesTab from '$components/campaign-updates/CampaignUpdatesTab'
+import CampaignCommentsSection from '$components/campaign-comments/CampaignCommentsSection'
 import './CampaignPage.css'
 
 const PUBLIC_DESC_LIMIT = 100
@@ -538,7 +539,7 @@ function TeamMemberCard({ member }) {
   )
 }
 
-function CampaignContent({ campaign, rewards, team, faqs, updates, activeTab, onContribute, contributeDisabledReason, contributionSummary }) {
+function CampaignContent({ campaign, rewards, team, faqs, updates, comments, activeTab, onContribute, contributeDisabledReason, contributionSummary, onCommentsChange }) {
   const storyHeadings = useMemo(() => extractMarkdownHeadings(campaign.description), [campaign.description])
   const tocItems = useMemo(() => (
     storyHeadings.length > 0
@@ -754,14 +755,7 @@ function CampaignContent({ campaign, rewards, team, faqs, updates, activeTab, on
   }
 
   if (activeTab === 'comments') {
-    return (
-      <div className="cp-content-grid">
-        <div className="cp-main cp-main--full">
-          <h2>Comentarios</h2>
-          <p className="cp-placeholder-text">Esta sección estará disponible próximamente.</p>
-        </div>
-      </div>
-    )
+    return <CampaignCommentsSection campaignId={campaign.id} comments={comments} onCommentsChange={onCommentsChange} />
   }
 
   // Tab "history" (default)
@@ -916,6 +910,7 @@ export default function CampaignPage() {
   const [team, setTeam] = useState([])
   const [faqs, setFaqs] = useState([])
   const [updates, setUpdates] = useState([])
+  const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('history')
@@ -1020,11 +1015,12 @@ export default function CampaignPage() {
           api.get(`/api/campaigns/${data.id}/team`).catch(() => []),
           api.get(`/api/campaigns/${data.id}/faqs`).catch(() => []),
           api.get(`/api/campaigns/${data.id}/updates`).catch(() => []),
+          api.get(`/api/campaigns/${data.id}/comments`).catch(() => []),
         ])
       })
       .then(extras => {
         if (cancelled || !extras) return
-        const [rewardsData, teamData, faqsData, updatesData] = extras
+        const [rewardsData, teamData, faqsData, updatesData, commentsData] = extras
         setRewards(normalizeRewards(rewardsData))
         setTeam([...(Array.isArray(teamData) ? teamData : [])].sort(
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
@@ -1033,6 +1029,7 @@ export default function CampaignPage() {
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
         ))
         setUpdates(Array.isArray(updatesData) ? updatesData : [])
+        setComments(Array.isArray(commentsData) ? commentsData : [])
       })
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
@@ -1124,10 +1121,12 @@ export default function CampaignPage() {
                 team={team}
                 faqs={faqs}
                 updates={updates}
+                comments={comments}
                 activeTab={activeTab}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
                 contributionSummary={contributionSummary}
+                onCommentsChange={setComments}
               />
             </>
           )
