@@ -63,7 +63,7 @@
   color: var(--color-text-muted);
 }
 .cp-tag--cat {
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  background: var(--campaign-primary-tint-10);
   color: var(--color-primary);
 }
 
@@ -105,10 +105,10 @@
   height: 100%;
   border: 0;
   display: block;
-  background: black;
+  background: var(--campaign-video-bg);
 }
 
-.cp-dot--video { background: rgba(255, 255, 255, 0.7); }
+.cp-dot--video { background: var(--campaign-white-70); }
 
 .cp-play-btn {
   position: absolute;
@@ -117,7 +117,7 @@
   transform: translate(-50%, -50%);
   width: 56px;
   height: 56px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--campaign-white-92);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -134,7 +134,7 @@
   transform: translateY(-50%);
   width: 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--campaign-white-85);
   border: none;
   border-radius: 50%;
   display: flex;
@@ -144,7 +144,7 @@
   color: var(--color-text-primary);
   transition: background var(--transition-fast);
 }
-.cp-carousel-arrow:hover { background: white; }
+.cp-carousel-arrow:hover { background: var(--color-white); }
 .cp-carousel-arrow--left { left: 0.75rem; }
 .cp-carousel-arrow--right { right: 0.75rem; }
 
@@ -160,12 +160,12 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--campaign-white-40);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 .cp-dot.active {
-  background: white;
+  background: var(--color-white);
   width: 20px;
   border-radius: 4px;
 }
@@ -173,7 +173,7 @@
 /* ── Stats panel ── */
 
 .cp-stats-panel {
-  background: white;
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   padding: var(--space-lg);
@@ -243,7 +243,7 @@
   justify-content: center;
   gap: 0.375rem;
   padding: 0.625rem;
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
@@ -260,7 +260,7 @@
 .cp-sec-btn--active {
   border-color: var(--color-primary);
   color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  background: var(--campaign-primary-tint-08);
 }
 
 .cp-sec-btn:disabled {
@@ -447,8 +447,8 @@
 .cp-story blockquote {
   margin: 0 0 var(--space-md);
   padding: 0.1rem 0 0.1rem 1rem;
-  border-left: 3px solid color-mix(in srgb, var(--color-primary) 30%, white);
-  background: color-mix(in srgb, var(--color-primary) 4%, white);
+  border-left: 3px solid var(--campaign-primary-tint-30);
+  background: var(--campaign-primary-tint-04);
 }
 
 .cp-story hr {
@@ -468,8 +468,8 @@
 .cp-story pre {
   margin: 0 0 var(--space-md);
   padding: 1rem;
-  background: #17171a;
-  color: #f5f5f7;
+  background: var(--campaign-code-bg);
+  color: var(--campaign-code-fg);
   border-radius: var(--radius-md);
   overflow-x: auto;
 }
@@ -530,13 +530,13 @@
 }
 
 .cp-reward-card {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.04);
+  box-shadow: 0 10px 30px var(--campaign-shadow-card);
   cursor: pointer;
   transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
   height: 100%;
@@ -549,7 +549,7 @@
 }
 
 .cp-reward-card:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-primary) 70%, white);
+  outline: 2px solid var(--campaign-focus-ring);
   outline-offset: 3px;
 }
 
@@ -652,7 +652,7 @@
 }
 
 .cp-team-card {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
@@ -670,7 +670,7 @@
 }
 
 .cp-team-card:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-primary) 70%, white);
+  outline: 2px solid var(--campaign-focus-ring);
   outline-offset: 3px;
 }
 
@@ -696,7 +696,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  background: var(--campaign-primary-tint-10);
   color: var(--color-primary);
   font-weight: 700;
   font-size: var(--font-size-xl);
@@ -739,7 +739,7 @@
   grid-template-columns: 56px minmax(0, 1fr);
   gap: var(--space-md);
   align-items: flex-start;
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
@@ -752,7 +752,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  background: var(--campaign-primary-tint-10);
   color: var(--color-primary);
   font-size: var(--font-size-sm);
   font-weight: 700;
@@ -781,7 +781,7 @@
   position: fixed;
   inset: 0;
   z-index: 1200;
-  background: rgba(18, 16, 24, 0.46);
+  background: var(--campaign-overlay);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -795,13 +795,13 @@
   max-height: calc(100vh - 3rem);
   overflow: auto;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 252, 250, 0.98)) padding-box,
-    linear-gradient(135deg, rgba(210, 141, 167, 0.42), rgba(244, 188, 163, 0.32)) border-box;
+    linear-gradient(180deg, var(--campaign-white-96), var(--campaign-focus-surface-bottom)) padding-box,
+    linear-gradient(135deg, var(--campaign-focus-border-start), var(--campaign-focus-border-end)) border-box;
   border: 1px solid transparent;
   border-radius: 28px;
   box-shadow:
-    0 28px 90px rgba(24, 20, 34, 0.24),
-    0 6px 24px rgba(176, 103, 131, 0.12);
+    0 28px 90px var(--campaign-shadow-heavy),
+    0 6px 24px var(--campaign-shadow-soft);
   display: grid;
   grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
   animation: cp-focus-enter 220ms ease-out;
@@ -824,19 +824,19 @@
   height: 36px;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--campaign-white-92);
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(24, 20, 34, 0.12);
+  box-shadow: 0 8px 24px var(--campaign-shadow-close);
   transition: transform var(--transition-fast), background-color var(--transition-fast);
 }
 
 .cp-focus-close:hover {
   transform: scale(1.04);
-  background: white;
+  background: var(--color-white);
 }
 
 .cp-focus-media {
@@ -910,7 +910,7 @@
 }
 
 .cp-creator-card {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
@@ -929,7 +929,7 @@
   border-color: var(--color-primary);
 }
 .cp-creator-card--clickable:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-primary) 70%, white);
+  outline: 2px solid var(--campaign-focus-ring);
   outline-offset: 3px;
 }
 .cp-creator-avatar {
@@ -944,7 +944,7 @@
   transform: scale(1.05);
 }
 .cp-creator-avatar--placeholder {
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  background: var(--campaign-primary-tint-10);
   color: var(--color-primary);
   display: flex;
   align-items: center;
@@ -958,7 +958,7 @@
   padding: 0.2rem 0.55rem;
   margin-bottom: 0.45rem;
   border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  background: var(--campaign-primary-tint-10);
   color: var(--color-primary);
   font-size: var(--font-size-xs);
   font-weight: 700;
@@ -987,7 +987,7 @@
 }
 
 .cp-contribute-card {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
@@ -1044,7 +1044,7 @@
 }
 
 .cp-reward-sidebar {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
@@ -1070,9 +1070,9 @@
   margin-top: 0.75rem;
   padding: 0.75rem;
   border-radius: var(--radius-md);
-  border: 1px solid #b7e4c7;
-  background: #edfdf3;
-  color: #166534;
+  border: 1px solid var(--campaign-current-tier-border);
+  background: var(--campaign-current-tier-bg);
+  color: var(--campaign-current-tier-fg);
   font-size: var(--font-size-xs);
 }
 

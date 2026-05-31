@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, BarChart3, FilePenLine, Clock3, Target, Users } from 'lucide-react'
+import { ArrowLeft, BarChart3, FilePenLine, Clock3, Target, Users, Newspaper } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import EditDraftCampaign from './EditDraftCampaign'
+import CampaignUpdatesManager from '$components/campaign-updates/CampaignUpdatesManager'
 import './CreatorCampaignDashboard.css'
 
 function formatMoney(amount) {
@@ -171,6 +172,7 @@ export default function CreatorCampaignDashboard() {
   const [campaign, setCampaign] = useState(null)
   const [rewards, setRewards] = useState([])
   const [detail, setDetail] = useState(null)
+  const [updates, setUpdates] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeSection, setActiveSection] = useState('campaign')
@@ -180,11 +182,13 @@ export default function CreatorCampaignDashboard() {
     Promise.all([
       api.get(`/api/campaigns/${id}`),
       api.get(`/api/campaigns/${id}/rewards`).catch(() => []),
+      api.get(`/api/campaigns/${id}/updates`).catch(() => []),
       api.get(`/api/creator/campaigns/${id}/details`),
     ])
-      .then(([campaignData, rewardsData, detailData]) => {
+      .then(([campaignData, rewardsData, updatesData, detailData]) => {
         setCampaign(campaignData)
         setRewards(Array.isArray(rewardsData) ? rewardsData : [])
+        setUpdates(Array.isArray(updatesData) ? updatesData : [])
         setDetail(detailData)
       })
       .catch(err => setError(err.message || 'No se pudo cargar la campaña'))
@@ -249,6 +253,12 @@ export default function CreatorCampaignDashboard() {
               <FilePenLine size={16} /> Mi campaña
             </button>
             <button
+              className={`ccd-nav-item ${activeSection === 'updates' ? 'is-active' : ''}`}
+              onClick={() => handleSectionChange('updates')}
+            >
+              <Newspaper size={16} /> Actualizaciones
+            </button>
+            <button
               className={`ccd-nav-item ${activeSection === 'stats' ? 'is-active' : ''}`}
               onClick={() => handleSectionChange('stats')}
             >
@@ -268,6 +278,12 @@ export default function CreatorCampaignDashboard() {
               </div>
               <EditDraftCampaign campaignId={id} embedded />
             </section>
+          ) : activeSection === 'updates' ? (
+            <CampaignUpdatesManager
+              campaignId={id}
+              updates={updates}
+              onUpdatesChange={setUpdates}
+            />
           ) : (
             <StatisticsSection detail={detail} rewards={rewards} />
           )}

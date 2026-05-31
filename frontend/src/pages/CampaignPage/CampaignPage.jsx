@@ -12,6 +12,7 @@ import { useUser } from '../../store/useUser'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ChevronLeft, ChevronRight, Play, Bookmark, Share2, Users, Tag, Gift, X } from 'lucide-react'
+import CampaignUpdatesTab from '$components/campaign-updates/CampaignUpdatesTab'
 import './CampaignPage.css'
 
 const PUBLIC_DESC_LIMIT = 100
@@ -537,7 +538,7 @@ function TeamMemberCard({ member }) {
   )
 }
 
-function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribute, contributeDisabledReason, contributionSummary }) {
+function CampaignContent({ campaign, rewards, team, faqs, updates, activeTab, onContribute, contributeDisabledReason, contributionSummary }) {
   const storyHeadings = useMemo(() => extractMarkdownHeadings(campaign.description), [campaign.description])
   const tocItems = useMemo(() => (
     storyHeadings.length > 0
@@ -748,12 +749,15 @@ function CampaignContent({ campaign, rewards, team, faqs, activeTab, onContribut
     )
   }
 
-  if (['updates', 'comments'].includes(activeTab)) {
-    const labels = { updates: 'Actualizaciones', comments: 'Comentarios' }
+  if (activeTab === 'updates') {
+    return <CampaignUpdatesTab updates={updates} />
+  }
+
+  if (activeTab === 'comments') {
     return (
       <div className="cp-content-grid">
         <div className="cp-main cp-main--full">
-          <h2>{labels[activeTab]}</h2>
+          <h2>Comentarios</h2>
           <p className="cp-placeholder-text">Esta sección estará disponible próximamente.</p>
         </div>
       </div>
@@ -911,6 +915,7 @@ export default function CampaignPage() {
   const [rewards, setRewards] = useState([])
   const [team, setTeam] = useState([])
   const [faqs, setFaqs] = useState([])
+  const [updates, setUpdates] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('history')
@@ -1014,11 +1019,12 @@ export default function CampaignPage() {
           api.get(`/api/campaigns/${data.id}/rewards`).catch(() => []),
           api.get(`/api/campaigns/${data.id}/team`).catch(() => []),
           api.get(`/api/campaigns/${data.id}/faqs`).catch(() => []),
+          api.get(`/api/campaigns/${data.id}/updates`).catch(() => []),
         ])
       })
       .then(extras => {
         if (cancelled || !extras) return
-        const [rewardsData, teamData, faqsData] = extras
+        const [rewardsData, teamData, faqsData, updatesData] = extras
         setRewards(normalizeRewards(rewardsData))
         setTeam([...(Array.isArray(teamData) ? teamData : [])].sort(
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
@@ -1026,6 +1032,7 @@ export default function CampaignPage() {
         setFaqs([...(Array.isArray(faqsData) ? faqsData : [])].sort(
           (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
         ))
+        setUpdates(Array.isArray(updatesData) ? updatesData : [])
       })
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
@@ -1116,6 +1123,7 @@ export default function CampaignPage() {
                 rewards={rewards}
                 team={team}
                 faqs={faqs}
+                updates={updates}
                 activeTab={activeTab}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
