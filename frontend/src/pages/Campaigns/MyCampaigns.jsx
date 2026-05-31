@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, ChevronLeft, ChevronRight, Clock, Users, TrendingUp, Rocket, Pencil, ShieldCheck, AlertTriangle, Info } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Rocket, Pencil, ShieldCheck, AlertTriangle, Info } from 'lucide-react'
+import CampaignWideCard from '$components/features/CampaignWideCard'
 import { Button } from '$components/ui'
 import { useUser } from '../../store/useUser'
 import api from '$utils/api/api'
@@ -165,10 +166,6 @@ function MyCampaigns() {
     )
   }
 
-  const progress = active && active.goal > 0
-    ? Math.min((active.raised / active.goal) * 100, 100)
-    : 0
-
   return (
     <main className="mc-page">
       <header className="container mc-header">
@@ -210,44 +207,13 @@ function MyCampaigns() {
 
       {active && (
         <section className="container mc-featured-section">
-          <a href={`/my-campaigns/${active.id}/manage`} className="mc-featured">
-            <div className="mc-featured-image">
-              <img src={active.imageUrl} alt={active.title} />
-              <span className="mc-featured-status">
-                {STATUS_LABELS[active.status] || active.status}
-              </span>
-            </div>
-            <div className="mc-featured-body">
-              <span className="mc-featured-category">{active.category}</span>
-              <h2 className="mc-featured-title">{active.title}</h2>
-              {active.shortDescription && (
-                <p className="mc-featured-desc">{active.shortDescription}</p>
-              )}
-              <div className="mc-featured-progress">
-                <div className="mc-progress-bar">
-                  <div className="mc-progress-fill" style={{ width: `${progress}%` }} />
-                </div>
-                <div className="mc-progress-labels">
-                  <span>${active.raised.toLocaleString('es-AR')} recaudados</span>
-                  <span>{progress.toFixed(0)}%</span>
-                </div>
-              </div>
-              <div className="mc-featured-stats">
-                <div className="mc-fstat">
-                  <TrendingUp size={16} />
-                  <span>Meta: ${active.goal.toLocaleString('es-AR')}</span>
-                </div>
-                <div className="mc-fstat">
-                  <Users size={16} />
-                  <span>{(active.backers ?? 0).toLocaleString('es-AR')} aportantes</span>
-                </div>
-                <div className="mc-fstat">
-                  <Clock size={16} />
-                  <span>{active.daysLeft > 0 ? `${active.daysLeft} días restantes` : 'Finalizada'}</span>
-                </div>
-              </div>
-            </div>
-          </a>
+          <CampaignWideCard
+            campaign={active}
+            to={`/my-campaigns/${active.id}/manage`}
+            description={active.shortDescription}
+            statusLabel={STATUS_LABELS[active.status] || active.status}
+            className="mc-featured"
+          />
         </section>
       )}
 
@@ -385,47 +351,6 @@ const styles = `
   }
 
   .mc-featured-section { padding-top: 0.5rem; animation: mc-fadeUp 0.5s ease 0.2s both; }
-  .mc-featured {
-    display: grid; grid-template-columns: 1fr 1fr;
-    background: white; border-radius: var(--radius-xl); overflow: hidden;
-    border: 1px solid var(--color-border); text-decoration: none; color: inherit;
-    transition: box-shadow var(--transition-base), border-color var(--transition-base);
-  }
-  .mc-featured:hover { box-shadow: var(--shadow-xl); border-color: var(--color-primary); }
-  .mc-featured-image {
-    position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--color-muted);
-  }
-  .mc-featured-image img {
-    width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;
-  }
-  .mc-featured:hover .mc-featured-image img { transform: scale(1.03); }
-  .mc-featured-status {
-    position: absolute; top: 1rem; left: 1rem;
-    padding: 0.375rem 0.875rem; background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(6px); border-radius: var(--radius-full);
-    font-size: var(--font-size-xs); font-weight: 600; color: var(--color-primary);
-  }
-  .mc-featured-body {
-    padding: 2rem; display: flex; flex-direction: column; justify-content: center;
-  }
-  .mc-featured-category {
-    font-size: var(--font-size-xs); font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--color-text-muted); margin-bottom: 0.5rem;
-  }
-  .mc-featured-title {
-    font-size: var(--font-size-2xl); font-weight: 700;
-    color: var(--color-text-primary); margin: 0 0 0.5rem; line-height: 1.25;
-  }
-  .mc-featured:hover .mc-featured-title { color: var(--color-primary); }
-  .mc-featured-desc {
-    font-size: var(--font-size-sm); color: var(--color-text-muted);
-    line-height: 1.6; margin: 0 0 1.5rem;
-    display: -webkit-box; -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical; overflow: hidden;
-  }
-
-  .mc-featured-progress { margin-bottom: 1.5rem; }
   .mc-progress-bar {
     width: 100%; height: 0.5rem; background: var(--color-muted);
     border-radius: var(--radius-full); overflow: hidden;
@@ -435,19 +360,6 @@ const styles = `
     height: 100%; background: var(--gradient-warm);
     border-radius: var(--radius-full); transition: width 0.5s ease;
   }
-  .mc-progress-labels {
-    display: flex; justify-content: space-between;
-    margin-top: 0.5rem; font-size: var(--font-size-sm);
-    color: var(--color-text-secondary); font-weight: 500;
-  }
-
-  .mc-featured-stats { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-  .mc-fstat {
-    display: flex; align-items: center; gap: 0.375rem;
-    font-size: var(--font-size-sm); color: var(--color-text-secondary);
-  }
-  .mc-fstat svg { color: var(--color-primary); flex-shrink: 0; }
-
   .mc-rest-section { padding-top: 2.5rem; animation: mc-fadeUp 0.5s ease 0.3s both; }
   .mc-rest-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -549,10 +461,6 @@ const styles = `
   .mc-create-card:hover .mc-create-label { color: var(--color-primary); }
 
   @media (max-width: 768px) {
-    .mc-featured { grid-template-columns: 1fr; }
-    .mc-featured-image { aspect-ratio: 16 / 9; }
-    .mc-featured-body { padding: 1.5rem; }
-    .mc-featured-stats { gap: 1rem; }
     .mc-mini-card { flex: 0 0 220px; }
     .mc-vb { flex-direction: column; text-align: center; }
   }

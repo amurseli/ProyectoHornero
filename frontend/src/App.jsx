@@ -16,6 +16,7 @@ import VerifyEmail from '$pages/VerifyEmail/VerifyEmail.jsx';
 import EmailSent from '$pages/EmailSent/EmailSent.jsx';
 import OAuth2Redirect from '$pages/OAuth2Redirect/OAuth2Redirect.jsx';
 import MyCampaigns from '$pages/Campaigns/MyCampaigns';
+import SavedCampaigns from '$pages/SavedCampaigns/SavedCampaigns';
 import CreateCampaign from '$pages/Campaigns/CreateCampaign';
 import ForCreators from '$pages/ForCreators/ForCreators.jsx';
 import BecomeCreator from '$pages/BecomeCreator/BecomeCreator.jsx';
@@ -98,6 +99,7 @@ function App() {
 
           {/* Protected */}
           <Route path="/my-campaigns" element={<ProtectedRoute><MyCampaigns /></ProtectedRoute>} />
+          <Route path="/my-saved-campaigns" element={<ProtectedRoute><SavedCampaigns /></ProtectedRoute>} />
           <Route path="/my-campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
           <Route path="/become-creator" element={<ProtectedRoute><BecomeCreator /></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><UserConfig /></ProtectedRoute>} />

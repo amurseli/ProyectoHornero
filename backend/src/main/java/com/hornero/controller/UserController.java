@@ -24,6 +24,7 @@ import com.hornero.service.EmailVerificationService;
 import com.hornero.service.EmailChangeService;
 import com.hornero.service.PasswordResetService;
 import com.hornero.service.RefreshTokenService;
+import com.hornero.service.SavedCampaignService;
 import com.hornero.service.UserService;
 import com.hornero.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
@@ -53,6 +54,9 @@ public class UserController {
 
     @Autowired
     private CampaignService campaignService;
+
+    @Autowired
+    private SavedCampaignService savedCampaignService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -624,6 +628,48 @@ public class UserController {
         }
         List<Campaign> campaigns = campaignService.getCampaignsByOwner(userId);
         return ResponseEntity.ok(campaigns);
+    }
+
+    @GetMapping("/me/saved-campaigns")
+    public ResponseEntity<?> getMySavedCampaigns(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        return ResponseEntity.ok(savedCampaignService.getSavedCampaigns(userId));
+    }
+
+    @GetMapping("/me/saved-campaigns/{campaignId}")
+    public ResponseEntity<?> isCampaignSaved(@PathVariable Long campaignId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        return ResponseEntity.ok(Map.of("saved", savedCampaignService.isCampaignSaved(userId, campaignId)));
+    }
+
+    @PostMapping("/me/saved-campaigns/{campaignId}")
+    public ResponseEntity<?> saveCampaign(@PathVariable Long campaignId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        savedCampaignService.saveCampaign(userId, campaignId);
+        return ResponseEntity.ok(Map.of("saved", true));
+    }
+
+    @DeleteMapping("/me/saved-campaigns/{campaignId}")
+    public ResponseEntity<?> unsaveCampaign(@PathVariable Long campaignId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+        savedCampaignService.unsaveCampaign(userId, campaignId);
+        return ResponseEntity.ok(Map.of("saved", false));
     }
 
     // ═══════ Connections Endpoints ═══════

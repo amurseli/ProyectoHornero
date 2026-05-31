@@ -4,6 +4,7 @@ import { savePostLoginRedirect } from '../../utils/auth/postLoginRedirect'
 import { campaignService } from '$utils/campaignService'
 import { contributionService } from '$utils/contributionService'
 import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
+import savedCampaignService from '$utils/savedCampaignService'
 import { Button } from '$components/ui'
 import ContributionModal from '$components/ContributionModal/ContributionModal'
 import api from '$utils/api/api'
@@ -295,7 +296,7 @@ async function copyTextToClipboard(text) {
   }
 }
 
-function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
+function CampaignHero({ campaign, onContribute, contributeDisabledReason, savedCampaign, savingSavedCampaign, onToggleSave }) {
   // ─── Build the media manifest ────────────────────────────────────────
   // 1. The video (if any) is shown first, with the primary image as poster.
   // 2. After the video comes a carousel of the *other* images (max 6).
@@ -449,7 +450,14 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason }) {
           )}
 
           <div className="cp-secondary-actions">
-            <button type="button" className="cp-sec-btn"><Bookmark size={14} /> Recordarme</button>
+            <button
+              type="button"
+              className={`cp-sec-btn ${savedCampaign ? 'cp-sec-btn--active' : ''}`}
+              onClick={onToggleSave}
+              disabled={savingSavedCampaign}
+            >
+              <Bookmark size={14} /> {savingSavedCampaign ? 'Guardando...' : savedCampaign ? 'Guardado' : 'Recordarme'}
+            </button>
             <button type="button" className="cp-sec-btn" onClick={handleShare}>
               <Share2 size={14} /> {shareCopied ? 'Link copiado' : 'Compartir'}
             </button>
@@ -909,6 +917,8 @@ export default function CampaignPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalConfig, setModalConfig] = useState({ amount: 1, reward: null })
   const [contributionSummary, setContributionSummary] = useState(null)
+  const [savedCampaign, setSavedCampaign] = useState(false)
+  const [savingSavedCampaign, setSavingSavedCampaign] = useState(false)
 
   const tabs = TABS.filter(tab => {
     if (tab.key === 'faq') return faqs.length > 0
@@ -952,6 +962,29 @@ export default function CampaignPage() {
   function handleContributionCompleted() {
     refreshCampaign()
     refreshContributionSummary()
+  }
+
+  async function handleToggleSave() {
+    if (!campaign?.id) return
+
+    if (!user) {
+      savePostLoginRedirect(`${location.pathname}${location.search || ''}`)
+      navigate('/login')
+      return
+    }
+
+    setSavingSavedCampaign(true)
+    try {
+      if (savedCampaign) {
+        await savedCampaignService.unsaveCampaign(campaign.id)
+        setSavedCampaign(false)
+      } else {
+        await savedCampaignService.saveCampaign(campaign.id)
+        setSavedCampaign(true)
+      }
+    } finally {
+      setSavingSavedCampaign(false)
+    }
   }
 
   function getContributeDisabledReason(c) {
@@ -1015,6 +1048,24 @@ export default function CampaignPage() {
     return undefined
   }, [id, user])
 
+  useEffect(() => {
+    if (!campaign?.id || !user) {
+      setSavedCampaign(false)
+      return undefined
+    }
+
+    let cancelled = false
+    savedCampaignService.getSavedStatus(campaign.id)
+      .then((data) => {
+        if (!cancelled) setSavedCampaign(!!data?.saved)
+      })
+      .catch(() => {
+        if (!cancelled) setSavedCampaign(false)
+      })
+
+    return () => { cancelled = true }
+  }, [campaign?.id, user])
+
   if (loading) {
     return (
       <div className="cp-page">
@@ -1055,6 +1106,9 @@ export default function CampaignPage() {
                 campaign={campaign}
                 onContribute={openModal}
                 contributeDisabledReason={contributeDisabledReason}
+                savedCampaign={savedCampaign}
+                savingSavedCampaign={savingSavedCampaign}
+                onToggleSave={handleToggleSave}
               />
               <CampaignTabs active={activeTab} onChange={setActiveTab} tabs={tabs} />
               <CampaignContent
