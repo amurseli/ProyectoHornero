@@ -198,6 +198,10 @@ public class PaymentsServiceClient {
             detail.setApprovedContributionCount(body.getApprovedContributionCount());
             detail.setContributions(mapContributionResponses(body.getContributions()));
             return detail;
+        } catch (HttpStatusCodeException e) {
+            String detail = extractErrorMessage(e.getResponseBodyAsString());
+            logger.error("Error al obtener detalle financiero para campaña {}: {}", campaignId, detail);
+            throw new RuntimeException(detail);
         } catch (Exception e) {
             logger.error("Error al obtener detalle financiero para campaña {}: {}", campaignId, e.getMessage());
             throw new RuntimeException("Error al obtener detalle financiero de payments", e);

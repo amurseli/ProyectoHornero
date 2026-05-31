@@ -22,10 +22,10 @@ public class Transaction {
     @Column(name = "transaction_method", nullable = false, length = 30)
     private String transactionMethod;
 
-    @Column(name = "CBU_origin", length = 50)
+    @Column(name = "cbu_origin", length = 50)
     private String cbuOrigin;
 
-    @Column(name = "CBU_destination", length = 50)
+    @Column(name = "cbu_destination", length = 50)
     private String cbuDestination;
 
     @Column(name = "id_transaction_external", length = 50)

@@ -1,14 +1,13 @@
 package com.hornero.controller;
 
+import com.hornero.client.PaymentsServiceClient;
 import com.hornero.dto.AdminCampaignContributionResponse;
 import com.hornero.dto.AdminCampaignDetailResponse;
 import com.hornero.dto.AdminCampaignSummaryResponse;
+import com.hornero.dto.ErrorResponse;
 import com.hornero.model.Campaign;
 import com.hornero.model.User;
-import com.hornero.model.payments.PaymentContribution;
-import com.hornero.model.payments.PaymentTransaction;
 import com.hornero.repository.CampaignRepository;
-import com.hornero.repository.PaymentContributionRepository;
 import com.hornero.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -24,15 +24,15 @@ import java.util.stream.Collectors;
 public class CreatorCampaignController {
 
     private final CampaignRepository campaignRepository;
-    private final PaymentContributionRepository paymentContributionRepository;
+    private final PaymentsServiceClient paymentsServiceClient;
     private final UserRepository userRepository;
 
     public CreatorCampaignController(
             CampaignRepository campaignRepository,
-            PaymentContributionRepository paymentContributionRepository,
+            PaymentsServiceClient paymentsServiceClient,
             UserRepository userRepository) {
         this.campaignRepository = campaignRepository;
-        this.paymentContributionRepository = paymentContributionRepository;
+        this.paymentsServiceClient = paymentsServiceClient;
         this.userRepository = userRepository;
     }
 
@@ -56,48 +56,35 @@ public class CreatorCampaignController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Acceso denegado"));
         }
 
-        var contributions = paymentContributionRepository.findDetailedByCampaignId(id);
-        var usersById = userRepository.findAllById(
-                contributions.stream().map(PaymentContribution::getIdUser).distinct().toList()
-        ).stream().collect(Collectors.toMap(User::getId, user -> user));
+        try {
+            AdminCampaignDetailResponse paymentDetail = paymentsServiceClient.fetchCampaignDetail(id);
+            var contributions = paymentDetail.getContributions();
+            var usersById = userRepository.findAllById(
+                    contributions.stream()
+                            .map(AdminCampaignContributionResponse::getContributorUserId)
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .toList()
+            ).stream().collect(Collectors.toMap(User::getId, user -> user));
 
-        long approvedCount = contributions.stream().filter(c -> "APPROVED".equals(c.getStatus())).count();
-        AdminCampaignDetailResponse response = new AdminCampaignDetailResponse();
-        response.setCampaign(AdminCampaignSummaryResponse.fromEntity(campaign, LocalDate.now(), approvedCount));
-        response.setApprovedContributionCount(approvedCount);
-        response.setApprovedAmount(paymentContributionRepository.sumAmountByCampaignAndStatus(id, "APPROVED"));
-        response.setContributions(contributions.stream()
-                .map(contribution -> toContributionResponse(contribution, usersById.get(contribution.getIdUser())))
-                .collect(Collectors.toList()));
+            AdminCampaignDetailResponse response = new AdminCampaignDetailResponse();
+            response.setCampaign(AdminCampaignSummaryResponse.fromEntity(campaign, LocalDate.now(), paymentDetail.getApprovedContributionCount()));
+            response.setApprovedContributionCount(paymentDetail.getApprovedContributionCount());
+            response.setApprovedAmount(paymentDetail.getApprovedAmount());
+            response.setContributions(contributions.stream()
+                    .map(contribution -> enrichContribution(contribution, usersById.get(contribution.getContributorUserId())))
+                    .collect(Collectors.toList()));
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
     }
 
-    private AdminCampaignContributionResponse toContributionResponse(PaymentContribution contribution, User user) {
-        AdminCampaignContributionResponse response = new AdminCampaignContributionResponse();
-        response.setContributionId(contribution.getId());
-        response.setContributorUserId(contribution.getIdUser());
+    private AdminCampaignContributionResponse enrichContribution(AdminCampaignContributionResponse response, User user) {
         response.setContributorName(buildUserName(user));
         response.setContributorEmail(user != null ? user.getEmail() : null);
-        response.setAmount(contribution.getAmount());
-        response.setRewardId(contribution.getRewardId());
-        response.setRewardPrice(contribution.getRewardPrice());
-        response.setStatus(contribution.getStatus());
-        response.setCreatedAt(contribution.getCreatedAt());
-        response.setUpdatedAt(contribution.getUpdatedAt());
-
-        PaymentTransaction transaction = contribution.getTransaction();
-        if (transaction != null) {
-            AdminCampaignContributionResponse.TransactionInfo tx = new AdminCampaignContributionResponse.TransactionInfo();
-            tx.setTransactionId(transaction.getId());
-            tx.setAmount(transaction.getAmount());
-            tx.setTransactionMethod(transaction.getTransactionMethod());
-            tx.setPaymentProvider(transaction.getPaymentProvider());
-            tx.setExternalTransactionId(transaction.getIdTransactionExternal());
-            tx.setHashTx(transaction.getHashTx());
-            tx.setCreatedAt(transaction.getCreatedAt());
-            response.setTransaction(tx);
-        }
         return response;
     }
 
