@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { FiTrendingUp, FiUsers, FiClock, FiTag, FiMapPin } from "react-icons/fi"
+import { FiTrendingUp, FiUsers, FiClock, FiTag, FiMapPin, FiAward } from "react-icons/fi"
 import ReactPlayer from "react-player"
 import { getCampaignPath } from "../../utils/campaignService"
 
@@ -23,6 +23,17 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
   const videoUrl = campaign.videoUrl || null
   const campaignPath = getCampaignPath(campaign)
 
+  // A campaign counts as "financiada" once it reaches 100% of its goal — even
+  // while still in CROWDFUNDING (goal hit before the end date). FAILED campaigns
+  // never reach the goal, so they never match.
+  const isFunded = goal > 0 && raised >= goal
+  const fundedSeal = isFunded ? (
+    <span className="campaign-funded-seal">
+      <FiAward className="campaign-funded-seal-icon" />
+      Financiada
+    </span>
+  ) : null
+
   const [hovered, setHovered] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
 
@@ -37,7 +48,8 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
 
   if (variant === "compact") {
     return (
-      <a href={campaignPath} className="campaign-card-compact">
+      <a href={campaignPath} className={`campaign-card-compact ${isFunded ? "is-funded" : ""}`}>
+        {fundedSeal}
         <img
           src={campaign.imageUrl || campaign.image || "/crowdfunding-campaign.jpg"}
           alt={campaign.title}
@@ -64,10 +76,11 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
     return (
       <a
         href={campaignPath}
-        className="campaign-card-editorial"
+        className={`campaign-card-editorial ${isFunded ? "is-funded" : ""}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
+        {fundedSeal}
         <div className="editorial-media">
           <img
             src={campaign.imageUrl || campaign.image || "/crowdfunding-campaign.jpg"}
@@ -159,7 +172,8 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
       daysLeft <= 7 ? "countdown-warning" : ""
 
     return (
-      <a href={campaignPath} className="campaign-card-horizontal">
+      <a href={campaignPath} className={`campaign-card-horizontal ${isFunded ? "is-funded" : ""}`}>
+        {fundedSeal}
         <div className="horizontal-image-wrap">
           <img
             src={campaign.imageUrl || campaign.image || "/crowdfunding-campaign.jpg"}
@@ -214,11 +228,12 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
   return (
     <a
       href={campaignPath}
-      className={`campaign-card-full ${isLarge ? "campaign-card-full--large" : ""}`}
+      className={`campaign-card-full ${isLarge ? "campaign-card-full--large" : ""} ${isFunded ? "is-funded" : ""}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div className="campaign-thumbnail">
+        {fundedSeal}
         <img
           src={campaign.imageUrl || campaign.image || "/crowdfunding-campaign.jpg"}
           alt={campaign.title}
@@ -331,6 +346,62 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
   )
 }
 
+// Shared "Financiada" seal — positioned absolutely; each variant sets its own
+// top/right/left + size tweaks above this block.
+const fundedSealBaseStyles = `
+  .campaign-funded-seal {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.65rem;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary));
+    background-size: 200% 100%;
+    color: #fff;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-primary) 45%, transparent);
+    z-index: 4;
+    pointer-events: none;
+    animation: funded-shimmer 4s linear infinite;
+  }
+  .campaign-funded-seal-icon {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  /* Slides the symmetric gradient across the border-box layer (2nd bg layer)
+     while the solid padding-box layer (1st) stays put. The gradient starts and
+     ends on the same colour and the layer repeats, so the ring is filled at all
+     times and flows continuously (never disappears). */
+  @keyframes funded-border-move {
+    0%   { background-position: 0 0, 0% 50%; }
+    100% { background-position: 0 0, 200% 50%; }
+  }
+  /* Single-layer version for the seal. */
+  @keyframes funded-shimmer {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  /* Glow that breathes between the two warm Hornero tones (no accent/green). */
+  @keyframes funded-glow {
+    0%, 100% { box-shadow: 0 6px 26px color-mix(in srgb, var(--color-primary) 42%, transparent); }
+    50%      { box-shadow: 0 6px 26px color-mix(in srgb, var(--color-secondary) 42%, transparent); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .campaign-funded-seal,
+    .campaign-card-full.is-funded,
+    .campaign-card-compact.is-funded,
+    .campaign-card-horizontal.is-funded,
+    .campaign-card-editorial.is-funded {
+      animation: none !important;
+    }
+  }
+`
+
 const compactStyles = `
   .campaign-card-compact {
     display: flex;
@@ -402,6 +473,24 @@ const compactStyles = `
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
   }
+  .campaign-card-compact.is-funded,
+  .campaign-card-compact.is-funded:hover {
+    position: relative;
+    border: 2px solid transparent;
+    background:
+      linear-gradient(var(--color-background), var(--color-background)) padding-box,
+      linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary)) border-box;
+    background-size: 100% 100%, 200% 100%;
+    background-repeat: no-repeat, repeat;
+    animation: funded-border-move 4s linear infinite, funded-glow 6s ease-in-out infinite;
+  }
+  .campaign-card-compact .campaign-funded-seal {
+    top: 0.4rem;
+    right: 0.4rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.6rem;
+  }
+  ${fundedSealBaseStyles}
 `
 
 const editorialStyles = `
@@ -580,6 +669,25 @@ const editorialStyles = `
     width: 0.875rem;
     height: 0.875rem;
   }
+  .campaign-card-editorial.is-funded,
+  .campaign-card-editorial.is-funded:hover {
+    border: 2px solid transparent;
+    background:
+      linear-gradient(#111, #111) padding-box,
+      linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary)) border-box;
+    background-size: 100% 100%, 200% 100%;
+    background-repeat: no-repeat, repeat;
+    animation: funded-border-move 4s linear infinite, funded-glow 6s ease-in-out infinite;
+  }
+  .campaign-card-editorial.is-funded .editorial-creator {
+    display: none;
+  }
+  .campaign-card-editorial .campaign-funded-seal {
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 5;
+  }
+  ${fundedSealBaseStyles}
 `
 
 const horizontalStyles = `
@@ -727,6 +835,24 @@ const horizontalStyles = `
   .countdown-warning {
     border-left-color: rgba(217, 119, 6, 0.2);
   }
+  .campaign-card-horizontal.is-funded,
+  .campaign-card-horizontal.is-funded:hover {
+    position: relative;
+    border: 2px solid transparent;
+    background:
+      linear-gradient(var(--color-background), var(--color-background)) padding-box,
+      linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary)) border-box;
+    background-size: 100% 100%, 200% 100%;
+    background-repeat: no-repeat, repeat;
+    animation: funded-border-move 4s linear infinite, funded-glow 6s ease-in-out infinite;
+  }
+  .campaign-card-horizontal .campaign-funded-seal {
+    top: 0.4rem;
+    left: 0.4rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.6rem;
+  }
+  ${fundedSealBaseStyles}
 `
 
 const fullStyles = `
@@ -969,6 +1095,21 @@ const fullStyles = `
     height: 0.85rem;
     color: var(--color-primary);
   }
+  .campaign-card-full.is-funded,
+  .campaign-card-full.is-funded:hover {
+    border: 2px solid transparent;
+    background:
+      linear-gradient(var(--color-background), var(--color-background)) padding-box,
+      linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary)) border-box;
+    background-size: 100% 100%, 200% 100%;
+    background-repeat: no-repeat, repeat;
+    animation: funded-border-move 4s linear infinite, funded-glow 6s ease-in-out infinite;
+  }
+  .campaign-card-full .campaign-thumbnail .campaign-funded-seal {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+  ${fundedSealBaseStyles}
 `
 
 export default CampaignCard
