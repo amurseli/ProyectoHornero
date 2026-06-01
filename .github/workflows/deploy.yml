@@ -145,6 +145,9 @@ jobs:
             docker compose pull backoffice
             docker compose up -d backoffice
           fi
+
+          # Reclaim disk: drop dangling images left behind by pulling :latest.
+          docker image prune -f
           EOF
 
       - name: Remove SSH key
