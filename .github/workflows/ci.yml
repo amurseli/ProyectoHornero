@@ -84,6 +84,44 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
+  blockchain:
+    name: Blockchain Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./blockchain/ledger
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn clean compile -DskipTests
+
+      - name: Run tests
+        run: mvn test
+        continue-on-error: true
+
+  scheduler:
+    name: Scheduler Shellcheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./scheduler
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shellcheck finalize script
+        run: shellcheck finalize-campaigns.sh
+        continue-on-error: true
+
   backoffice:
     name: Backoffice Build, Lint & Audit
     runs-on: ubuntu-latest

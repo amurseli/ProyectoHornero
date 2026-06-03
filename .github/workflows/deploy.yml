@@ -8,6 +8,8 @@ on:
       - 'frontend/**'
       - 'payments/**'
       - 'backoffice/**'
+      - 'scheduler/**'
+      - 'blockchain/**'
       - '.github/workflows/deploy.yml'
 
 concurrency:
@@ -26,6 +28,8 @@ jobs:
       frontend: ${{ steps.changes.outputs.frontend }}
       payments: ${{ steps.changes.outputs.payments }}
       backoffice: ${{ steps.changes.outputs.backoffice }}
+      scheduler: ${{ steps.changes.outputs.scheduler }}
+      blockchain: ${{ steps.changes.outputs.blockchain }}
       namespace: ${{ steps.namespace.outputs.value }}
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +42,8 @@ jobs:
             frontend: 'frontend/**'
             payments: 'payments/**'
             backoffice: 'backoffice/**'
+            scheduler: 'scheduler/**'
+            blockchain: 'blockchain/**'
 
       - name: Normalize GHCR namespace
         id: namespace
@@ -49,7 +55,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [backend, frontend, payments, backoffice]
+        include:
+          - service: backend
+            context: ./backend
+          - service: frontend
+            context: ./frontend
+          - service: payments
+            context: ./payments
+          - service: backoffice
+            context: ./backoffice
+          - service: scheduler
+            context: ./scheduler
+          - service: blockchain
+            context: ./blockchain/ledger
 
     steps:
       - name: Skip unchanged service
@@ -85,7 +103,7 @@ jobs:
         if: needs.detect.outputs[matrix.service] == 'true'
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.service }}
+          context: ${{ matrix.context }}
           push: true
           tags: ghcr.io/${{ needs.detect.outputs.namespace }}/hornero-${{ matrix.service }}:latest
           cache-from: type=gha
@@ -113,6 +131,8 @@ jobs:
           FRONTEND_CHANGED: ${{ needs.detect.outputs.frontend }}
           PAYMENTS_CHANGED: ${{ needs.detect.outputs.payments }}
           BACKOFFICE_CHANGED: ${{ needs.detect.outputs.backoffice }}
+          SCHEDULER_CHANGED: ${{ needs.detect.outputs.scheduler }}
+          BLOCKCHAIN_CHANGED: ${{ needs.detect.outputs.blockchain }}
         run: |
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no "${EC2_USER}@${BACKEND_HOST}" <<EOF
           set -e
@@ -144,6 +164,18 @@ jobs:
             cd /home/${EC2_USER}/ProyectoHornero/backoffice
             docker compose pull backoffice
             docker compose up -d backoffice
+          fi
+
+          if [ "${BLOCKCHAIN_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/blockchain
+            docker compose -f compose.yaml pull ledger-service
+            docker compose -f compose.yaml up -d ledger-service
+          fi
+
+          if [ "${SCHEDULER_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/scheduler
+            docker compose pull scheduler
+            docker compose up -d scheduler
           fi
 
           # Reclaim disk: drop dangling images left behind by pulling :latest.

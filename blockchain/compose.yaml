@@ -1,5 +1,6 @@
 services:
   ledger-service:
+    image: ghcr.io/${GHCR_NAMESPACE:-proyectohornero}/hornero-blockchain:latest
     build:
       context: ./ledger
       dockerfile: Dockerfile
