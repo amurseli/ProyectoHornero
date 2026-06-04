@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, Eye, ChevronDown, ChevronUp, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '../../components'
 import api from '../../utils/api'
+import { formatDate } from '../../utils/datetime'
 import './Verifications.css'
 
 const STATUS_LABELS = {
@@ -147,7 +148,7 @@ function Verifications() {
                       {getStatusIcon(v.verificationStatus)}
                       {STATUS_LABELS[v.verificationStatus]}
                     </span>
-                    <span className="av-card-date">{new Date(v.createdAt).toLocaleDateString('es-AR')}</span>
+                    <span className="av-card-date">{formatDate(v.createdAt)}</span>
                     {expandedId === v.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                   </div>
                 </div>
@@ -268,14 +269,14 @@ function Verifications() {
                       <div className="av-rejection-info">
                         <strong>Motivo de rechazo:</strong> {v.rejectionReason}
                         <br />
-                        <small>Rechazado por {v.verifiedBy} el {new Date(v.verifiedAt).toLocaleDateString('es-AR')}</small>
+                        <small>Rechazado por {v.verifiedBy} el {formatDate(v.verifiedAt)}</small>
                       </div>
                     )}
 
                     {v.verificationStatus === 'APPROVED' && (
                       <div className="av-approved-info">
                         <CheckCircle size={16} />
-                        <span>Aprobado por {v.verifiedBy} el {new Date(v.verifiedAt).toLocaleDateString('es-AR')}</span>
+                        <span>Aprobado por {v.verifiedBy} el {formatDate(v.verifiedAt)}</span>
                       </div>
                     )}
                   </div>
