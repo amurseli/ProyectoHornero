@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, BarChart3, FilePenLine, Clock3, Target, Users, Newspaper } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
+import { formatDate, getCampaignTimeLeft } from '$utils/datetime'
 import EditDraftCampaign from './EditDraftCampaign'
 import CampaignUpdatesManager from '$components/campaign-updates/CampaignUpdatesManager'
 import './CreatorCampaignDashboard.css'
@@ -11,15 +12,17 @@ function formatMoney(amount) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0)
 }
 
-function formatDate(value) {
-  if (!value) return 'N/D'
-  return new Date(value).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
+// Etiquetas legibles en español para el estado del aportante en la tabla.
+const ESTADO_APORTANTE_LABELS = {
+  APPROVED: 'Aprobado',
+  PENDING: 'Pendiente',
+  REJECTED: 'Rechazado',
 }
 
-function getDaysLeft(endDate) {
-  if (!endDate) return null
-  return Math.max(0, Math.ceil((new Date(endDate) - new Date()) / 86400000))
+function labelEstadoAportante(value) {
+  return ESTADO_APORTANTE_LABELS[value] || value || 'N/D'
 }
+
 
 function StatisticsSection({ detail, rewards }) {
   const campaign = detail?.campaign
@@ -92,7 +95,7 @@ function StatisticsSection({ detail, rewards }) {
   const currentAmount = Number(campaign.currentAmount || 0)
   const targetAmount = Number(campaign.targetAmount || 0)
   const progress = targetAmount > 0 ? Math.min(100, (currentAmount / targetAmount) * 100) : 0
-  const daysLeft = getDaysLeft(campaign.endDate)
+  const timeLeft = getCampaignTimeLeft(campaign.endDate)
   const uniqueApprovedContributors = contributorRows.filter((row) => row.approvedAmount > 0).length
 
   return (
@@ -107,8 +110,8 @@ function StatisticsSection({ detail, rewards }) {
         <article className="ccd-stat-card">
           <div className="ccd-stat-icon"><Clock3 size={18} /></div>
           <span className="ccd-stat-label">Tiempo restante</span>
-          <strong className="ccd-stat-value">{daysLeft === null ? 'N/D' : daysLeft}</strong>
-          <span className="ccd-stat-helper">{daysLeft === 0 ? 'Campaña finalizada' : `Cierra el ${formatDate(campaign.endDate)}`}</span>
+          <strong className="ccd-stat-value">{timeLeft.ended ? 'Finalizada' : timeLeft.text}</strong>
+          <span className="ccd-stat-helper">{timeLeft.ended ? 'Campaña finalizada' : `Cierra el ${formatDate(campaign.endDate, 'N/D')}`}</span>
         </article>
         <article className="ccd-stat-card">
           <div className="ccd-stat-icon"><Users size={18} /></div>
@@ -148,7 +151,7 @@ function StatisticsSection({ detail, rewards }) {
                     <td>{contributor.rewardLabel}</td>
                     <td>
                       <span className={`ccd-pill ccd-pill--${String(contributor.statusLabel || '').toLowerCase()}`}>
-                        {contributor.statusLabel}
+                        {labelEstadoAportante(contributor.statusLabel)}
                       </span>
                     </td>
                     <td>{formatDate(contributor.latestContributionAt)}</td>

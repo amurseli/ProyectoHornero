@@ -10,6 +10,7 @@ import {
 import ReactPlayer from "react-player"
 import { useCampaignSearch } from "../../hooks/useCampaignSearch"
 import { getCampaignPath } from "../../utils/campaignService"
+import { getCampaignTimeLeft } from "$utils/datetime"
 
 function SearchResultRow({ campaign, showCategory, onMouseEnter, onMouseLeave, onClick }) {
   const goal = campaign.goal || campaign.targetAmount || 0
@@ -46,7 +47,7 @@ function CampaignPreview({ campaign }) {
   const goal = campaign.goal || campaign.targetAmount || 0
   const raised = campaign.currentAmount ?? campaign.raised ?? 0
   const progress = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0
-  const daysLeft = campaign.daysLeft ?? 0
+  const timeLeft = getCampaignTimeLeft(campaign.endDate)
   const videoUrl = campaign.videoUrl || null
 
   useEffect(() => {
@@ -99,9 +100,9 @@ function CampaignPreview({ campaign }) {
           <div className="navsearch-preview-stat-right">
             <p className="navsearch-preview-stat-value">
               <FiCalendar className="navsearch-preview-icon" />
-              {daysLeft > 0 ? `${daysLeft} días` : "Finalizada"}
+              {timeLeft.ended ? "Finalizada" : timeLeft.text}
             </p>
-            <p className="navsearch-preview-stat-label">{daysLeft > 0 ? "restantes" : ""}</p>
+            <p className="navsearch-preview-stat-label">{timeLeft.ended ? "" : "restantes"}</p>
           </div>
         </div>
       </div>
