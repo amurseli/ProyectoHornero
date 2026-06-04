@@ -18,4 +18,5 @@ public interface TransactionHistoryProjection {
     String getReference();
     String getHashTx();
     LocalDateTime getCreatedAt();
+    String getOperationNumber();
 }
