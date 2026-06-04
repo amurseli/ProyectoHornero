@@ -4,6 +4,7 @@ import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
 import { getMediaImageSrc } from '$utils/imageSources'
+import { browserDiffersFromArgentina, argentinaMidnight, argentinaYmd, formatInBrowserTime } from '$utils/datetime'
 import {
   TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
   GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
@@ -114,6 +115,17 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
   const durationNum = Math.min(DURATION_MAX, Math.max(DURATION_MIN, Number(form.duration) || DURATION_MIN))
   const previewEndDate = new Date(Date.now() + durationNum * 86400000)
   const immutableFieldsLocked = disableImmutableFields && campaign.status !== 'DRAFT'
+
+  // En otra zona horaria, mostramos en hora local cuándo abre/cierra la campaña (las fechas se
+  // guardan como 00:00 de Argentina, GMT-3). Si ya está publicada, usamos las fechas fijas.
+  const tzStartYmd = immutableFieldsLocked ? campaign.startDate : argentinaYmd(new Date())
+  const tzEndYmd = immutableFieldsLocked ? campaign.endDate : argentinaYmd(previewEndDate)
+  const tzHint = browserDiffersFromArgentina() && tzEndYmd
+    ? {
+        start: formatInBrowserTime(argentinaMidnight(tzStartYmd)),
+        end: formatInBrowserTime(argentinaMidnight(tzEndYmd)),
+      }
+    : null
 
   const goalNum = parseAmount(form.goal)
   const goalError =
@@ -279,6 +291,12 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
               ? <>La duración queda fija después de publicar la campaña. Finaliza el <strong>{formatDateAr(campaign.endDate)}</strong></>
               : <>Si publicás hoy, finaliza el <strong>{formatDateAr(previewEndDate)}</strong></>}
           </span>
+          {tzHint && (
+            <span className="edc-hint edc-hint--tz">
+              Las fechas usan el horario de Argentina (GMT-3). En tu zona horaria, la campaña
+              comienza el <strong>{tzHint.start}</strong> y finaliza el <strong>{tzHint.end}</strong>.
+            </span>
+          )}
         </div>
         <div className="edc-field">
           <label className="edc-label">Meta <span className="edc-optional">(monto objetivo a recaudar)</span></label>

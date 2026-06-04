@@ -284,6 +284,11 @@
 .wizard-helper--error {
   color: var(--color-danger, #c44);
 }
+.wizard-helper--tz {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--color-text-secondary, #475569);
+}
 
 /* Compact textarea used for short descriptions (200-char limit) */
 .wizard-textarea--short {

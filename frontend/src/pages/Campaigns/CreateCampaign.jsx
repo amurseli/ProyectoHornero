@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Upload, X } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
+import { browserDiffersFromArgentina, argentinaMidnight, argentinaYmd, formatInBrowserTime } from '$utils/datetime'
 import './CreateCampaign.css'
 import { useUser } from '../../store/useUser'
 import SouthAmericaMap from '$components/SouthAmericaMap/SouthAmericaMap'
@@ -134,6 +135,15 @@ function StepDetalles({ form, currency, onChange }) {
   const durationNum = Math.min(DURATION_MAX, Math.max(DURATION_MIN, Number(form.duration) || DURATION_MIN))
   const endDate = new Date(Date.now() + durationNum * 86400000)
 
+  // Si el creador está en otra zona horaria, le mostramos en su hora local cuándo abre y cierra
+  // la campaña (las fechas se guardan como 00:00 de Argentina, GMT-3).
+  const tzHint = browserDiffersFromArgentina()
+    ? {
+        start: formatInBrowserTime(argentinaMidnight(argentinaYmd(new Date()))),
+        end: formatInBrowserTime(argentinaMidnight(argentinaYmd(endDate))),
+      }
+    : null
+
   const goalNum = parseAmount(form.goal)
   const goalError =
     form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN || goalNum > GOAL_MAX)
@@ -228,6 +238,12 @@ function StepDetalles({ form, currency, onChange }) {
           <span className="wizard-helper">
             Si publicás hoy, finaliza el <strong>{formatDateAr(endDate)}</strong>
           </span>
+          {tzHint && (
+            <span className="wizard-helper wizard-helper--tz">
+              Las fechas usan el horario de Argentina (GMT-3). En tu zona horaria, la campaña
+              comienza el <strong>{tzHint.start}</strong> y finaliza el <strong>{tzHint.end}</strong>.
+            </span>
+          )}
         </div>
         <div className="wizard-form-group">
           <label className="wizard-label">Meta <span>(monto objetivo a recaudar)</span></label>
