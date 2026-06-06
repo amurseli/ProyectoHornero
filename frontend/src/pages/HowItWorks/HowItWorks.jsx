@@ -1,119 +1,119 @@
 import { useNavigate } from 'react-router-dom'
 import { Button } from '$components/ui'
-import { Rocket, ShieldCheck, Users, BarChart2, Zap, Globe, ArrowRight } from 'lucide-react'
+import { Search, HeartHandshake, Link2, BarChart2, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react'
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
+const STEPS = [
+  { number: '01', title: 'Descubrí proyectos', desc: 'Explorá campañas de creadores de toda la región y encontrá las ideas que querés ver realizadas.' },
+  { number: '02', title: 'Apoyá con tu aporte', desc: 'Elegí cuánto querés aportar y sumate con un par de clics usando medios de pago locales.' },
+  { number: '03', title: 'Seguí en blockchain', desc: 'Cada movimiento de fondos queda registrado de forma transparente y verificable en tiempo real.' },
+  { number: '04', title: 'Mirá cómo despega', desc: 'Acompañá el progreso de la campaña y recibí novedades del creador hasta que alcance su meta.' },
+]
+
 const FEATURES = [
   {
-    icon: Rocket,
-    title: 'Lanzá en minutos',
-    desc: 'Nuestro wizard te guía paso a paso para publicar tu campaña sin complicaciones.',
-  },
-  {
     icon: ShieldCheck,
-    title: 'Transparencia total',
-    desc: 'Cada movimiento de fondos queda registrado en blockchain. Tus backers pueden verificarlo en tiempo real.',
+    title: 'Transparencia blockchain',
+    desc: 'Los fondos y su uso quedan registrados en la blockchain. Nada de cajas negras: todo es auditable.',
   },
   {
-    icon: Users,
-    title: 'Comunidad activa',
-    desc: 'Conectate con miles de personas que ya están apoyando proyectos creativos en Argentina.',
+    icon: HeartHandshake,
+    title: 'Apoyo directo',
+    desc: 'Tu aporte llega directo al creador, sin intermediarios que se queden con una tajada innecesaria.',
+  },
+  {
+    icon: Link2,
+    title: 'Verificable por cualquiera',
+    desc: 'No hace falta confiar a ciegas: podés comprobar cada transacción vos mismo en la cadena.',
   },
   {
     icon: BarChart2,
-    title: 'Seguí tu progreso',
-    desc: 'Panel de control con métricas en tiempo real: recaudación, visitas y conversiones.',
+    title: 'Progreso en vivo',
+    desc: 'Mirá la recaudación y el avance de cada campaña actualizándose en tiempo real.',
   },
   {
-    icon: Zap,
-    title: 'Sin burocracia',
-    desc: 'Creá tu campaña, recibí los fondos. Sin intermediarios innecesarios ni procesos interminables.',
+    icon: Search,
+    title: 'Proyectos curados',
+    desc: 'Descubrí ideas creativas de la región organizadas para que encuentres lo que te interesa.',
   },
   {
-    icon: Globe,
-    title: 'Alcance regional',
-    desc: 'Hornero está pensado para proyectos latinoamericanos con medios de pago locales.',
+    icon: Sparkles,
+    title: 'Simple de usar',
+    desc: 'Pensado para que apoyar o lanzar un proyecto sea cuestión de minutos, no de trámites.',
   },
-]
-
-const STEPS = [
-  { number: '01', title: 'Contá tu idea', desc: 'Completá el formulario con los detalles de tu proyecto: título, descripción, objetivo y duración.' },
-  { number: '02', title: 'Subí tu media', desc: 'Agregá imágenes y un video para que tu campaña sea irresistible.' },
-  { number: '03', title: 'Publicá', desc: 'Revisá todo y publicá. Tu campaña aparece inmediatamente en Hornero.' },
-  { number: '04', title: 'Recibí el apoyo', desc: 'La comunidad empieza a apoyarte. Los fondos llegan directo a vos.' },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ForCreators() {
+function HowItWorks() {
   const navigate = useNavigate()
 
   return (
-    <div className="fc-page">
+    <div className="hiw-page">
 
       {/* Hero */}
-      <section className="fc-hero">
-        <div className="fc-hero-decor fc-hero-decor-1" />
-        <div className="fc-hero-decor fc-hero-decor-2" />
-        <div className="fc-hero-inner">
-          <span className="fc-eyebrow">Para creadores</span>
-          <h1 className="fc-hero-title">Tu idea merece<br />ser real</h1>
-          <p className="fc-hero-desc">
-            Hornero es la plataforma de crowdfunding con transparencia blockchain para que tus proyectos despeguen. Sin letra chica, sin vueltas.
+      <section className="hiw-hero">
+        <div className="hiw-hero-decor hiw-hero-decor-1" />
+        <div className="hiw-hero-decor hiw-hero-decor-2" />
+        <div className="hiw-hero-inner">
+          <span className="hiw-eyebrow">Cómo funciona</span>
+          <h1 className="hiw-hero-title">Apoyar un proyecto<br />nunca fue tan claro</h1>
+          <p className="hiw-hero-desc">
+            Hornero conecta a creadores con personas que quieren ver sus ideas hechas realidad, con la transparencia de la blockchain en cada paso.
           </p>
-          <div className="fc-hero-actions">
-            <Button variant="primary" size="lg" onClick={() => navigate('/my-campaigns/new')}>
-              Crear campaña gratis
+          <div className="hiw-hero-actions">
+            <Button variant="primary" size="lg" onClick={() => navigate('/explorar')}>
+              Explorar campañas
               <ArrowRight size={16} />
             </Button>
-            <Button variant="secondary" size="lg" onClick={() => navigate('/explorar')}>
-              Ver proyectos
+            <Button variant="secondary" size="lg" onClick={() => navigate('/for-creators')}>
+              Quiero crear una campaña
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="fc-section fc-features-section">
-        <div className="fc-container">
-          <span className="fc-section-eyebrow">Herramientas</span>
-          <h2 className="fc-section-title">Todo lo que necesitás</h2>
-          <p className="fc-section-desc">Una plataforma construida pensando en los creadores.</p>
-          <div className="fc-features-grid">
-            {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="fc-feature-card">
-                <div className="fc-feature-icon">
-                  <Icon size={20} strokeWidth={1.8} />
+      {/* Steps */}
+      <section className="hiw-section hiw-steps-section">
+        <div className="hiw-container">
+          <span className="hiw-section-eyebrow">Proceso</span>
+          <h2 className="hiw-section-title">En cuatro pasos</h2>
+          <p className="hiw-section-desc">Del descubrimiento al apoyo, sin vueltas.</p>
+          <div className="hiw-steps">
+            {STEPS.map((s, i) => (
+              <div key={s.number} className="hiw-step">
+                <div className="hiw-step-header">
+                  <span className="hiw-step-number-bg">{s.number}</span>
+                  <span className="hiw-step-number">{s.number}</span>
                 </div>
-                <div>
-                  <h3 className="fc-feature-title">{title}</h3>
-                  <p className="fc-feature-desc">{desc}</p>
+                <div className="hiw-step-content">
+                  <h3 className="hiw-step-title">{s.title}</h3>
+                  <p className="hiw-step-desc">{s.desc}</p>
                 </div>
+                {i < STEPS.length - 1 && <div className="hiw-step-connector" />}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="fc-section fc-steps-section">
-        <div className="fc-container">
-          <span className="fc-section-eyebrow">Proceso</span>
-          <h2 className="fc-section-title">Cómo funciona</h2>
-          <p className="fc-section-desc">De la idea a la campaña en cuatro pasos.</p>
-          <div className="fc-steps">
-            {STEPS.map((s, i) => (
-              <div key={s.number} className="fc-step">
-                <div className="fc-step-header">
-                  <span className="fc-step-number-bg">{s.number}</span>
-                  <span className="fc-step-number">{s.number}</span>
+      {/* Features */}
+      <section className="hiw-section hiw-features-section">
+        <div className="hiw-container">
+          <span className="hiw-section-eyebrow">Por qué Hornero</span>
+          <h2 className="hiw-section-title">Confianza por diseño</h2>
+          <p className="hiw-section-desc">Una plataforma donde apoyar proyectos es transparente de verdad.</p>
+          <div className="hiw-features-grid">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="hiw-feature-card">
+                <div className="hiw-feature-icon">
+                  <Icon size={20} strokeWidth={1.8} />
                 </div>
-                <div className="fc-step-content">
-                  <h3 className="fc-step-title">{s.title}</h3>
-                  <p className="fc-step-desc">{s.desc}</p>
+                <div>
+                  <h3 className="hiw-feature-title">{title}</h3>
+                  <p className="hiw-feature-desc">{desc}</p>
                 </div>
-                {i < STEPS.length - 1 && <div className="fc-step-connector" />}
               </div>
             ))}
           </div>
@@ -121,13 +121,13 @@ function ForCreators() {
       </section>
 
       {/* CTA final */}
-      <section className="fc-cta">
-        <div className="fc-cta-circle" />
-        <div className="fc-container fc-cta-inner">
-          <h2 className="fc-cta-title">¿Estás listo?</h2>
-          <p className="fc-cta-desc">Empezá hoy. Es gratis y tarda menos de 10 minutos.</p>
-          <Button variant="primary" size="lg" onClick={() => navigate('/my-campaigns/new')}>
-            Crear mi campaña
+      <section className="hiw-cta">
+        <div className="hiw-cta-circle" />
+        <div className="hiw-container hiw-cta-inner">
+          <h2 className="hiw-cta-title">¿Listo para empezar?</h2>
+          <p className="hiw-cta-desc">Encontrá un proyecto para apoyar o lanzá el tuyo hoy mismo.</p>
+          <Button variant="primary" size="lg" onClick={() => navigate('/explorar')}>
+            Ver proyectos
             <ArrowRight size={16} />
           </Button>
         </div>
@@ -135,19 +135,19 @@ function ForCreators() {
 
       <style>{`
         /* ── Page ── */
-        .fc-page {
+        .hiw-page {
           min-height: 100vh;
           overflow: hidden;
         }
 
-        .fc-container {
+        .hiw-container {
           max-width: var(--max-width);
           margin: 0 auto;
           padding: 0 var(--space-xl);
         }
 
         /* ── Hero ── */
-        .fc-hero {
+        .hiw-hero {
           position: relative;
           background: var(--color-bg-primary);
           border-bottom: 1px solid var(--color-border);
@@ -156,13 +156,13 @@ function ForCreators() {
           overflow: hidden;
         }
 
-        .fc-hero-decor {
+        .hiw-hero-decor {
           position: absolute;
           border-radius: 50%;
           pointer-events: none;
         }
 
-        .fc-hero-decor-1 {
+        .hiw-hero-decor-1 {
           width: 600px;
           height: 600px;
           top: -200px;
@@ -170,7 +170,7 @@ function ForCreators() {
           background: var(--color-primary);
         }
 
-        .fc-hero-decor-2 {
+        .hiw-hero-decor-2 {
           width: 400px;
           height: 400px;
           bottom: -150px;
@@ -178,7 +178,7 @@ function ForCreators() {
           background: var(--color-accent);
         }
 
-        .fc-hero-inner {
+        .hiw-hero-inner {
           max-width: 680px;
           margin: 0 auto;
           display: flex;
@@ -189,7 +189,7 @@ function ForCreators() {
           z-index: 1;
         }
 
-        .fc-eyebrow {
+        .hiw-eyebrow {
           font-size: var(--font-size-xs);
           font-weight: 700;
           text-transform: uppercase;
@@ -201,7 +201,7 @@ function ForCreators() {
           border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
         }
 
-        .fc-hero-title {
+        .hiw-hero-title {
           font-size: 4rem;
           font-weight: 800;
           line-height: 1.05;
@@ -210,15 +210,15 @@ function ForCreators() {
           margin: 0;
         }
 
-        .fc-hero-desc {
+        .hiw-hero-desc {
           font-size: var(--font-size-lg);
           color: var(--color-text-secondary);
           line-height: 1.65;
           margin: 0;
-          max-width: 500px;
+          max-width: 520px;
         }
 
-        .fc-hero-actions {
+        .hiw-hero-actions {
           display: flex;
           gap: 0.75rem;
           flex-wrap: wrap;
@@ -227,11 +227,11 @@ function ForCreators() {
         }
 
         /* ── Section shared ── */
-        .fc-section {
+        .hiw-section {
           padding: 5.5rem 0;
         }
 
-        .fc-section-eyebrow {
+        .hiw-section-eyebrow {
           display: block;
           font-size: var(--font-size-xs);
           font-weight: 700;
@@ -242,17 +242,17 @@ function ForCreators() {
           margin-bottom: 0.75rem;
         }
 
-        .fc-features-section {
+        .hiw-features-section {
           background: var(--color-bg-primary);
         }
 
-        .fc-steps-section {
+        .hiw-steps-section {
           background: color-mix(in srgb, var(--color-muted) 50%, var(--color-bg-primary));
           border-top: 1px solid var(--color-border);
           border-bottom: 1px solid var(--color-border);
         }
 
-        .fc-section-title {
+        .hiw-section-title {
           font-size: 2.25rem;
           font-weight: 800;
           color: var(--color-text-primary);
@@ -261,7 +261,7 @@ function ForCreators() {
           letter-spacing: -0.02em;
         }
 
-        .fc-section-desc {
+        .hiw-section-desc {
           font-size: var(--font-size-lg);
           color: var(--color-text-muted);
           text-align: center;
@@ -269,7 +269,7 @@ function ForCreators() {
         }
 
         /* ── Features grid (bento style) ── */
-        .fc-features-grid {
+        .hiw-features-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 1px;
@@ -279,7 +279,7 @@ function ForCreators() {
           overflow: hidden;
         }
 
-        .fc-feature-card {
+        .hiw-feature-card {
           padding: 2rem;
           background: var(--color-bg-primary);
           display: flex;
@@ -288,11 +288,11 @@ function ForCreators() {
           transition: background var(--transition-base);
         }
 
-        .fc-feature-card:hover {
+        .hiw-feature-card:hover {
           background: color-mix(in srgb, var(--color-muted) 60%, var(--color-bg-primary));
         }
 
-        .fc-feature-icon {
+        .hiw-feature-icon {
           width: 2.5rem;
           height: 2.5rem;
           min-width: 2.5rem;
@@ -305,45 +305,45 @@ function ForCreators() {
           transition: background var(--transition-base), color var(--transition-base);
         }
 
-        .fc-feature-card:hover .fc-feature-icon {
+        .hiw-feature-card:hover .hiw-feature-icon {
           background: var(--color-primary);
           color: white;
         }
 
-        .fc-feature-title {
+        .hiw-feature-title {
           font-size: var(--font-size-base);
           font-weight: 700;
           color: var(--color-text-primary);
           margin-bottom: 0.35rem;
         }
 
-        .fc-feature-desc {
+        .hiw-feature-desc {
           font-size: var(--font-size-sm);
           color: var(--color-text-muted);
           line-height: 1.6;
         }
 
         /* ── Steps (editorial numbers) ── */
-        .fc-steps {
+        .hiw-steps {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 0;
         }
 
-        .fc-step {
+        .hiw-step {
           position: relative;
           padding: 2rem 1.5rem;
           text-align: left;
         }
 
-        .fc-step-header {
+        .hiw-step-header {
           position: relative;
           height: 5rem;
           margin-bottom: 1.25rem;
           overflow: hidden;
         }
 
-        .fc-step-number-bg {
+        .hiw-step-number-bg {
           font-size: 6rem;
           font-weight: 900;
           color: color-mix(in srgb, var(--color-primary) 20%, transparent);
@@ -355,7 +355,7 @@ function ForCreators() {
           user-select: none;
         }
 
-        .fc-step-number {
+        .hiw-step-number {
           position: relative;
           z-index: 1;
           display: inline-flex;
@@ -374,12 +374,12 @@ function ForCreators() {
           transition: background var(--transition-base), color var(--transition-base);
         }
 
-        .fc-step:hover .fc-step-number {
+        .hiw-step:hover .hiw-step-number {
           background: var(--color-primary);
           color: white;
         }
 
-        .fc-step-connector {
+        .hiw-step-connector {
           position: absolute;
           top: 3.25rem;
           right: -1rem;
@@ -389,32 +389,32 @@ function ForCreators() {
           z-index: 2;
         }
 
-        .fc-step-content {
+        .hiw-step-content {
           position: relative;
         }
 
-        .fc-step-title {
+        .hiw-step-title {
           font-size: var(--font-size-base);
           font-weight: 700;
           color: var(--color-text-primary);
           margin-bottom: 0.5rem;
         }
 
-        .fc-step-desc {
+        .hiw-step-desc {
           font-size: var(--font-size-sm);
           color: var(--color-text-muted);
           line-height: 1.65;
         }
 
         /* ── CTA (solid bg, no gradient) ── */
-        .fc-cta {
+        .hiw-cta {
           background: var(--color-primary);
           padding: 5rem 0;
           position: relative;
           overflow: hidden;
         }
 
-        .fc-cta-circle {
+        .hiw-cta-circle {
           position: absolute;
           width: 500px;
           height: 500px;
@@ -425,7 +425,7 @@ function ForCreators() {
           pointer-events: none;
         }
 
-        .fc-cta-inner {
+        .hiw-cta-inner {
           text-align: center;
           display: flex;
           flex-direction: column;
@@ -435,7 +435,7 @@ function ForCreators() {
           z-index: 1;
         }
 
-        .fc-cta-title {
+        .hiw-cta-title {
           font-size: 2.75rem;
           font-weight: 800;
           color: white;
@@ -443,46 +443,46 @@ function ForCreators() {
           letter-spacing: -0.02em;
         }
 
-        .fc-cta-desc {
+        .hiw-cta-desc {
           font-size: var(--font-size-lg);
           color: rgba(255, 255, 255, 0.6);
           margin: 0;
         }
 
-        .fc-cta .btn-primary,
-        .fc-cta [class*="primary"] {
+        .hiw-cta .btn-primary,
+        .hiw-cta [class*="primary"] {
           background: white !important;
           color: var(--color-primary) !important;
           border-color: white !important;
         }
 
-        .fc-cta .btn-primary:hover,
-        .fc-cta [class*="primary"]:hover {
+        .hiw-cta .btn-primary:hover,
+        .hiw-cta [class*="primary"]:hover {
           box-shadow: 0 4px 24px rgba(255, 255, 255, 0.15) !important;
         }
 
         /* ── Responsive ── */
         @media (max-width: 1024px) {
-          .fc-features-grid { grid-template-columns: repeat(2, 1fr); }
-          .fc-steps {
+          .hiw-features-grid { grid-template-columns: repeat(2, 1fr); }
+          .hiw-steps {
             grid-template-columns: repeat(2, 1fr);
             gap: 1.5rem;
           }
-          .fc-step-connector { display: none; }
+          .hiw-step-connector { display: none; }
         }
 
         @media (max-width: 640px) {
-          .fc-hero { padding: 5rem var(--space-md) 4rem; }
-          .fc-hero-title { font-size: 2.75rem; }
-          .fc-features-grid { grid-template-columns: 1fr; }
-          .fc-steps { grid-template-columns: 1fr; }
-          .fc-section { padding: 3.5rem 0; }
-          .fc-cta-title { font-size: 2rem; }
-          .fc-step { padding: 1.5rem 1rem; }
+          .hiw-hero { padding: 5rem var(--space-md) 4rem; }
+          .hiw-hero-title { font-size: 2.75rem; }
+          .hiw-features-grid { grid-template-columns: 1fr; }
+          .hiw-steps { grid-template-columns: 1fr; }
+          .hiw-section { padding: 3.5rem 0; }
+          .hiw-cta-title { font-size: 2rem; }
+          .hiw-step { padding: 1.5rem 1rem; }
         }
       `}</style>
     </div>
   )
 }
 
-export default ForCreators
+export default HowItWorks
