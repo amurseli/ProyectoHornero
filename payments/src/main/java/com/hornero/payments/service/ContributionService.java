@@ -409,13 +409,18 @@ public class ContributionService {
                     .currencyId("ARS")
                     .build();
 
-            Preference preference = new PreferenceClient().create(
-                    PreferenceRequest.builder()
-                            .items(List.of(item))
-                            .backUrls(backUrls)
-                            .externalReference(String.valueOf(contributionId))
-                            .build()
-            );
+            PreferenceRequest.PreferenceRequestBuilder requestBuilder = PreferenceRequest.builder()
+                    .items(List.of(item))
+                    .backUrls(backUrls)
+                    .externalReference(String.valueOf(contributionId));
+
+            // MP rechaza auto_return cuando el back_url.success no es una URL pública HTTPS
+            // (devuelve 400 "auto_return invalid. back_url.success must be defined" para localhost/http)
+            if (returnBase.startsWith("https://")) {
+                requestBuilder.autoReturn("approved");
+            }
+
+            Preference preference = new PreferenceClient().create(requestBuilder.build());
             return preference.getId();
         } catch (MPApiException e) {
             logger.warn("No se pudo crear la Preference de MP para contribucion {}: HTTP {} - {}",

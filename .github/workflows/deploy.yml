@@ -8,6 +8,9 @@ on:
       - 'frontend/**'
       - 'payments/**'
       - 'backoffice/**'
+      - 'scheduler/**'
+      - 'blockchain/**'
+      - 'notifications/**'
       - '.github/workflows/deploy.yml'
 
 concurrency:
@@ -26,6 +29,9 @@ jobs:
       frontend: ${{ steps.changes.outputs.frontend }}
       payments: ${{ steps.changes.outputs.payments }}
       backoffice: ${{ steps.changes.outputs.backoffice }}
+      scheduler: ${{ steps.changes.outputs.scheduler }}
+      blockchain: ${{ steps.changes.outputs.blockchain }}
+      notifications: ${{ steps.changes.outputs.notifications }}
       namespace: ${{ steps.namespace.outputs.value }}
     steps:
       - uses: actions/checkout@v4
@@ -38,17 +44,9 @@ jobs:
             frontend: 'frontend/**'
             payments: 'payments/**'
             backoffice: 'backoffice/**'
-
-  build:
-    needs: detect
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [backend, frontend, payments, backoffice]
-    steps:
-      - name: Skip if unchanged
-        if: needs.detect.outputs[matrix.service] != 'true'
-        run: echo "No changes" && exit 0
+            scheduler: 'scheduler/**'
+            blockchain: 'blockchain/**'
+            notifications: 'notifications/**'
 
       - name: Normalize GHCR namespace
         id: namespace
@@ -60,7 +58,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [backend, frontend, payments, backoffice]
+        include:
+          - service: backend
+            context: ./backend
+          - service: frontend
+            context: ./frontend
+          - service: payments
+            context: ./payments
+          - service: backoffice
+            context: ./backoffice
+          - service: scheduler
+            context: ./scheduler
+          - service: blockchain
+            context: ./blockchain/ledger
+          - service: notifications
+            context: ./notifications
 
     steps:
       - name: Skip unchanged service
@@ -96,7 +108,7 @@ jobs:
         if: needs.detect.outputs[matrix.service] == 'true'
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.service }}
+          context: ${{ matrix.context }}
           push: true
           tags: ghcr.io/${{ needs.detect.outputs.namespace }}/hornero-${{ matrix.service }}:latest
           cache-from: type=gha
@@ -105,34 +117,16 @@ jobs:
   deploy:
     needs: [detect, build]
     runs-on: ubuntu-latest
-
     steps:
       - name: Write SSH private key
         env:
-          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
-        run: |
-          printf '%s\n' "$FRONTEND_ENV" > ./frontend/.env.frontend
-          echo "--- .env.frontend size and line count ---"
-          wc -lc ./frontend/.env.frontend
-          echo "--- variable names only (no values) ---"
-          grep -oE '^[A-Z_]+' ./frontend/.env.frontend || echo "EMPTY FILE"
-      
-      - uses: docker/build-push-action@v5
-        if: needs.detect.outputs[matrix.service] == 'true'
-        with:
-          context: ./${{ matrix.service }}
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/hornero-${{ matrix.service }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    needs: [detect, build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: SSH and pull
-        env:
           SSH_KEY: ${{ secrets.BACKEND_SSH_KEY }}
+        run: |
+          printf "%s" "$SSH_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+      - name: Deploy on EC2
+        env:
           EC2_USER: ${{ secrets.EC2_USER }}
           BACKEND_HOST: ${{ secrets.BACKEND_HOST }}
           GHCR_NAMESPACE: ${{ needs.detect.outputs.namespace }}
@@ -142,9 +136,10 @@ jobs:
           FRONTEND_CHANGED: ${{ needs.detect.outputs.frontend }}
           PAYMENTS_CHANGED: ${{ needs.detect.outputs.payments }}
           BACKOFFICE_CHANGED: ${{ needs.detect.outputs.backoffice }}
+          SCHEDULER_CHANGED: ${{ needs.detect.outputs.scheduler }}
+          BLOCKCHAIN_CHANGED: ${{ needs.detect.outputs.blockchain }}
+          NOTIFICATIONS_CHANGED: ${{ needs.detect.outputs.notifications }}
         run: |
-          printf "%s" "$SSH_KEY" > /tmp/deploy_key
-          chmod 600 /tmp/deploy_key
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no "${EC2_USER}@${BACKEND_HOST}" <<EOF
           set -e
           cd /home/${EC2_USER}/ProyectoHornero
@@ -176,5 +171,29 @@ jobs:
             docker compose pull backoffice
             docker compose up -d backoffice
           fi
+
+          if [ "${BLOCKCHAIN_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/blockchain
+            docker compose -f compose.yaml pull ledger-service
+            docker compose -f compose.yaml up -d ledger-service
+          fi
+
+          if [ "${SCHEDULER_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/scheduler
+            docker compose pull scheduler
+            docker compose up -d scheduler
+          fi
+
+          if [ "${NOTIFICATIONS_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/notifications
+            docker compose pull notifications
+            docker compose up -d notifications
+          fi
+
+          # Reclaim disk: drop dangling images left behind by pulling :latest.
+          docker image prune -f
           EOF
-          rm -f /tmp/deploy_key
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f /tmp/deploy_key
