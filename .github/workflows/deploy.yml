@@ -11,10 +11,40 @@ on:
       - 'scheduler/**'
       - 'blockchain/**'
       - '.github/workflows/deploy.yml'
+  # Manual rebuild + redeploy for when a push-triggered deploy missed a service
+  # (e.g. a queued/cancelled run). Tick the services to force.
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: 'Rebuild & deploy backend'
+        type: boolean
+        default: false
+      frontend:
+        description: 'Rebuild & deploy frontend'
+        type: boolean
+        default: false
+      payments:
+        description: 'Rebuild & deploy payments'
+        type: boolean
+        default: false
+      backoffice:
+        description: 'Rebuild & deploy backoffice'
+        type: boolean
+        default: false
+      scheduler:
+        description: 'Rebuild & deploy scheduler'
+        type: boolean
+        default: false
+      blockchain:
+        description: 'Rebuild & deploy blockchain'
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-main
-  cancel-in-progress: true
+  # Queue deploys instead of cancelling: a second push must not abort an
+  # in-flight deploy, or that push's changed services never get built.
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -24,18 +54,21 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.changes.outputs.backend }}
-      frontend: ${{ steps.changes.outputs.frontend }}
-      payments: ${{ steps.changes.outputs.payments }}
-      backoffice: ${{ steps.changes.outputs.backoffice }}
-      scheduler: ${{ steps.changes.outputs.scheduler }}
-      blockchain: ${{ steps.changes.outputs.blockchain }}
+      backend: ${{ steps.resolve.outputs.backend }}
+      frontend: ${{ steps.resolve.outputs.frontend }}
+      payments: ${{ steps.resolve.outputs.payments }}
+      backoffice: ${{ steps.resolve.outputs.backoffice }}
+      scheduler: ${{ steps.resolve.outputs.scheduler }}
+      blockchain: ${{ steps.resolve.outputs.blockchain }}
       namespace: ${{ steps.namespace.outputs.value }}
     steps:
       - uses: actions/checkout@v4
 
+      # On push, diff the commit to decide which services changed. On manual
+      # dispatch there is no diff, so this is skipped and the inputs are used.
       - uses: dorny/paths-filter@v3
         id: changes
+        if: github.event_name == 'push'
         with:
           filters: |
             backend: 'backend/**'
@@ -44,6 +77,27 @@ jobs:
             backoffice: 'backoffice/**'
             scheduler: 'scheduler/**'
             blockchain: 'blockchain/**'
+
+      # Single source of truth for the build matrix: paths-filter on push, the
+      # checkbox inputs on workflow_dispatch.
+      - name: Resolve services to build
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "backend=${{ inputs.backend }}" >> "$GITHUB_OUTPUT"
+            echo "frontend=${{ inputs.frontend }}" >> "$GITHUB_OUTPUT"
+            echo "payments=${{ inputs.payments }}" >> "$GITHUB_OUTPUT"
+            echo "backoffice=${{ inputs.backoffice }}" >> "$GITHUB_OUTPUT"
+            echo "scheduler=${{ inputs.scheduler }}" >> "$GITHUB_OUTPUT"
+            echo "blockchain=${{ inputs.blockchain }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=${{ steps.changes.outputs.backend }}" >> "$GITHUB_OUTPUT"
+            echo "frontend=${{ steps.changes.outputs.frontend }}" >> "$GITHUB_OUTPUT"
+            echo "payments=${{ steps.changes.outputs.payments }}" >> "$GITHUB_OUTPUT"
+            echo "backoffice=${{ steps.changes.outputs.backoffice }}" >> "$GITHUB_OUTPUT"
+            echo "scheduler=${{ steps.changes.outputs.scheduler }}" >> "$GITHUB_OUTPUT"
+            echo "blockchain=${{ steps.changes.outputs.blockchain }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Normalize GHCR namespace
         id: namespace
