@@ -1,5 +1,6 @@
 services:
   scheduler:
+    image: ghcr.io/${GHCR_NAMESPACE:-proyectohornero}/hornero-scheduler:latest
     build:
       context: .
       dockerfile: Dockerfile
