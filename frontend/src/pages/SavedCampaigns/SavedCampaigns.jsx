@@ -17,9 +17,6 @@ function normalizeCampaign(c) {
     goal: c.targetAmount || c.goal || 0,
     raised: c.currentAmount ?? c.raised ?? 0,
     category: c.category?.name || c.category || 'General',
-    daysLeft: c.endDate
-      ? Math.max(0, Math.ceil((new Date(c.endDate) - new Date()) / 86400000))
-      : 30,
   }
 }
 

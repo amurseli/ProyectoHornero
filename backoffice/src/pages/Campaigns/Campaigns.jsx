@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from '../../components'
 import api from '../../utils/api'
+import { formatDateTime, getCampaignTimeLeft } from '../../utils/datetime'
 import './Campaigns.css'
 
 function formatCurrency(value) {
@@ -246,7 +247,7 @@ function CampaignDetailModal({ detailData, loading, onClose }) {
                     </span>
                   </td>
                   <td>{formatCurrency(item.amount)}</td>
-                  <td>{item.createdAt ? new Date(item.createdAt).toLocaleString('es-AR') : '—'}</td>
+                  <td>{formatDateTime(item.createdAt, '—')}</td>
                   <td>
                     {item.transaction ? (
                       <div className="ac-detail-transaction">
@@ -430,6 +431,7 @@ export default function CampaignsPage() {
           <div className="ac-list">
             {filteredCampaigns.map((campaign) => {
               const tone = getCampaignTone(campaign)
+              const timeLeft = getCampaignTimeLeft(campaign.endDate)
               return (
                 <article key={campaign.id} className={`ac-card ac-card--${tone}`}>
                   <div className="ac-card-main">
@@ -454,6 +456,7 @@ export default function CampaignsPage() {
                         <div>
                           <span>Fecha de cierre</span>
                           <strong>{formatDate(campaign.endDate)}</strong>
+                          <small className="ac-meta-timeleft">{timeLeft.ended ? 'Finalizada' : `Faltan ${timeLeft.text}`}</small>
                         </div>
                       </div>
                       <div className="ac-meta-card">

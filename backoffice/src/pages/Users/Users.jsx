@@ -3,11 +3,11 @@ import { AlertCircle, ShieldCheck, Search, UserX, UserCheck, ChevronLeft, Chevro
 import { Button } from '../../components'
 import { useUser } from '../../store/useUser'
 import api from '../../utils/api'
+import { formatDate as formatBackendDate } from '../../utils/datetime'
 import './Users.css'
 
 function formatDate(value) {
-  if (!value) return '—'
-  return new Date(value).toLocaleDateString('es-AR')
+  return formatBackendDate(value, '—')
 }
 
 function displayName(user) {
