@@ -146,7 +146,8 @@ public class InternalController {
     }
 
     // GET /internal/users/{id}
-    // Usado por el servicio de payments para obtener el userName sin JWT.
+    // Usado por payments para obtener datos del usuario sin JWT (username para blockchain,
+    // email/firstName para publicar eventos hacia el servicio de notificaciones).
     @GetMapping("/users/{id}")
     public ResponseEntity<Map<String, Object>> getUser(
             @PathVariable Long id,
@@ -157,7 +158,11 @@ public class InternalController {
         }
 
         return userRepository.findById(id)
-                .map(user -> ResponseEntity.ok(Map.<String, Object>of("userName", user.getUserName())))
+                .map(user -> ResponseEntity.ok(Map.<String, Object>of(
+                        "userName", user.getUserName(),
+                        "email", user.getEmail(),
+                        "firstName", user.getFirstName()
+                )))
                 .orElse(ResponseEntity.notFound().build());
     }
 }
