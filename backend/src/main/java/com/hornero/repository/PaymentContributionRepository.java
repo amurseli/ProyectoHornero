@@ -106,7 +106,8 @@ public class PaymentContributionRepository {
                     'HORNERO_MAIN_ACCOUNT' AS recipientLabel,
                     CONCAT('campaign:', cam.title) AS reference,
                     t.hash_tx AS hashTx,
-                    t.created_at AS createdAt
+                    t.created_at AS createdAt,
+                    t.id_transaction_external AS operationNumber
                 FROM payments.transaction t
                 JOIN payments.contribution c ON c.id = t.id_contribution
                 JOIN "user" u ON u.id = c.id_user
@@ -127,7 +128,8 @@ public class PaymentContributionRepository {
                     CONCAT('CREATOR_', cu.user_name) AS recipientLabel,
                     CONCAT('campaign:', cam.title) AS reference,
                     p.hash_tx AS hashTx,
-                    COALESCE(p.processed_at, p.created_at) AS createdAt
+                    COALESCE(p.processed_at, p.created_at) AS createdAt,
+                    p.id_payout_external AS operationNumber
                 FROM payments.payout p
                 JOIN "user" cu ON cu.id = p.id_creator_user
                 JOIN campaign cam ON cam.id = p.id_campaign
@@ -147,7 +149,8 @@ public class PaymentContributionRepository {
                     u2.user_name AS recipientLabel,
                     CONCAT('refund campaign:', cam.title) AS reference,
                     r.hash_tx AS hashTx,
-                    COALESCE(r.processed_at, r.created_at) AS createdAt
+                    COALESCE(r.processed_at, r.created_at) AS createdAt,
+                    r.id_refund_external AS operationNumber
                 FROM payments.refund r
                 JOIN payments.contribution c ON c.id = r.id_contribution
                 JOIN "user" u2 ON u2.id = c.id_user
@@ -173,7 +176,8 @@ public class PaymentContributionRepository {
                     (String) row[10],
                     (String) row[11],
                     (String) row[12],
-                    toLocalDateTime(row[13])
+                    toLocalDateTime(row[13]),
+                    (String) row[14]
             ));
         }
         return result;
@@ -212,7 +216,8 @@ public class PaymentContributionRepository {
             String recipientLabel,
             String reference,
             String hashTx,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            String operationNumber
     ) implements TransactionHistoryProjection {
         @Override public String getHistoryType() { return historyType; }
         @Override public Long getContributionId() { return contributionId; }
@@ -228,5 +233,6 @@ public class PaymentContributionRepository {
         @Override public String getReference() { return reference; }
         @Override public String getHashTx() { return hashTx; }
         @Override public LocalDateTime getCreatedAt() { return createdAt; }
+        @Override public String getOperationNumber() { return operationNumber; }
     }
 }

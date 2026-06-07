@@ -1,3 +1,5 @@
+import { formatDate } from '$utils/datetime'
+
 export const CAMPAIGN_UPDATE_MAX_LENGTH = 8000
 export const CAMPAIGN_UPDATE_PUBLIC_PREVIEW_LENGTH = 750
 
@@ -32,10 +34,5 @@ export function getCampaignUpdateExcerpt(markdown, limit = CAMPAIGN_UPDATE_PUBLI
 }
 
 export function formatCampaignUpdateDate(value) {
-  if (!value) return 'Sin fecha'
-  return new Date(value).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  return formatDate(value)
 }

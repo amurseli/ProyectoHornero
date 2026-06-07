@@ -4,6 +4,7 @@ import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
 import { getMediaImageSrc } from '$utils/imageSources'
+import { browserDiffersFromArgentina, argentinaYmd, formatArgentinaCloseDateTime } from '$utils/datetime'
 import {
   TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
   GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
@@ -15,9 +16,6 @@ function daysBetween(start, end) {
   return Math.max(DURATION_MIN, Math.ceil(ms / 86400000))
 }
 
-function formatDateAr(d) {
-  return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
-}
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -160,11 +158,10 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
 
       const media = [coverEntry, ...rest]
 
-      const startISO = campaign.startDate || new Date().toISOString().split('T')[0]
-      const startDate = new Date(startISO)
+      const startISO = campaign.startDate || argentinaYmd(new Date())
       const endISO = immutableFieldsLocked
         ? campaign.endDate
-        : new Date(startDate.getTime() + durationNum * 86400000).toISOString().split('T')[0]
+        : argentinaYmd(new Date(Date.now() + durationNum * 86400000))
 
       await api.put(`/api/campaigns/${campaign.id}`, {
         title: form.title.trim(),
@@ -276,9 +273,14 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
           />
           <span className="edc-hint edc-hint--left">
             {immutableFieldsLocked
-              ? <>La duración queda fija después de publicar la campaña. Finaliza el <strong>{formatDateAr(campaign.endDate)}</strong></>
-              : <>Si publicás hoy, finaliza el <strong>{formatDateAr(previewEndDate)}</strong></>}
+              ? <>La duración queda fija después de publicar la campaña. Finaliza el <strong>{formatArgentinaCloseDateTime(campaign.endDate)}</strong></>
+              : <>Si publicás hoy, finaliza el <strong>{formatArgentinaCloseDateTime(previewEndDate)}</strong></>}
           </span>
+          {browserDiffersFromArgentina() && (
+            <span className="edc-hint edc-hint--tz">
+              Las fechas se cuentan en el horario de Argentina (GMT-3).
+            </span>
+          )}
         </div>
         <div className="edc-field">
           <label className="edc-label">Meta <span className="edc-optional">(monto objetivo a recaudar)</span></label>

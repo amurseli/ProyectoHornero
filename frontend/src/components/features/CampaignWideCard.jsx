@@ -1,6 +1,7 @@
 import { Clock, TrendingUp, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getCampaignPath } from '$utils/campaignService'
+import { getCampaignTimeLeft } from '$utils/datetime'
 import './CampaignWideCard.css'
 
 function CampaignWideCard({
@@ -15,7 +16,8 @@ function CampaignWideCard({
   const raised = Number(campaign.raised ?? campaign.currentAmount ?? 0)
   const progress = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0
   const href = to || getCampaignPath(campaign)
-  const daysLabel = campaign.daysLeft > 0 ? `${campaign.daysLeft} días restantes` : 'Finalizada'
+  const timeLeft = getCampaignTimeLeft(campaign.endDate)
+  const daysLabel = timeLeft.ended ? 'Finalizada' : `${timeLeft.text} restantes`
 
   return (
     <Link to={href} className={`cwc-card ${className}`.trim()}>

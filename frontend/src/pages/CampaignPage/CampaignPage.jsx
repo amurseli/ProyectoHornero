@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { savePostLoginRedirect } from '../../utils/auth/postLoginRedirect'
 import { campaignService } from '$utils/campaignService'
+import { getCampaignTimeLeft } from '$utils/datetime'
 import { contributionService } from '$utils/contributionService'
 import { getEntityImageSrc, getMediaImageSrc } from '$utils/imageSources'
 import savedCampaignService from '$utils/savedCampaignService'
@@ -345,6 +346,7 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason, savedC
   }, [shareCopied])
 
   const progress = getProgress(campaign.currentAmount, campaign.goal)
+  const timeLeft = getCampaignTimeLeft(campaign.endDate)
 
   const prev = () => setMediaIndex(i => (i - 1 + mediaItems.length) % mediaItems.length)
   const next = () => setMediaIndex(i => (i + 1) % mediaItems.length)
@@ -432,8 +434,8 @@ function CampaignHero({ campaign, onContribute, contributeDisabledReason, savedC
               <span className="cp-stat-label">patrocinadores</span>
             </div>
             <div className="cp-stat">
-              <span className="cp-stat-value">{campaign.daysLeft ?? '—'}</span>
-              <span className="cp-stat-label">días restantes</span>
+              <span className="cp-stat-value">{timeLeft.ended ? '—' : timeLeft.value}</span>
+              <span className="cp-stat-label">{timeLeft.ended ? 'Finalizada' : `${timeLeft.unit} restantes`}</span>
             </div>
           </div>
 

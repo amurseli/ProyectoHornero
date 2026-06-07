@@ -49,6 +49,7 @@ public class TransactionHistoryController {
         response.setReference(row.getReference());
         response.setHashTx(row.getHashTx());
         response.setExplorerUrl(resolveExplorerUrl(row.getHashTx()));
+        response.setOperationNumber(row.getOperationNumber());
         response.setCreatedAt(row.getCreatedAt());
         return response;
     }

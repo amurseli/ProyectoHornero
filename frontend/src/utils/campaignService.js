@@ -32,9 +32,6 @@ function normalizeCampaign(campaign) {
     })(),
     goal: campaign.targetAmount || campaign.goal || 0,
     category: campaign.category?.name || campaign.category || "General",
-    daysLeft: campaign.endDate
-              ? Math.max(0, Math.ceil((new Date(campaign.endDate) - new Date()) / (1000 * 60 * 60 * 24)))
-              : 30,
     videoUrl: campaign.media?.find(m => m.mediaType === 'VIDEO')?.url || null,
   }
 }
