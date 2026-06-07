@@ -19,6 +19,7 @@ public class TransactionHistoryResponse {
     private String reference;
     private String hashTx;
     private String explorerUrl;
+    private String operationNumber;
     private LocalDateTime createdAt;
 
     public String getHistoryType() { return historyType; }
@@ -62,6 +63,9 @@ public class TransactionHistoryResponse {
 
     public String getExplorerUrl() { return explorerUrl; }
     public void setExplorerUrl(String explorerUrl) { this.explorerUrl = explorerUrl; }
+
+    public String getOperationNumber() { return operationNumber; }
+    public void setOperationNumber(String operationNumber) { this.operationNumber = operationNumber; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

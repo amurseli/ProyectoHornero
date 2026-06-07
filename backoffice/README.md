@@ -34,3 +34,4 @@ npm run build        # genera dist/
 make up-bo           # modo dev (HMR)
 make up-bo-prod      # modo prod (nginx, puerto 3001)
 ```
+Prueba deploy

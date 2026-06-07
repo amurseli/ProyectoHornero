@@ -27,7 +27,7 @@ public class PayoutService {
 
     private final PayoutRepository payoutRepository;
     private final ContributionRepository contributionRepository;
-    private final BackendClient backendClient;
+    private final BackendClient backendClient; 
     private final LedgerClient ledgerClient;
     private final PaymentEventLogService eventLog;
     private final NotificationEventPublisher notificationPublisher;

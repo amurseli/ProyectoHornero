@@ -297,6 +297,11 @@
 .edc-hint--left {
   text-align: left;
 }
+.edc-hint--tz {
+  display: block;
+  text-align: left;
+  margin-top: 0.4rem;
+}
 
 /* Sub-label description shown right under a field label (e.g. "Meta") */
 .edc-subdesc {

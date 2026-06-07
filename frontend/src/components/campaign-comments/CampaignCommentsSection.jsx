@@ -4,6 +4,7 @@ import { MessageSquare, Reply, Send } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
 import { savePostLoginRedirect } from '$utils/auth/postLoginRedirect'
+import { parseBackendInstant } from '$utils/datetime'
 import { useUser } from '$store/useUser'
 import './CampaignCommentsSection.css'
 
@@ -12,8 +13,8 @@ const MAX_COMMENT_LENGTH = 500
 function formatRelativeTime(value) {
   if (!value) return ''
 
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
+  const date = parseBackendInstant(value)
+  if (!date) return ''
 
   const diffMs = date.getTime() - Date.now()
   const diffSeconds = Math.round(diffMs / 1000)

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   CAMPAIGNS PAGE
+  CAMPAIGNS PAGE
 ═══════════════════════════════════════════════════════════ */
 
 .campaigns-page {
@@ -243,6 +243,13 @@
 .ac-meta-card strong {
   font-size: 0.9rem;
   color: var(--color-text-primary);
+}
+
+.ac-meta-timeleft {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
 }
 
 .ac-card-actions {

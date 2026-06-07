@@ -87,11 +87,16 @@
   margin-bottom: 1.25rem;
 }
 
+.transaction-card-headline {
+  min-width: 0;
+}
+
 .transaction-card-title {
   margin: 0;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--color-text-primary);
+  overflow-wrap: anywhere;
 }
 
 .transaction-card-subtitle {
@@ -131,6 +136,10 @@
   margin-bottom: 1.25rem;
 }
 
+.transaction-cell {
+  min-width: 0;
+}
+
 .transaction-label {
   display: block;
   margin-bottom: 0.3rem;
@@ -139,6 +148,17 @@
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.transaction-value {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.transaction-value--mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-weight: 600;
 }
 
 .transaction-code {

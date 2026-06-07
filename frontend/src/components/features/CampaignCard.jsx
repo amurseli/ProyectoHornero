@@ -2,6 +2,7 @@ import { useState } from "react"
 import { FiTrendingUp, FiUsers, FiClock, FiTag, FiMapPin, FiAward } from "react-icons/fi"
 import ReactPlayer from "react-player"
 import { getCampaignPath } from "../../utils/campaignService"
+import { getCampaignTimeLeft } from "$utils/datetime"
 
 function stripMarkdown(text) {
   return String(text || "")
@@ -19,7 +20,7 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
   const goal = campaign.goal || campaign.targetAmount || 0
   const raised = campaign.currentAmount ?? campaign.raised ?? 0
   const progressPercentage = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0
-  const daysLeft = campaign.daysLeft ?? 0
+  const timeLeft = getCampaignTimeLeft(campaign.endDate)
   const videoUrl = campaign.videoUrl || null
   const campaignPath = getCampaignPath(campaign)
 
@@ -64,7 +65,7 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
             <div className="compact-progress-bar">
               <div className="compact-progress-fill" style={{ width: `${progressPercentage}%` }} />
             </div>
-            <p className="campaign-compact-meta">{progressPercentage.toFixed(0)}% — {daysLeft > 0 ? `${daysLeft}d` : "Finalizada"}</p>
+            <p className="campaign-compact-meta">{progressPercentage.toFixed(0)}% — {timeLeft.ended ? "Finalizada" : timeLeft.short}</p>
           </div>
         </div>
         <style>{compactStyles}</style>
@@ -146,7 +147,7 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
                     {progressPercentage.toFixed(0)}%
                   </span>
                   <span className="editorial-stat-label">
-                    {daysLeft > 0 ? `${daysLeft} días` : "Finalizada"}
+                    {timeLeft.ended ? "Finalizada" : timeLeft.text}
                   </span>
                 </div>
               </div>
@@ -168,8 +169,8 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
 
   if (variant === "horizontal") {
     const countdownClass =
-      daysLeft <= 3 ? "countdown-urgent" :
-      daysLeft <= 7 ? "countdown-warning" : ""
+      timeLeft.level === "urgent" || timeLeft.ended ? "countdown-urgent" :
+      timeLeft.level === "warning" ? "countdown-warning" : ""
 
     return (
       <a href={campaignPath} className={`campaign-card-horizontal ${isFunded ? "is-funded" : ""}`}>
@@ -207,8 +208,8 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
 
           <div className={`horizontal-countdown ${countdownClass}`}>
             <FiClock className="countdown-icon" />
-            <span className="countdown-number">{daysLeft > 0 ? daysLeft : "0"}</span>
-            <span className="countdown-label">{daysLeft === 1 ? "día" : "días"}</span>
+            <span className="countdown-number">{timeLeft.ended ? "0" : timeLeft.value}</span>
+            <span className="countdown-label">{timeLeft.ended ? "días" : timeLeft.unit}</span>
           </div>
         </div>
 
@@ -325,8 +326,8 @@ function CampaignCard({ campaign, variant = "standard", size = "default" }) {
               <p className="stat-label">de ${goal.toLocaleString()} meta</p>
             </div>
             <div className="stat-item stat-right">
-              <p className="stat-value">{daysLeft > 0 ? `${daysLeft} días` : "Finalizada"}</p>
-              <p className="stat-label">{daysLeft > 0 ? "restantes" : ""}</p>
+              <p className="stat-value">{timeLeft.ended ? "Finalizada" : timeLeft.text}</p>
+              <p className="stat-label">{timeLeft.ended ? "" : "restantes"}</p>
             </div>
           </div>
 

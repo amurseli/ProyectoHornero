@@ -106,3 +106,4 @@ Este servicio es parte de un **monolito modular**:
 - Corre como servicio independiente (puerto 8081)
 - Comunicación con backend vía REST
 
+Prueba deploy

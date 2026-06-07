@@ -1,6 +1,36 @@
 import { useEffect, useState } from 'react'
 import api from '$utils/api/api'
+import { formatDateTime } from '$utils/datetime'
 import './TransactionHistory.css'
+
+// Etiquetas legibles en español para el tipo de movimiento (historyType del backend).
+const TIPO_LABELS = {
+  CONTRIBUTION: 'Aporte',
+  PAYOUT: 'Pago a creador',
+  REFUND: 'Reembolso',
+}
+
+// Etiquetas legibles para el estado (entryStatus). Hoy la query solo devuelve APPROVED y
+// COMPLETED, pero mapeamos también el resto por si el historial se amplía en el futuro.
+const ESTADO_LABELS = {
+  APPROVED: 'Aprobado',
+  COMPLETED: 'Completado',
+  PENDING: 'Pendiente',
+  IN_PROCESS: 'En proceso',
+  PROCESSING: 'Procesando',
+  REJECTED: 'Rechazado',
+  CANCELLED: 'Cancelado',
+  FAILED: 'Fallido',
+  PENDING_MANUAL_TRANSFER: 'Transferencia manual pendiente',
+}
+
+function labelTipo(value) {
+  return TIPO_LABELS[value] || value || 'N/D'
+}
+
+function labelEstado(value) {
+  return ESTADO_LABELS[value] || value || 'N/D'
+}
 
 function formatAmount(amount) {
   return new Intl.NumberFormat('es-AR', {
@@ -8,20 +38,6 @@ function formatAmount(amount) {
     currency: 'ARS',
     maximumFractionDigits: 2,
   }).format(amount ?? 0)
-}
-
-function formatDate(value) {
-  if (!value) return 'Sin fecha'
-
-  const normalizedValue = typeof value === 'string' && !value.endsWith('Z')
-    ? `${value}Z`
-    : value
-
-  return new Intl.DateTimeFormat('es-AR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'America/Argentina/Buenos_Aires',
-  }).format(new Date(normalizedValue))
 }
 
 function getHashStatus(hashTx) {
@@ -97,36 +113,40 @@ function TransactionHistory() {
               return (
                 <article className="transaction-card" key={transaction.transactionId}>
                   <div className="transaction-card-header">
-                    <div>
+                    <div className="transaction-card-headline">
                       <p className="transaction-card-title">{describeTransaction(transaction)}</p>
                     </div>
                     <span className={`transaction-status ${hashState.tone}`}>{hashState.label}</span>
                   </div>
 
                   <div className="transaction-card-grid">
-                    <div>
+                    <div className="transaction-cell">
                       <span className="transaction-label">Monto</span>
-                      <strong>{formatAmount(transaction.amount)}</strong>
+                      <strong className="transaction-value">{formatAmount(transaction.amount)}</strong>
                     </div>
-                    <div>
+                    <div className="transaction-cell">
                       <span className="transaction-label">Campaña</span>
-                      <strong>{transaction.campaignTitle}</strong>
+                      <strong className="transaction-value" title={transaction.campaignTitle || ''}>{transaction.campaignTitle || 'N/D'}</strong>
                     </div>
-                    <div>
+                    <div className="transaction-cell">
                       <span className="transaction-label">Estado</span>
-                      <strong>{transaction.entryStatus}</strong>
+                      <strong className="transaction-value">{labelEstado(transaction.entryStatus)}</strong>
                     </div>
-                    <div>
+                    <div className="transaction-cell">
                       <span className="transaction-label">Proveedor</span>
-                      <strong>{transaction.paymentProvider || 'N/D'}</strong>
+                      <strong className="transaction-value">{transaction.paymentProvider || 'N/D'}</strong>
                     </div>
-                    <div>
+                    <div className="transaction-cell">
                       <span className="transaction-label">Fecha</span>
-                      <strong>{formatDate(transaction.createdAt)}</strong>
+                      <strong className="transaction-value">{formatDateTime(transaction.createdAt)}</strong>
                     </div>
-                    <div>
+                    <div className="transaction-cell">
                       <span className="transaction-label">Tipo</span>
-                      <strong>{transaction.historyType}</strong>
+                      <strong className="transaction-value">{labelTipo(transaction.historyType)}</strong>
+                    </div>
+                    <div className="transaction-cell">
+                      <span className="transaction-label">N° de Operación</span>
+                      <strong className="transaction-value transaction-value--mono" title={transaction.operationNumber || ''}>{transaction.operationNumber || 'N/D'}</strong>
                     </div>
                   </div>
 
