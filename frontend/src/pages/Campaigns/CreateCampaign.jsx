@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Upload, X } from 'lucide-react'
 import { Button } from '$components/ui'
 import api from '$utils/api/api'
-import { browserDiffersFromArgentina, argentinaMidnight, argentinaYmd, formatInBrowserTime } from '$utils/datetime'
+import { browserDiffersFromArgentina, argentinaYmd, formatArgentinaCloseDateTime } from '$utils/datetime'
 import './CreateCampaign.css'
 import { useUser } from '../../store/useUser'
 import SouthAmericaMap from '$components/SouthAmericaMap/SouthAmericaMap'
@@ -124,25 +124,12 @@ function StepPais({ form, countries, onChange }) {
   )
 }
 
-function formatDateAr(d) {
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
-}
-
 function StepDetalles({ form, currency, onChange }) {
   const coverRef = useRef()
   const [cropSrc, setCropSrc] = useState(null)
 
   const durationNum = Math.min(DURATION_MAX, Math.max(DURATION_MIN, Number(form.duration) || DURATION_MIN))
   const endDate = new Date(Date.now() + durationNum * 86400000)
-
-  // Si el creador está en otra zona horaria, le mostramos en su hora local cuándo abre y cierra
-  // la campaña (las fechas se guardan como 00:00 de Argentina, GMT-3).
-  const tzHint = browserDiffersFromArgentina()
-    ? {
-        start: formatInBrowserTime(argentinaMidnight(argentinaYmd(new Date()))),
-        end: formatInBrowserTime(argentinaMidnight(argentinaYmd(endDate))),
-      }
-    : null
 
   const goalNum = parseAmount(form.goal)
   const goalError =
@@ -236,12 +223,11 @@ function StepDetalles({ form, currency, onChange }) {
             }}
           />
           <span className="wizard-helper">
-            Si publicás hoy, finaliza el <strong>{formatDateAr(endDate)}</strong>
+            Si publicás hoy, finaliza el <strong>{formatArgentinaCloseDateTime(endDate)}</strong>
           </span>
-          {tzHint && (
+          {browserDiffersFromArgentina() && (
             <span className="wizard-helper wizard-helper--tz">
-              Las fechas usan el horario de Argentina (GMT-3). En tu zona horaria, la campaña
-              comienza el <strong>{tzHint.start}</strong> y finaliza el <strong>{tzHint.end}</strong>.
+              Las fechas se cuentan en el horario de Argentina (GMT-3).
             </span>
           )}
         </div>
@@ -297,7 +283,7 @@ function StepRevision({ form, currency }) {
         <div className="wizard-review-row"><span className="wizard-review-key">País</span><span className="wizard-review-val">{form.country || '—'}</span></div>
         <div className="wizard-review-row"><span className="wizard-review-key">Título</span><span className="wizard-review-val">{form.title || '—'}</span></div>
         <div className="wizard-review-row"><span className="wizard-review-key">Duración</span><span className="wizard-review-val">{durationNum} días</span></div>
-        <div className="wizard-review-row"><span className="wizard-review-key">Finaliza</span><span className="wizard-review-val">{formatDateAr(endDate)}</span></div>
+        <div className="wizard-review-row"><span className="wizard-review-key">Finaliza</span><span className="wizard-review-val">{formatArgentinaCloseDateTime(endDate)}</span></div>
         <div className="wizard-review-row">
           <span className="wizard-review-key">Meta</span>
           <span className="wizard-review-val">
@@ -430,8 +416,8 @@ function CreateCampaign() {
     setLoading(true)
     setError(null)
     try {
-      const startDate = new Date().toISOString().split('T')[0]
-      const endDate = new Date(Date.now() + Number(form.duration) * 86400000).toISOString().split('T')[0]
+      const startDate = argentinaYmd(new Date())
+      const endDate = argentinaYmd(new Date(Date.now() + Number(form.duration) * 86400000))
 
       const media = [{
         base64Data: await toBase64(form.coverFile),

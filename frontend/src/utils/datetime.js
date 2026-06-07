@@ -100,14 +100,45 @@ export function getCampaignTimeLeft(endDate, now = Date.now()) {
   return { ended: false, value, unit, text: `${value} ${unit}`, short, level }
 }
 
-// Formatea un instante (fecha + hora) en la zona horaria local del navegador.
-export function formatInBrowserTime(value, fallback = '') {
-  const date = parseBackendInstant(value)
-  if (!date) return fallback
+// Fecha calendario larga ("4 de julio de 2026") según el huso de Argentina. Acepta tanto un
+// instante (Date) como una fecha "YYYY-MM-DD"; nunca aplica desfase de zona al día.
+export function formatArgentinaLongDate(value, fallback = '') {
+  let ymd = null
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    ymd = value.slice(0, 10)
+  } else if (value) {
+    const date = parseBackendInstant(value)
+    ymd = date ? argentinaYmd(date) : null
+  }
+  if (!ymd) return fallback
+  const [year, month, day] = ymd.split('-').map(Number)
   return new Intl.DateTimeFormat('es-AR', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-  }).format(date)
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(year, month - 1, day))
+}
+
+// Momento de cierre de una campaña en palabras: "4 de julio de 2026 a las 00:00". La campaña
+// sigue activa durante todo el día de endDate y cierra a las 00:00 (AR) del día siguiente, igual
+// que getCampaignTimeLeft. Acepta un instante (Date) o una fecha "YYYY-MM-DD".
+export function formatArgentinaCloseDateTime(value, fallback = '') {
+  let ymd = null
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    ymd = value.slice(0, 10)
+  } else if (value) {
+    const date = parseBackendInstant(value)
+    ymd = date ? argentinaYmd(date) : null
+  }
+  if (!ymd) return fallback
+  const [year, month, day] = ymd.split('-').map(Number)
+  // Día siguiente a endDate a las 00:00: ese es el instante en que la campaña cierra.
+  const longDate = new Intl.DateTimeFormat('es-AR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(year, month - 1, day + 1))
+  return `${longDate} a las 00:00`
 }
 
 // Solo fecha. Soporta dos casos:
