@@ -20,6 +20,21 @@ import java.util.Map;
 @Component
 public class BackendClient {
 
+    // Datos de contacto del usuario, usados para publicar eventos hacia notificaciones
+    // (no para autenticacion ni lógica de negocio).
+    public static class UserContactInfo {
+        private final String email;
+        private final String firstName;
+
+        public UserContactInfo(String email, String firstName) {
+            this.email = email;
+            this.firstName = firstName;
+        }
+
+        public String getEmail() { return email; }
+        public String getFirstName() { return firstName; }
+    }
+
     public static class RewardSummary {
         private final Long id;
         private final String title;
@@ -175,6 +190,33 @@ public class BackendClient {
             throw e;
         } catch (Exception e) {
             logger.error("Error al obtener username de usuario {}: {}", userId, e.getMessage());
+            throw new RuntimeException("Error al comunicarse con el backend para obtener el usuario", e);
+        }
+    }
+
+    // Obtiene email y nombre del usuario para publicar eventos hacia el servicio de notificaciones.
+    public UserContactInfo getUserContactInfo(Long userId) {
+        String url = backendUrl + "/internal/users/" + userId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Service-Key", serviceKey);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<?, ?> user = response.getBody();
+
+            if (user == null || user.get("email") == null) {
+                throw new IllegalStateException("Usuario no encontrado: " + userId);
+            }
+
+            return new UserContactInfo(String.valueOf(user.get("email")), String.valueOf(user.get("firstName")));
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new IllegalStateException("Usuario no encontrado: " + userId);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al obtener datos de contacto de usuario {}: {}", userId, e.getMessage());
             throw new RuntimeException("Error al comunicarse con el backend para obtener el usuario", e);
         }
     }

@@ -14,6 +14,8 @@ services:
       DATABASE_USER: ${DB_USER:-hornero}
       DATABASE_PASSWORD: ${DB_PASSWORD:-hornero123}
       BLOCKCHAIN_URL: ${BLOCKCHAIN_URL:-http://hornero-ledger-service:8080}
+      REDIS_HOST: ${REDIS_HOST:-hornero-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     networks:
       - hornero-network
     restart: unless-stopped

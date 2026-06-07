@@ -1,13 +1,21 @@
 package com.hornero.service;
 
+import com.hornero.event.CampaignFinalizedEvent;
+import com.hornero.event.NotificationEventPublisher;
 import com.hornero.model.Campaign;
 import com.hornero.model.CampaignCategory;
 import com.hornero.model.CampaignMedia;
+import com.hornero.model.User;
+import com.hornero.model.payments.PaymentContribution;
 import com.hornero.repository.CampaignCategoryRepository;
 import com.hornero.repository.CampaignRepository;
 import com.hornero.repository.CampaignTeamMemberRepository;
+import com.hornero.repository.PaymentContributionRepository;
 import com.hornero.repository.RewardRepository;
+import com.hornero.repository.UserRepository;
 import com.hornero.service.validator.CampaignPublishValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -32,6 +40,8 @@ import java.util.Set;
 @Service
 public class CampaignService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CampaignService.class);
+
     @Autowired
     private CampaignRepository campaignRepository;
 
@@ -49,6 +59,15 @@ public class CampaignService {
 
     @Autowired
     private AppImageService appImageService;
+
+    @Autowired
+    private PaymentContributionRepository paymentContributionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationEventPublisher notificationEventPublisher;
 
     public Campaign createCampaign(Campaign campaign) {
         if (campaign.getMedia() != null) {
@@ -324,7 +343,60 @@ public class CampaignService {
             campaign.setMoneyStatus("REFUND_PENDING");
         }
         campaignRepository.save(campaign);
+        publishCampaignFinalizedEvent(campaign, reachedGoal);
         return true;
+    }
+
+    // Publica CAMPAIGN_SUCCEEDED o CAMPAIGN_FAILED hacia notificaciones con el detalle
+    // de la campaña, su creador y cada contribuyente aprobado (agregado por usuario,
+    // ya que una persona puede tener varias contribuciones aprobadas a la misma campaña).
+    // Un fallo aca no debe impedir que la campaña quede finalizada.
+    private void publishCampaignFinalizedEvent(Campaign campaign, boolean succeeded) {
+        try {
+            User owner = campaign.getOwner();
+            if (owner == null) {
+                logger.warn("Campaña {} no tiene owner, no se publica evento de finalizacion", campaign.getId());
+                return;
+            }
+
+            CampaignFinalizedEvent.CreatorInfo creator = new CampaignFinalizedEvent.CreatorInfo(
+                    owner.getId(), owner.getEmail(), owner.getFirstName());
+
+            List<CampaignFinalizedEvent.ContributorInfo> contributors = buildContributorInfos(campaign.getId());
+
+            CampaignFinalizedEvent event = new CampaignFinalizedEvent(
+                    campaign.getId(),
+                    campaign.getTitle(),
+                    campaign.getTargetAmount(),
+                    campaign.getCurrentAmount(),
+                    creator,
+                    contributors
+            );
+
+            if (succeeded) {
+                notificationEventPublisher.publishCampaignSucceeded(event);
+            } else {
+                notificationEventPublisher.publishCampaignFailed(event);
+            }
+        } catch (Exception e) {
+            logger.error("Error al publicar evento de finalizacion de campaña {}: {}", campaign.getId(), e.getMessage());
+        }
+    }
+
+    private List<CampaignFinalizedEvent.ContributorInfo> buildContributorInfos(Long campaignId) {
+        Map<Long, BigDecimal> approvedAmountByUser = new LinkedHashMap<>();
+        for (PaymentContribution contribution : paymentContributionRepository.findDetailedByCampaignId(campaignId)) {
+            if (!"APPROVED".equals(contribution.getStatus())) continue;
+            approvedAmountByUser.merge(contribution.getIdUser(), contribution.getAmount(), BigDecimal::add);
+        }
+
+        List<CampaignFinalizedEvent.ContributorInfo> contributors = new ArrayList<>();
+        for (Map.Entry<Long, BigDecimal> entry : approvedAmountByUser.entrySet()) {
+            userRepository.findById(entry.getKey()).ifPresent(user -> contributors.add(
+                    new CampaignFinalizedEvent.ContributorInfo(user.getId(), user.getEmail(), user.getFirstName(), entry.getValue())
+            ));
+        }
+        return contributors;
     }
 
     public List<Campaign> findExpiredCrowdfundingCampaigns() {

@@ -10,6 +10,7 @@ on:
       - 'backoffice/**'
       - 'scheduler/**'
       - 'blockchain/**'
+      - 'notifications/**'
       - '.github/workflows/deploy.yml'
   # Manual rebuild + redeploy for when a push-triggered deploy missed a service
   # (e.g. a queued/cancelled run). Tick the services to force.
@@ -39,6 +40,10 @@ on:
         description: 'Rebuild & deploy blockchain'
         type: boolean
         default: false
+      notifications:
+        description: 'Rebuild & deploy notifications'
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-main
@@ -60,6 +65,7 @@ jobs:
       backoffice: ${{ steps.resolve.outputs.backoffice }}
       scheduler: ${{ steps.resolve.outputs.scheduler }}
       blockchain: ${{ steps.resolve.outputs.blockchain }}
+      notifications: ${{ steps.resolve.outputs.notifications }}
       namespace: ${{ steps.namespace.outputs.value }}
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +83,7 @@ jobs:
             backoffice: 'backoffice/**'
             scheduler: 'scheduler/**'
             blockchain: 'blockchain/**'
+            notifications: 'notifications/**'
 
       # Single source of truth for the build matrix: paths-filter on push, the
       # checkbox inputs on workflow_dispatch.
@@ -90,6 +97,7 @@ jobs:
             echo "backoffice=${{ inputs.backoffice }}" >> "$GITHUB_OUTPUT"
             echo "scheduler=${{ inputs.scheduler }}" >> "$GITHUB_OUTPUT"
             echo "blockchain=${{ inputs.blockchain }}" >> "$GITHUB_OUTPUT"
+            echo "notifications=${{ inputs.notifications }}" >> "$GITHUB_OUTPUT"
           else
             echo "backend=${{ steps.changes.outputs.backend }}" >> "$GITHUB_OUTPUT"
             echo "frontend=${{ steps.changes.outputs.frontend }}" >> "$GITHUB_OUTPUT"
@@ -97,6 +105,7 @@ jobs:
             echo "backoffice=${{ steps.changes.outputs.backoffice }}" >> "$GITHUB_OUTPUT"
             echo "scheduler=${{ steps.changes.outputs.scheduler }}" >> "$GITHUB_OUTPUT"
             echo "blockchain=${{ steps.changes.outputs.blockchain }}" >> "$GITHUB_OUTPUT"
+            echo "notifications=${{ steps.changes.outputs.notifications }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Normalize GHCR namespace
@@ -122,6 +131,8 @@ jobs:
             context: ./scheduler
           - service: blockchain
             context: ./blockchain/ledger
+          - service: notifications
+            context: ./notifications
 
     steps:
       - name: Skip unchanged service
@@ -187,6 +198,7 @@ jobs:
           BACKOFFICE_CHANGED: ${{ needs.detect.outputs.backoffice }}
           SCHEDULER_CHANGED: ${{ needs.detect.outputs.scheduler }}
           BLOCKCHAIN_CHANGED: ${{ needs.detect.outputs.blockchain }}
+          NOTIFICATIONS_CHANGED: ${{ needs.detect.outputs.notifications }}
         run: |
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no "${EC2_USER}@${BACKEND_HOST}" <<EOF
           set -e
@@ -230,6 +242,12 @@ jobs:
             cd /home/${EC2_USER}/ProyectoHornero/scheduler
             docker compose pull scheduler
             docker compose up -d scheduler
+          fi
+
+          if [ "${NOTIFICATIONS_CHANGED}" = "true" ]; then
+            cd /home/${EC2_USER}/ProyectoHornero/notifications
+            docker compose pull notifications
+            docker compose up -d notifications
           fi
 
           # Reclaim disk: drop dangling images left behind by pulling :latest.
