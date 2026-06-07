@@ -45,7 +45,7 @@ class ContributionControllerTest {
         private boolean webhookCalled;
 
         StubContributionService() {
-            super(null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null);
         }
 
         @Override
