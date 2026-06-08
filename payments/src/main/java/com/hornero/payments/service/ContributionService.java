@@ -27,7 +27,6 @@ import com.mercadopago.resources.preference.Preference;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -280,11 +279,12 @@ public class ContributionService {
         return buildStatusResponse(contribution, transaction);
     }
 
+    // Reconsulta a MP el estado de toda contribucion PENDING/IN_PROCESS, sin importar su antiguedad
     @Transactional
     public int cleanupStalePending() {
         List<Contribution> stale = new ArrayList<>();
-        stale.addAll(contributionRepository.findByStatusAndCreatedAtBefore("PENDING", LocalDateTime.now().minusHours(24)));
-        stale.addAll(contributionRepository.findByStatusAndCreatedAtBefore("IN_PROCESS", LocalDateTime.now().minusHours(48)));
+        stale.addAll(contributionRepository.findByStatus("PENDING"));
+        stale.addAll(contributionRepository.findByStatus("IN_PROCESS"));
 
         int resolved = 0;
         for (Contribution c : stale) {
