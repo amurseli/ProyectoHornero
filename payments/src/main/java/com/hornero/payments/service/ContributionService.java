@@ -26,6 +26,7 @@ import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -289,7 +290,16 @@ public class ContributionService {
         int resolved = 0;
         for (Contribution c : stale) {
             Transaction tx = c.getTransaction();
-            if (tx == null || tx.getIdTransactionExternal() == null) {
+            if (tx == null) {
+                // No se llego a crear la Transaction local (initiate genera la Preference
+                // pero la Transaction recien se persiste en process(), tras el regreso del
+                // checkout). Antes de cancelar a ciegas, buscamos en MP por external_reference
+                // (= id de la contribucion, seteado al crear la Preference) por si el usuario
+                // SI completo el pago y el callback de retorno nunca se proceso.
+                if (reconcileFromExternalReference(c)) {
+                    resolved++;
+                }
+            } else if (tx.getIdTransactionExternal() == null) {
                 c.setStatus("CANCELLED");
                 contributionRepository.save(c);
                 resolved++;
@@ -321,6 +331,52 @@ public class ContributionService {
         }
         logger.info("Cleanup stale contributions: {} resueltas de {} encontradas", resolved, stale.size());
         return resolved;
+    }
+
+    // Reconcilia una contribucion PENDING/IN_PROCESS sin Transaction local buscando en MP
+    // por external_reference (= id de la contribucion). Si MP tiene un pago para esa
+    // referencia, recreamos la Transaction con el id real y aplicamos el estado que
+    // corresponda; si no encuentra nada, recien ahi es seguro cancelar (nunca se pago).
+    private boolean reconcileFromExternalReference(Contribution c) {
+        try {
+            List<Payment> found = mercadoPagoGateway.searchByExternalReference(String.valueOf(c.getId()));
+            if (found.isEmpty()) {
+                c.setStatus("CANCELLED");
+                contributionRepository.save(c);
+                return true;
+            }
+
+            Payment mpPayment = found.stream()
+                    .max(Comparator.comparing(Payment::getDateCreated))
+                    .orElseThrow();
+            String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
+            if ("PENDING".equals(newStatus) || "IN_PROCESS".equals(newStatus)) {
+                // El pago sigue en curso del lado de MP: dejamos la contribucion como esta
+                // para que una proxima corrida del cleanup la vuelva a revisar.
+                return false;
+            }
+
+            Transaction transaction = new Transaction();
+            transaction.setContribution(c);
+            transaction.setAmount(c.getAmount());
+            transaction.setTransactionMethod("account_money".equalsIgnoreCase(mpPayment.getPaymentMethodId()) ? "ACCOUNT_MONEY" : "CARD");
+            transaction.setPaymentProvider("MERCADO_PAGO");
+            transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
+            transactionRepository.save(transaction);
+
+            c.setStatus(newStatus);
+            contributionRepository.save(c);
+            logger.info("Contribucion {} reconciliada via external_reference en cleanup. Pago MP {} -> {}", c.getId(), mpPayment.getId(), newStatus);
+
+            if ("APPROVED".equals(newStatus)) {
+                try { backendClient.updateCampaignAmount(c.getIdCampaign(), c.getAmount()); }
+                catch (Exception ex) { logger.error("Error actualizando monto campaña {} por cleanup: {}", c.getIdCampaign(), ex.getMessage()); }
+            }
+            return true;
+        } catch (Exception e) {
+            logger.error("Error buscando pago por external_reference para contribution {} en cleanup: {}", c.getId(), e.getMessage());
+            return false;
+        }
     }
 
     public CampaignContributionSummaryResponse getCampaignContributionSummary(Long campaignId, Long userId) {
