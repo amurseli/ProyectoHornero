@@ -6,6 +6,7 @@ BACKEND_DIR    = backend
 FRONTEND_DIR   = frontend
 BACKOFFICE_DIR = backoffice
 PAYMENTS_DIR   = payments
+NOTIFICATIONS_DIR = notifications
 SCHEDULER_DIR  = scheduler
 BLOCKCHAIN_DIR = blockchain
 NETWORK        = hornero-network
@@ -21,6 +22,7 @@ endif
         up-backoffice down-backoffice build-backoffice logs-backoffice \
         up-bo-prod down-bo-prod build-bo-prod \
         up-pay down-pay build-pay logs-pay \
+        up-notif down-notif build-notif logs-notif \
         up-chain down-chain build-chain logs-chain \
         up-sched down-sched build-sched logs-sched \
         up-all down-all build-all \
@@ -51,6 +53,11 @@ help:
 	@echo "  make build-pay    Reconstruye payments"
 	@echo "  make logs-pay     Logs de payments"
 	@echo ""
+	@echo "  make up-notif     Levanta notifications"
+	@echo "  make down-notif   Detiene notifications"
+	@echo "  make build-notif  Reconstruye notifications"
+	@echo "  make logs-notif   Logs de notifications"
+	@echo ""
 	@echo "  make up-chain     Levanta blockchain"
 	@echo "  make down-chain   Detiene blockchain"
 	@echo "  make build-chain  Reconstruye blockchain"
@@ -61,7 +68,7 @@ help:
 	@echo "  make build-sched  Reconstruye scheduler (rapido, Alpine+curl)"
 	@echo "  make logs-sched   Logs del scheduler"
 	@echo ""
-	@echo "  make up-all       Levanta todo (backend + frontend + backoffice + payments + blockchain + scheduler)"
+	@echo "  make up-all       Levanta todo (backend + frontend + backoffice + payments + notifications + blockchain + scheduler)"
 	@echo "  make down-all     Detiene todo"
 	@echo "  make build-all    Reconstruye todo"
 	@echo ""
@@ -163,6 +170,21 @@ logs-pay:
 	cd $(PAYMENTS_DIR) && docker-compose logs -f
 
 # ------------------------------------------------------------
+# Notifications
+# ------------------------------------------------------------
+up-notif: network
+	cd $(NOTIFICATIONS_DIR) && docker-compose up -d --build
+
+down-notif:
+	cd $(NOTIFICATIONS_DIR) && docker-compose down || true
+
+build-notif:
+	cd $(NOTIFICATIONS_DIR) && docker-compose build
+
+logs-notif:
+	cd $(NOTIFICATIONS_DIR) && docker-compose logs -f
+
+# ------------------------------------------------------------
 # Blockchain
 # ------------------------------------------------------------
 up-chain: network
@@ -195,11 +217,11 @@ logs-sched:
 # ------------------------------------------------------------
 # Todo junto (testing local)
 # ------------------------------------------------------------
-up-all: up up-bo up-pay up-chain up-sched
+up-all: up up-bo up-pay up-notif up-chain up-sched
 
-down-all: down-sched down-chain down-pay down-bo down
+down-all: down-sched down-chain down-notif down-pay down-bo down
 
-build-all: build build-bo build-pay build-chain build-sched
+build-all: build build-bo build-pay build-notif build-chain build-sched
 
 # ------------------------------------------------------------
 # Desarrollo (backend Docker, frontend local)
@@ -219,6 +241,7 @@ ps:
 clean:
 	cd $(SCHEDULER_DIR) && docker-compose down -v --rmi all --remove-orphans || true
 	cd $(BLOCKCHAIN_DIR) && docker-compose -f compose.yaml down -v --rmi all --remove-orphans || true
+	cd $(NOTIFICATIONS_DIR) && docker-compose down -v --rmi all --remove-orphans || true
 	cd $(PAYMENTS_DIR) && docker-compose down -v --rmi all --remove-orphans || true
 	cd $(BACKEND_DIR) && docker-compose down -v --rmi all --remove-orphans || true
 	docker network rm $(NETWORK) || true
@@ -226,5 +249,7 @@ clean:
 restart: down build up
 
 restart-pay: down-pay build-pay up-pay
+
+restart-notif: down-notif build-notif up-notif
 
 restart-all: down-all build-all up-all

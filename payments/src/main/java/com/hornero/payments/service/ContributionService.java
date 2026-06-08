@@ -3,6 +3,8 @@ package com.hornero.payments.service;
 import com.hornero.payments.client.BackendClient;
 import com.hornero.payments.dto.ContributionRewardInfo;
 import com.hornero.payments.dto.CampaignContributionSummaryResponse;
+import com.hornero.payments.event.ContributionApprovedEvent;
+import com.hornero.payments.event.NotificationEventPublisher;
 import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.ContributionStatusResponse;
 import com.hornero.payments.dto.InitiateContributionResponse;
@@ -25,7 +27,6 @@ import com.mercadopago.resources.preference.Preference;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,6 +47,7 @@ public class ContributionService {
     private final LedgerClient ledgerClient;
     private final MercadoPagoGateway mercadoPagoGateway;
     private final PaymentEventLogService eventLog;
+    private final NotificationEventPublisher notificationPublisher;
 
     @Value("${mercadopago.public-key}")
     private String mpPublicKey;
@@ -58,13 +60,15 @@ public class ContributionService {
                                BackendClient backendClient,
                                LedgerClient ledgerClient,
                                MercadoPagoGateway mercadoPagoGateway,
-                               PaymentEventLogService eventLog) {
+                               PaymentEventLogService eventLog,
+                               NotificationEventPublisher notificationPublisher) {
         this.contributionRepository = contributionRepository;
         this.transactionRepository = transactionRepository;
         this.backendClient = backendClient;
         this.ledgerClient = ledgerClient;
         this.mercadoPagoGateway = mercadoPagoGateway;
         this.eventLog = eventLog;
+        this.notificationPublisher = notificationPublisher;
     }
 
     // Crea el registro PENDING y devuelve la publicKey para que el frontend inicialice el Payment Brick
@@ -202,6 +206,7 @@ public class ContributionService {
                     logger.error("Error actualizando monto de campaña {} por contribucion {}: {}",
                             contribution.getIdCampaign(), contributionId, e.getMessage());
                 }
+                publishContributionApprovedEvent(contribution);
             }
 
             return buildStatusResponse(contribution, transaction);
@@ -251,6 +256,7 @@ public class ContributionService {
 
                     if ("APPROVED".equals(newStatus) && !"APPROVED".equals(previousStatus)) {
                         backendClient.updateCampaignAmount(contribution.getIdCampaign(), contribution.getAmount());
+                        publishContributionApprovedEvent(contribution);
                     }
                 }
             });
@@ -273,11 +279,12 @@ public class ContributionService {
         return buildStatusResponse(contribution, transaction);
     }
 
+    // Reconsulta a MP el estado de toda contribucion PENDING/IN_PROCESS, sin importar su antiguedad
     @Transactional
     public int cleanupStalePending() {
         List<Contribution> stale = new ArrayList<>();
-        stale.addAll(contributionRepository.findByStatusAndCreatedAtBefore("PENDING", LocalDateTime.now().minusHours(24)));
-        stale.addAll(contributionRepository.findByStatusAndCreatedAtBefore("IN_PROCESS", LocalDateTime.now().minusHours(48)));
+        stale.addAll(contributionRepository.findByStatus("PENDING"));
+        stale.addAll(contributionRepository.findByStatus("IN_PROCESS"));
 
         int resolved = 0;
         for (Contribution c : stale) {
@@ -402,13 +409,18 @@ public class ContributionService {
                     .currencyId("ARS")
                     .build();
 
-            Preference preference = new PreferenceClient().create(
-                    PreferenceRequest.builder()
-                            .items(List.of(item))
-                            .backUrls(backUrls)
-                            .externalReference(String.valueOf(contributionId))
-                            .build()
-            );
+            PreferenceRequest.PreferenceRequestBuilder requestBuilder = PreferenceRequest.builder()
+                    .items(List.of(item))
+                    .backUrls(backUrls)
+                    .externalReference(String.valueOf(contributionId));
+
+            // MP rechaza auto_return cuando el back_url.success no es una URL pública HTTPS
+            // (devuelve 400 "auto_return invalid. back_url.success must be defined" para localhost/http)
+            if (returnBase.startsWith("https://")) {
+                requestBuilder.autoReturn("approved");
+            }
+
+            Preference preference = new PreferenceClient().create(requestBuilder.build());
             return preference.getId();
         } catch (MPApiException e) {
             logger.warn("No se pudo crear la Preference de MP para contribucion {}: HTTP {} - {}",
@@ -417,6 +429,28 @@ public class ContributionService {
         } catch (Exception e) {
             logger.warn("No se pudo crear la Preference de MP para contribucion {}: {}", contributionId, e.getMessage());
             return null;
+        }
+    }
+
+    // Publica el evento CONTRIBUTION_APPROVED hacia notificaciones. Se ejecuta una unica vez
+    // por contribucion (en la transicion PENDING/IN_PROCESS -> APPROVED, ya sea via process()
+    // o via webhook). Un fallo aca no debe interrumpir el flujo de pago.
+    private void publishContributionApprovedEvent(Contribution contribution) {
+        try {
+            String campaignTitle = backendClient.getCampaignTitle(contribution.getIdCampaign());
+            BackendClient.UserContactInfo contact = backendClient.getUserContactInfo(contribution.getIdUser());
+
+            notificationPublisher.publishContributionApproved(new ContributionApprovedEvent(
+                    contribution.getId(),
+                    contribution.getIdUser(),
+                    contact.getEmail(),
+                    contact.getFirstName(),
+                    contribution.getIdCampaign(),
+                    campaignTitle,
+                    contribution.getAmount()
+            ));
+        } catch (Exception e) {
+            logger.error("Error al publicar evento de contribucion aprobada {}: {}", contribution.getId(), e.getMessage());
         }
     }
 

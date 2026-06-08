@@ -1,0 +1,24 @@
+services:
+  notifications:
+    image: ghcr.io/${GHCR_NAMESPACE:-proyectohornero}/hornero-notifications:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hornero-notifications
+    ports:
+      - "8083:8083"
+    env_file:
+      - .env.notifications
+    environment:
+      DATABASE_URL: jdbc:postgresql://hornero-postgres:5432/${DB_NAME:-hornero}
+      DATABASE_USER: ${DB_USER:-hornero}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-hornero123}
+      REDIS_HOST: ${REDIS_HOST:-hornero-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    networks:
+      - hornero-network
+    restart: unless-stopped
+
+networks:
+  hornero-network:
+    external: true

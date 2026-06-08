@@ -3,6 +3,8 @@ package com.hornero.payments.service;
 import com.hornero.payments.client.BackendClient;
 import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.PayoutStatusResponse;
+import com.hornero.payments.event.NotificationEventPublisher;
+import com.hornero.payments.event.PayoutCompletedEvent;
 import com.hornero.payments.model.Contribution;
 import com.hornero.payments.model.Payout;
 import com.hornero.payments.repository.ContributionRepository;
@@ -28,6 +30,7 @@ public class PayoutService {
     private final BackendClient backendClient; 
     private final LedgerClient ledgerClient;
     private final PaymentEventLogService eventLog;
+    private final NotificationEventPublisher notificationPublisher;
 
     @Value("${app.fees.platform-rate}")
     private BigDecimal platformRate;
@@ -39,12 +42,14 @@ public class PayoutService {
                          ContributionRepository contributionRepository,
                          BackendClient backendClient,
                          LedgerClient ledgerClient,
-                         PaymentEventLogService eventLog) {
+                         PaymentEventLogService eventLog,
+                         NotificationEventPublisher notificationPublisher) {
         this.payoutRepository = payoutRepository;
         this.contributionRepository = contributionRepository;
         this.backendClient = backendClient;
         this.ledgerClient = ledgerClient;
         this.eventLog = eventLog;
+        this.notificationPublisher = notificationPublisher;
     }
 
     // Ejecuta el payout al creador para una campaña SUCCESSFUL.
@@ -117,9 +122,31 @@ public class PayoutService {
             logger.error("Error al notificar PAYOUT_COMPLETED al backend para campaña {}: {}", campaignId, e.getMessage());
         }
 
+        publishPayoutCompletedEvent(payout, campaignTitle);
+
         logger.info("Payout de campaña {} confirmado manualmente. Referencia MP: {}", campaignId, mpTransferReference);
         eventLog.logPayoutConfirmed(payout.getId(), mpTransferReference);
         return buildResponse(payout);
+    }
+
+    // Publica el evento PAYOUT_COMPLETED hacia notificaciones. Un fallo aca no debe
+    // interrumpir la confirmacion del payout, que ya quedo persistida.
+    private void publishPayoutCompletedEvent(Payout payout, String campaignTitle) {
+        try {
+            BackendClient.UserContactInfo creatorContact = backendClient.getUserContactInfo(payout.getIdCreatorUser());
+
+            notificationPublisher.publishPayoutCompleted(new PayoutCompletedEvent(
+                    payout.getId(),
+                    payout.getIdCreatorUser(),
+                    creatorContact.getEmail(),
+                    creatorContact.getFirstName(),
+                    payout.getIdCampaign(),
+                    campaignTitle,
+                    payout.getNetAmount()
+            ));
+        } catch (Exception e) {
+            logger.error("Error al publicar evento de payout completado {}: {}", payout.getId(), e.getMessage());
+        }
     }
 
     public PayoutStatusResponse getPayoutStatus(Long campaignId) {

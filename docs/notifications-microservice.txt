@@ -1,0 +1,311 @@
+============================================================
+ MICROSERVICIO DE NOTIFICACIONES - RESUMEN DE DESARROLLO
+============================================================
+
+Fecha: junio 2026
+Proyecto: ProyectoHornero (TPP)
+
+------------------------------------------------------------
+1. OBJETIVO Y DECISIONES DE ARQUITECTURA
+------------------------------------------------------------
+
+Se construyo un microservicio independiente ("notifications") encargado
+de enviar notificaciones in-app y emails ante eventos relevantes de la
+plataforma (donaciones, finalizacion de campanias, pagos a creadores,
+alertas a administradores).
+
+Decisiones clave acordadas con el usuario antes de implementar:
+
+  - NO se embebe en el backend: es un servicio Spring Boot propio,
+    con su propia base (esquema "notifications" dentro del Postgres
+    compartido) y su propio puerto (8083).
+
+  - Comunicacion via EVENTOS (Redis Streams), no HTTP sincronico.
+    Los servicios productores publican eventos en un stream
+    ("hornero:notifications:events") y el microservicio de
+    notificaciones los consume de forma asincronica. Esto evita
+    acoplar el flujo critico (pagos, finalizacion de campanias) a la
+    disponibilidad del servicio de notificaciones.
+
+  - RESTRICCION EXPLICITA: el "scheduler" NO debe hablar con
+    notifications. Solo "payments", "backend" y "frontend" lo hacen.
+    El scheduler dispara jobs contra el backend (vía
+    /internal/finalize-campaigns), y es el BACKEND quien, como parte
+    de ese flujo, publica los eventos hacia notifications. Así se
+    mantiene la regla sin perder la automatizacion.
+
+  - Idempotencia: dado que Redis Streams entrega "at-least-once",
+    cada evento publicado tiene un id unico de stream, y el consumidor
+    guarda ese id en una tabla "processed_event" antes de procesar,
+    evitando notificaciones/emails duplicados ante reintentos.
+
+  - Aislamiento de fallos: la publicacion de eventos y el envio de
+    emails estan siempre en bloques try/catch que loguean pero NUNCA
+    interrumpen el flujo de negocio principal (aprobar un pago,
+    finalizar una campania, etc.).
+
+  - Convencion de commits: el usuario hace los commits manualmente;
+    en cada fase se sugirio un mensaje de commit en español.
+
+  - Funcionalidad "recordarme" (CAMPAIGN_EXPIRING): se diseño la idea
+    a alto nivel pero se decidio NO implementarla en esta etapa
+    (queda fuera del alcance actual del proyecto).
+
+------------------------------------------------------------
+2. EVENTOS DEFINIDOS
+------------------------------------------------------------
+
+  CONTRIBUTION_APPROVED   -> publicado por PAYMENTS
+  PAYOUT_COMPLETED        -> publicado por PAYMENTS
+  CAMPAIGN_SUCCEEDED      -> publicado por BACKEND
+  CAMPAIGN_FAILED         -> publicado por BACKEND
+
+Cada evento tiene un DTO espejo (misma forma) tanto en el lado
+productor como en el consumidor (notifications), para evitar
+desincronizaciones de formato:
+
+  - ContributionApprovedEvent: contributionId, userId, userEmail,
+    userFirstName, campaignId, campaignTitle, amount
+
+  - PayoutCompletedEvent: payoutId, creatorId, creatorEmail,
+    creatorFirstName, campaignId, campaignTitle, amountTransferred
+
+  - CampaignFinalizedEvent (compartido por SUCCEEDED/FAILED):
+    campaignId, campaignTitle, targetAmount, currentAmount,
+    creator (CreatorInfo: userId, email, firstName),
+    contributors (lista de ContributorInfo: userId, email,
+    firstName, amount aportado)
+
+------------------------------------------------------------
+3. DIAGRAMA GENERAL - FLUJO DE EVENTOS
+------------------------------------------------------------
+
+    +-----------+         +-----------+         +---------------+
+    | PAYMENTS  |         |  BACKEND  |         |   SCHEDULER   |
+    |           |         |           |         |  (cron diario)|
+    +-----+-----+         +-----+-----+         +-------+-------+
+          |                     |                        |
+          | publica eventos     | publica eventos        | dispara job
+          | (CONTRIBUTION_      | (CAMPAIGN_SUCCEEDED /  | POST /internal/
+          |  APPROVED,          |  CAMPAIGN_FAILED)      | finalize-campaigns
+          |  PAYOUT_COMPLETED)  |                        |
+          |                     |<-----------------------+
+          |                     |   (X-Service-Key)
+          v                     v
+    +-------------------------------------+
+    |   REDIS STREAM                      |
+    |   "hornero:notifications:events"    |
+    +------------------+------------------+
+                       |
+                       | consumer group
+                       | "notifications-group"
+                       v
+          +-------------------------+
+          |   NOTIFICATIONS         |
+          |   (microservicio 8083)  |
+          |-------------------------|
+          | - Listener (Redis)      |
+          | - Idempotencia          |
+          |   (processed_event)     |
+          | - Crea notificacion     |
+          |   in-app (tabla         |
+          |   "notification")       |
+          | - Envia email (SMTP)    |
+          +------------+------------+
+                       |
+                       v
+              +-----------------+
+              |    FRONTEND     |
+              | (campanita +    |
+              |  polling 60s,   |
+              |  REST con JWT)  |
+              +-----------------+
+
+Nota: el SCHEDULER nunca llega a tocar a NOTIFICATIONS. Solo
+empuja al BACKEND, y es este quien produce los eventos.
+
+------------------------------------------------------------
+4. DIAGRAMA - PUBLICACION DESDE PAYMENTS
+------------------------------------------------------------
+
+  ContributionService.process() / handleWebhook()
+        |
+        | si el estado pasa a APPROVED (transicion unica,
+        | sin duplicados - validado con guards existentes)
+        v
+  publishContributionApprovedEvent(contribution)
+        |
+        |--> BackendClient.getCampaignTitle(...)         [HTTP interno]
+        |--> BackendClient.getUserContactInfo(...)       [HTTP interno,
+        |                                                  X-Service-Key]
+        v
+  NotificationEventPublisher.publishContributionApproved(event)
+        |
+        v
+  StringRedisTemplate.opsForStream().add(stream, {type, payload})
+
+
+  PayoutService.confirmManualPayout()
+        |
+        | tras backendClient.updateCampaignMoneyStatus(...)
+        v
+  publishPayoutCompletedEvent(payout, campaignTitle)
+        |
+        v
+  NotificationEventPublisher.publishPayoutCompleted(event)
+        |
+        v
+  Redis Stream
+
+(Todo el bloque de publicacion esta en try/catch: si falla,
+solo se loguea, el pago/payout ya quedo confirmado igual)
+
+------------------------------------------------------------
+5. DIAGRAMA - PUBLICACION DESDE BACKEND
+------------------------------------------------------------
+
+  Scheduler --(cron diario, 00:00)--> POST /internal/finalize-campaigns
+        |
+        v
+  InternalController -> CampaignService.findExpiredCrowdfundingCampaigns()
+        |
+        | por cada campania vencida:
+        v
+  CampaignService.finalizeCampaign(campaign)
+        |
+        |-- define estado SUCCESSFUL o FAILED
+        |-- campaignRepository.save(campaign)
+        |-- dispara payout/reembolso (PaymentsServiceClient)
+        |
+        v
+  publishCampaignFinalizedEvent(campaign, succeeded)
+        |
+        |-- arma CreatorInfo (owner: id, email, firstName)
+        |-- buildContributorInfos(campaignId):
+        |     consulta PaymentContributionRepository (acceso de
+        |     solo lectura al esquema payments.contribution),
+        |     agrupa montos aprobados por usuario, resuelve
+        |     email/firstName via UserRepository
+        |
+        v
+  NotificationEventPublisher.publishCampaignSucceeded / Failed(event)
+        |
+        v
+  Redis Stream "hornero:notifications:events"
+
+Tambien se corrigio en este flujo un bug latente: la config de Redis
+del backend usaba el prefijo viejo "spring.redis.*" (no valido en
+Spring Boot 3.2.x); se migro a "spring.data.redis.*".
+
+------------------------------------------------------------
+6. ARQUITECTURA INTERNA DE "NOTIFICATIONS"
+------------------------------------------------------------
+
+Paquetes (com.hornero.notifications):
+  - controller/   -> API REST (NotificationController)
+  - service/      -> NotificationService (in-app), EmailService (SMTP)
+  - consumer/     -> NotificationEventListener + NotificationEventProcessor
+  - model/        -> Notification, ProcessedEvent, EmailLog (JPA)
+  - repository/   -> acceso a datos (Spring Data JPA)
+  - config/       -> RedisStreamConfig (consumer group), CorsConfig
+  - util/         -> JwtUtil (valida JWT compartido con backend)
+  - dto/          -> DTOs de eventos y de respuesta REST
+
+Esquema propio "notifications" (Postgres compartido), migrado con
+Flyway (V1__create_notifications_schema.sql), 3 tablas:
+  - notification     (id, user_id, type, title, message,
+                      campaign_id, read, created_at)
+  - processed_event  (event_id PK)              -> idempotencia
+  - email_log        (auditoria de envios/fallos de email)
+
+Flujo del consumidor (at-least-once + idempotencia):
+
+   Redis Stream --> NotificationEventListener
+        |
+        v
+   NotificationEventProcessor.processIfNew(eventId, type, payload)
+        |
+        |-- ya existe en processed_event? --> XACK y descarta
+        |
+        v (evento nuevo)
+   route() segun "type":
+        CONTRIBUTION_APPROVED   -> handleContributionApproved()
+        CAMPAIGN_SUCCEEDED      -> handleCampaignSucceeded()
+        CAMPAIGN_FAILED         -> handleCampaignFailed()
+        PAYOUT_COMPLETED        -> handlePayoutCompleted()
+        |
+        |-- crea Notification in-app (NotificationService)
+        |-- envia email (EmailService, SMTP via JavaMailSender)
+        |-- guarda processed_event
+        |
+        v
+   XACK al stream
+
+Tipos de notificacion in-app / email generados:
+  DONATION_SUCCESS, CAMPAIGN_SUCCEEDED_CONTRIBUTOR,
+  CAMPAIGN_SUCCEEDED_CREATOR, CAMPAIGN_FAILED_CONTRIBUTOR,
+  CAMPAIGN_FAILED_CREATOR, PAYOUT_COMPLETED, ADMIN_TRANSFER_PENDING
+
+API REST expuesta (requiere JWT, cookie "jwt" o Authorization Bearer):
+  GET   /api/notifications              (paginado, ?unreadOnly=)
+  GET   /api/notifications/unread-count
+  PATCH /api/notifications/{id}/read
+  PATCH /api/notifications/read-all
+
+------------------------------------------------------------
+7. INTEGRACION EN EL FRONTEND
+------------------------------------------------------------
+
+  - notificationsService.js: cliente fetch (mismo patron que
+    contributionService.js), credentials: 'include', URL desde
+    VITE_NOTIFICATIONS_URL.
+
+  - NotificationBell.jsx (navbar): campanita con contador de no
+    leidas, polling cada 60s, dropdown con lista, marcar como
+    leida (individual / todas), navega a /campaigns/{id} al
+    hacer click. Estilizado con las variables CSS existentes
+    (color-mix para el tinte de "no leida").
+
+------------------------------------------------------------
+8. INFRAESTRUCTURA / ORQUESTACION
+------------------------------------------------------------
+
+  - notifications/docker-compose.yml: contenedor propio
+    (puerto 8083), conectado a hornero-postgres y hornero-redis
+    via la red compartida "hornero-network".
+
+  - Variables de entorno propias: .env.notifications (gitignored,
+    se crea localmente a partir de .env.notifications.example).
+
+  - Makefile raiz: se agregaron targets up-notif / down-notif /
+    build-notif / logs-notif / restart-notif, y se incluyo el
+    servicio en los agregados up-all / down-all / build-all / clean,
+    siguiendo el mismo patron que el resto de los servicios
+    (backend, payments, scheduler, blockchain).
+
+------------------------------------------------------------
+9. FUNCIONALIDAD DIFERIDA: "RECORDARME" (CAMPAIGN_EXPIRING)
+------------------------------------------------------------
+
+Se llego a esbozar (sin implementar) una posible feature para
+recordarle a los usuarios que una campania que les interesa esta por
+vencer:
+
+  - Disparador: el SCHEDULER seguiria sin hablar con notifications;
+    el aviso saldria del BACKEND (ej. un nuevo job/endpoint interno
+    "notify-expiring-campaigns" llamado por el scheduler, igual que
+    /internal/finalize-campaigns).
+  - Subscriptores: se evaluo reusar la funcionalidad ya existente de
+    "campanias guardadas" (SavedCampaign / /my-saved-campaigns) como
+    lista de usuarios a notificar, en lugar de crear un boton
+    "Recordarme" nuevo.
+  - Anticipacion sugerida: 24hs antes del endDate de la campania.
+  - Alcance de destinatarios sugerido: solo quienes guardaron/siguen
+    la campania (no se notificaria al creador en esta variante).
+
+Finalmente se decidio NO avanzar con esta funcionalidad por ahora;
+queda documentada como posible trabajo futuro.
+
+============================================================
+ FIN DEL DOCUMENTO
+============================================================

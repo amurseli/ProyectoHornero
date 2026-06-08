@@ -29,10 +29,12 @@ db.sqlite3-journal
 backend/.env.backend
 frontend/.env.frontend
 payments/.env.payments
-backoffice/.env.backoffice
+notifications/.env.notifications
+scheduler/.env.scheduler
 !backend/.env.backend.example
 !frontend/.env.frontend.example
-!backoffice/.env.backoffice.example
+!notifications/.env.notifications.example
+!scheduler/.env.scheduler.example
 
 # IDE
 .vscode/

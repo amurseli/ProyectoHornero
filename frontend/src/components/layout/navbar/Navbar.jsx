@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../ui"
 import { NavbarSearchBar } from "../../features"
 import { useUser } from "../../../store/useUser"
+import NotificationBell from "./NotificationBell"
 import "./Navbar.css"
 
 function getBackofficeUrl() {
@@ -63,6 +64,8 @@ function Navbar() {
           <Link to="/for-creators" className="navbar-creators-link">
             <Button variant="ghost" className="navbar-creators-btn">Para creadores</Button>
           </Link>
+
+          {user && <NotificationBell />}
 
           {user ? (
             <div className="navbar-user-dropdown" ref={dropdownRef}>
