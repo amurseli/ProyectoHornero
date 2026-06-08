@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { initMercadoPago, Payment } from '@mercadopago/sdk-react'
 import { contributionService } from '$utils/contributionService'
 import { Button } from '$components/ui'
-import { X, CheckCircle, XCircle, Loader, Clock } from 'lucide-react'
+import { X, CheckCircle, XCircle, Loader, Clock, ChevronRight, ArrowLeft } from 'lucide-react'
 import './ContributionModal.css'
 
 function formatMoney(value) {
@@ -16,12 +16,25 @@ function normalizeAmount(value, fallback = 1) {
 
 const AMOUNT_SUGGESTIONS = [500, 1000, 2000, 5000]
 
-const STEPS = ['Monto', 'Pago', 'Resultado']
-const STEP_INDEX = { amount: 0, reward: 0, payment: 1, result: 2 }
+const STEPS = ['Aporte', 'Pago', 'Resultado']
+const STEP_INDEX = { select: 0, amount: 0, reward: 0, payment: 1, result: 2 }
 
-export default function ContributionModal({ campaignId, initialAmount = 1, reward = null, onClose, onCompleted }) {
-  const rewardMode = !!reward
-  const [step, setStep] = useState(rewardMode ? 'reward' : 'amount')
+export default function ContributionModal({
+  campaignId,
+  initialAmount = 1,
+  reward = null,
+  rewards = [],
+  onClose,
+  onCompleted,
+}) {
+  // A reward passed via prop means the user already picked a tier on the page:
+  // skip selection and go straight to preparing that reward.
+  const forcedReward = reward
+  const availableRewards = Array.isArray(rewards) ? rewards : []
+  const initialStep = forcedReward ? 'reward' : availableRewards.length > 0 ? 'select' : 'amount'
+
+  const [step, setStep] = useState(initialStep)
+  const [selectedReward, setSelectedReward] = useState(forcedReward)
   const [amount, setAmount] = useState(Number(initialAmount) || 1)
   const [contributionId, setContributionId] = useState(null)
   const [preferenceId, setPreferenceId] = useState(null)
@@ -31,6 +44,8 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const mpInitialized = useRef(false)
+
+  const rewardMode = !!selectedReward
 
   async function startContribution({ nextAmount = null, rewardId = null } = {}) {
     setLoading(true)
@@ -61,9 +76,27 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
   }
 
   useEffect(() => {
-    if (step !== 'reward' || !rewardMode) return
-    startContribution({ rewardId: reward.id })
-  }, [step, rewardMode, reward?.id])
+    if (step !== 'reward' || !selectedReward) return
+    startContribution({ rewardId: selectedReward.id })
+  }, [step, selectedReward?.id])
+
+  function handleSelectReward(tier) {
+    setError(null)
+    setSelectedReward(tier)
+    setStep('reward')
+  }
+
+  function goToFreeAmount() {
+    setError(null)
+    setSelectedReward(null)
+    setStep('amount')
+  }
+
+  function goToRewardSelection() {
+    setError(null)
+    setSelectedReward(null)
+    setStep('select')
+  }
 
   async function handleAmountSubmit(e) {
     e.preventDefault()
@@ -88,7 +121,6 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
   }
 
   function handleRetry() {
-    setStep(rewardMode ? 'reward' : 'amount')
     setResult(null)
     setContributionId(null)
     setPreferenceId(null)
@@ -96,6 +128,15 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
     setRewardMeta(null)
     mpInitialized.current = false
     setError(null)
+    if (forcedReward) {
+      setStep('reward')
+    } else if (availableRewards.length > 0) {
+      setSelectedReward(null)
+      setStep('select')
+    } else {
+      setSelectedReward(null)
+      setStep('amount')
+    }
   }
 
   function handleOverlayClick(e) {
@@ -103,7 +144,7 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
   }
 
   const amountFormatted = formatMoney(amount)
-  const rewardPriceFormatted = formatMoney(rewardMeta?.rewardPrice ?? reward?.price)
+  const rewardPriceFormatted = formatMoney(rewardMeta?.rewardPrice ?? selectedReward?.price)
   const previousRewardFormatted = formatMoney(rewardMeta?.previousRewardPrice)
   const resultAmount = normalizeAmount(result?.amount, amount)
   const resultAmountFormatted = formatMoney(resultAmount)
@@ -133,9 +174,43 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
           ))}
         </div>
 
+        {step === 'select' && (
+          <div className="cm-body">
+            <h2 className="cm-title">Elegí tu recompensa</h2>
+            <p className="cm-subtitle">Sumate al proyecto eligiendo una recompensa. El monto se completa automáticamente.</p>
+
+            <div className="cm-tier-list">
+              {availableRewards.map((tier) => (
+                <button
+                  key={tier.id}
+                  type="button"
+                  className="cm-tier"
+                  onClick={() => handleSelectReward(tier)}
+                >
+                  <div className="cm-tier-main">
+                    <span className="cm-tier-price">{formatMoney(tier.price)}</span>
+                    <span className="cm-tier-title">{tier.title}</span>
+                    {tier.description && <span className="cm-tier-desc">{tier.description}</span>}
+                  </div>
+                  <ChevronRight size={18} className="cm-tier-arrow" />
+                </button>
+              ))}
+            </div>
+
+            <button type="button" className="cm-link-btn" onClick={goToFreeAmount}>
+              Prefiero aportar otro monto
+            </button>
+          </div>
+        )}
+
         {step === 'amount' && (
           <div className="cm-body">
-            <h2 className="cm-title">Hacer una contribución</h2>
+            {availableRewards.length > 0 && (
+              <button type="button" className="cm-back-link" onClick={goToRewardSelection}>
+                <ArrowLeft size={14} /> Volver a las recompensas
+              </button>
+            )}
+            <h2 className="cm-title">Aportá lo que quieras</h2>
             <p className="cm-subtitle">Ingresá el monto que querés aportar a esta campaña.</p>
 
             <div className="cm-chips">
@@ -179,12 +254,12 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
           <div className="cm-step">
             <h2 className="cm-title">Preparando recompensa</h2>
             <p className="cm-subtitle">
-              Estamos validando <strong>{reward.title}</strong> y calculando el monto exacto a pagar.
+              Estamos validando <strong>{selectedReward.title}</strong> y calculando el monto exacto a pagar.
             </p>
             <div className="cm-reward-card">
               <div>
-                <strong>{reward.title}</strong>
-                <p className="cm-reward-copy">Monto total de la recompensa: {formatMoney(reward.price)}</p>
+                <strong>{selectedReward.title}</strong>
+                <p className="cm-reward-copy">Monto total de la recompensa: {formatMoney(selectedReward.price)}</p>
               </div>
             </div>
             {loading ? (
@@ -214,7 +289,7 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
               <>
                 <h2 className="cm-title">Datos de pago</h2>
                 <p className="cm-subtitle">
-                  Seleccionaste <strong>{reward.title}</strong>. El monto de esta recompensa queda fijo en <strong>{rewardPriceFormatted}</strong>.
+                  Seleccionaste <strong>{selectedReward.title}</strong>. El monto de esta recompensa queda fijo en <strong>{rewardPriceFormatted}</strong>.
                 </p>
                 <div className="cm-reward-summary">
                   <div className="cm-reward-summary-row">
@@ -273,9 +348,9 @@ export default function ContributionModal({ campaignId, initialAmount = 1, rewar
                 <h2 className="cm-title">{rewardActivatedWithoutPayment ? '¡Recompensa activada!' : '¡Contribución exitosa!'}</h2>
                 <p className="cm-subtitle">
                   {rewardActivatedWithoutPayment
-                    ? <>Activaste la recompensa <strong>{reward.title}</strong> con tus aportes previos.</>
+                    ? <>Activaste la recompensa <strong>{selectedReward.title}</strong> con tus aportes previos.</>
                     : rewardMode
-                    ? <>Tu pago de <strong>{resultAmountFormatted}</strong> para <strong>{reward.title}</strong> fue procesado correctamente.</>
+                    ? <>Tu pago de <strong>{resultAmountFormatted}</strong> para <strong>{selectedReward.title}</strong> fue procesado correctamente.</>
                     : <>Tu aporte de <strong>{amountFormatted}</strong> fue procesado correctamente. ¡Gracias por apoyar esta campaña!</>}
                 </p>
                 <Button variant="primary" className="cm-btn" onClick={onClose}>

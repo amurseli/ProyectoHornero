@@ -1138,6 +1138,7 @@ export default function CampaignPage() {
             campaignId={Number(id)}
             initialAmount={modalConfig.amount}
             reward={modalConfig.reward}
+            rewards={rewards}
             onCompleted={handleContributionCompleted}
             onClose={() => setModalOpen(false)}
           />
