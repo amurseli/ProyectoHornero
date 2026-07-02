@@ -68,7 +68,12 @@ jobs:
       notifications: ${{ steps.resolve.outputs.notifications }}
       namespace: ${{ steps.namespace.outputs.value }}
     steps:
+      # fetch-depth: 0 → historial completo para que paths-filter pueda diffear
+      # bien los merge commits contra su base (con checkout shallow el diff falla
+      # y marca servicios como "sin cambios" aunque sí cambiaron).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # On push, diff the commit to decide which services changed. On manual
       # dispatch there is no diff, so this is skipped and the inputs are used.
@@ -76,6 +81,7 @@ jobs:
         id: changes
         if: github.event_name == 'push'
         with:
+          base: ${{ github.event.before }}
           filters: |
             backend: 'backend/**'
             frontend: 'frontend/**'
