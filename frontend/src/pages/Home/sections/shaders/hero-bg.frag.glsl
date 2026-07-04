@@ -1,5 +1,12 @@
 precision mediump float;
 
+// Frecuencia del ruido: valores mayores = ondas más pequeñas. Se puede sobrescribir
+// inyectando "#define U_SCALE <n>" antes de este source (ver ShaderBackground). Sin
+// override, mantiene el look original del hero de inicio.
+#ifndef U_SCALE
+#define U_SCALE 1.0
+#endif
+
 uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec4 u_mousepos;
@@ -62,6 +69,7 @@ void main() {
 
   vec2 uv = fragUv;
   uv.x *= u_resolution.x / u_resolution.y;
+  uv *= U_SCALE;
 
   float t = u_time * 0.07;
 

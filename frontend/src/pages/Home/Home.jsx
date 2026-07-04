@@ -5,6 +5,7 @@ import { useCampaigns } from "../../hooks/useCampaigns"
 import { useHeroSearch } from "../../hooks/useHeroSearch"
 import { campaignService } from "../../utils/campaignService"
 import HeroSection from "./sections/HeroSection"
+import TransactionsSection from "./sections/TransactionsSection"
 import FeaturedSection from "./sections/FeaturedSection"
 import EndingSoonSection from "./sections/EndingSoonSection"
 import NearGoalSection from "./sections/NearGoalSection"
@@ -42,6 +43,10 @@ function Home() {
 
         <div className="container home-content home-content--wide">
           <FeaturedSection campaigns={featuredCampaigns} isLoading={isLoading} />
+        </div>
+
+        <div className="container home-content home-content--wide">
+          <TransactionsSection />
         </div>
 
         <div className="home-body">
