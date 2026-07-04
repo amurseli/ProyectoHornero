@@ -6,7 +6,6 @@ import com.hornero.model.CampaignTeamMember;
 import com.hornero.model.Reward;
 import org.springframework.stereotype.Service;
 
-import java.net.URL;
 import java.util.Base64;
 import java.util.List;
 
@@ -65,8 +64,7 @@ public class AppImageService {
 
     public String resolveImageUrl(String s3Key) {
         if (s3Key == null || s3Key.isBlank()) return null;
-        URL url = s3StorageService.generatePresignedUrl(s3Key);
-        return url != null ? url.toString() : null;
+        return s3StorageService.generateAppImageUrl(s3Key);
     }
 
     public String resolveStoredImageReference(String value, String fallbackS3Key) {
