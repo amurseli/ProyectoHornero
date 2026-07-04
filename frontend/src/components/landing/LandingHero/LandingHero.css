@@ -83,12 +83,11 @@
 }
 
 .lh-hero-title {
-  font-family: 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 450;
+  font-family: var(--font-display);
+  font-weight: 800;
   font-size: clamp(3rem, 8.5vw, 6.25rem);
   line-height: 0.98;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.035em;
   color: #fff;
   margin: 0;
   text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);

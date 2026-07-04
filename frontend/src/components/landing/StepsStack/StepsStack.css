@@ -43,8 +43,8 @@
   position: absolute;
   right: -0.75rem;
   bottom: -2.75rem;
-  font-family: 'Fraunces', Georgia, serif;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 800;
   font-size: clamp(9rem, 22vw, 17rem);
   line-height: 0.8;
   letter-spacing: -0.04em;
@@ -65,11 +65,11 @@
 }
 
 .cs-card-title {
-  font-family: 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: clamp(1.6rem, 3.5vw, 2.5rem);
   line-height: 1.1;
+  letter-spacing: -0.02em;
   color: var(--color-text-primary);
   margin: 0 0 0.85rem;
 }

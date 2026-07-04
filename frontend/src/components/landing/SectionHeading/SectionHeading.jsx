@@ -2,7 +2,7 @@ import "./SectionHeading.css"
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SectionHeading — el trío de encabezado de sección reutilizado en la landing:
-//  eyebrow (mayúsculas doradas) + título Fraunces + subtítulo. Es un fragmento:
+//  eyebrow (mayúsculas doradas) + título (--font-display) + subtítulo. Es un fragmento:
 //  el wrapper (max-width / margen / text-align) lo pone quien lo consume.
 //    <SectionHeading eyebrow="…" title={…} subtitle="…" subMaxWidth="44ch" />
 //  - Si no hay subtítulo, el título queda como :last-child → sin margen inferior.

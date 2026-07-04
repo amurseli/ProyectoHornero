@@ -40,8 +40,8 @@
 }
 
 .tc-col-num {
-  font-family: 'Fraunces', Georgia, serif;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: 1.5rem;
   color: var(--color-text-muted);
   opacity: 0.5;

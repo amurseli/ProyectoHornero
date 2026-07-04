@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "./assets/styles/variables.css";
 @import "./assets/styles/global.css";
-/* Fraunces = serif display para los títulos importantes de las landings */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&display=swap');
 
 @theme {
   --color-primary: #EC4899;

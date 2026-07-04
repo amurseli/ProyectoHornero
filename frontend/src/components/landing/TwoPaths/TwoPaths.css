@@ -11,12 +11,11 @@
 }
 
 .tp-about-title {
-  font-family: 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 450;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: clamp(1.6rem, 3.5vw, 2.35rem);
   line-height: 1.08;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   color: var(--color-text-primary);
   margin: 0 0 1.25rem;
 }
@@ -99,12 +98,11 @@
 }
 
 .tp-card-title {
-  font-family: 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: clamp(1.5rem, 3vw, 2.1rem);
   line-height: 1.05;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   color: var(--color-text-primary);
   margin: 0 0 0.6rem;
 }
