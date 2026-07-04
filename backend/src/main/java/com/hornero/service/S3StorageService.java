@@ -15,8 +15,10 @@ import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.net.URL;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class S3StorageService {
@@ -45,6 +47,16 @@ public class S3StorageService {
     private S3Client s3Client;
     private S3Presigner s3Presigner;
     private String rootPrefix;
+
+    // Cache de URLs pre-firmadas para imágenes PÚBLICAS (campañas/rewards/team):
+    // devolvemos la MISMA URL por s3Key durante ~20h para que el navegador pueda
+    // deduplicar y cachear. Sin esto, cada respuesta firma una URL nueva y el
+    // navegador re-descarga la imagen aunque sea idéntica.
+    private static final Duration APP_IMAGE_SIGNATURE_TTL = Duration.ofHours(24);
+    private static final Duration APP_IMAGE_URL_CACHE_TTL = Duration.ofHours(20);
+    private final ConcurrentHashMap<String, CachedUrl> appImageUrlCache = new ConcurrentHashMap<>();
+
+    private record CachedUrl(String url, Instant regenerateAfter) {}
 
     @PostConstruct
     public void init() {
@@ -93,6 +105,8 @@ public class S3StorageService {
                 .bucket(bucketName)
                 .key(key)
                 .contentType(contentType)
+                // Objetos con key UUID = inmutables → el navegador puede cachearlos "para siempre".
+                .cacheControl("public, max-age=31536000, immutable")
                 .serverSideEncryption(ServerSideEncryption.AES256)
                 .build();
 
@@ -101,16 +115,38 @@ public class S3StorageService {
     }
 
     /**
-     * Generate a pre-signed URL for admin to view a document (expires in 15 minutes).
+     * Pre-signed URL de corta duración (15 min) para documentos PRIVADOS (KYC).
      */
     public URL generatePresignedUrl(String s3Key) {
+        return presign(s3Key, Duration.ofMinutes(15));
+    }
+
+    /**
+     * URL de imagen PÚBLICA (campaña/reward/team) ESTABLE: se cachea por s3Key
+     * (~20h) y se firma con TTL largo (24h). Al devolver la misma URL entre
+     * respuestas, el navegador deduplica y cachea en vez de re-descargar cada vez.
+     */
+    public String generateAppImageUrl(String s3Key) {
+        if (s3Key == null || s3Key.isBlank()) return null;
+        Instant now = Instant.now();
+        CachedUrl cached = appImageUrlCache.compute(s3Key, (key, existing) -> {
+            if (existing != null && now.isBefore(existing.regenerateAfter())) {
+                return existing;
+            }
+            String signed = presign(key, APP_IMAGE_SIGNATURE_TTL).toString();
+            return new CachedUrl(signed, now.plus(APP_IMAGE_URL_CACHE_TTL));
+        });
+        return cached.url();
+    }
+
+    private URL presign(String s3Key, Duration ttl) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(s3Key)
                 .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(15))
+                .signatureDuration(ttl)
                 .getObjectRequest(getObjectRequest)
                 .build();
 
