@@ -165,6 +165,8 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
            "ORDER BY c.updatedAt DESC")
     List<Long> findSpotlightIds(Pageable pageable);
 
+    long countByIsSpotlightTrueAndStatus(String status);
+
     @Query("SELECT c.id FROM Campaign c " +
            "WHERE c.status = 'CROWDFUNDING' " +
            "AND c.category.id = :categoryId " +

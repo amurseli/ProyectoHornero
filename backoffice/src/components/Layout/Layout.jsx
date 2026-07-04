@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { ShieldCheck, BadgeCheck, LogOut, User, Users, Landmark } from 'lucide-react'
+import { ShieldCheck, BadgeCheck, LogOut, User, Users, Landmark, Sparkles } from 'lucide-react'
 import Button from '../Button/Button.jsx'
 import { useUser } from '../../store/useUser'
 import './Layout.css'
@@ -8,6 +8,7 @@ import './Layout.css'
 const NAV_ITEMS = [
   { to: '/verificaciones', label: 'Verificaciones', icon: BadgeCheck },
   { to: '/campanas', label: 'Campañas', icon: Landmark },
+  { to: '/curador', label: 'Curador', icon: Sparkles },
   { to: '/usuarios', label: 'Usuarios', icon: Users },
 ]
 
