@@ -7,6 +7,7 @@ import com.hornero.payments.dto.InitiateContributionResponse;
 import com.hornero.payments.dto.ProcessContributionRequest;
 import com.hornero.payments.service.ContributionService;
 import com.hornero.payments.util.JwtUtil;
+import com.hornero.payments.util.WebhookSignatureValidator;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -25,10 +26,13 @@ public class ContributionController {
 
     private final ContributionService contributionService;
     private final JwtUtil jwtUtil;
+    private final WebhookSignatureValidator webhookValidator;
 
-    public ContributionController(ContributionService contributionService, JwtUtil jwtUtil) {
+    public ContributionController(ContributionService contributionService, JwtUtil jwtUtil,
+                                   WebhookSignatureValidator webhookValidator) {
         this.contributionService = contributionService;
         this.jwtUtil = jwtUtil;
+        this.webhookValidator = webhookValidator;
     }
 
     // POST /api/payments/contributions/initiate
@@ -88,14 +92,16 @@ public class ContributionController {
     }
 
     // POST /api/payments/notifications
-    // MercadoPago llama este endpoint como webhook (IPN) - sin autenticacion
+    // Mercado Pago llama este endpoint como webhook. La firma HMAC-SHA256 incluida
+    // en el header x-signature se valida antes de procesar el evento.
     @PostMapping("/notifications")
     public ResponseEntity<Void> handleWebhook(
             @RequestParam(required = false) String type,
             @RequestParam(value = "data.id", required = false) String dataId,
-            @RequestBody(required = false) Map<String, Object> body) {
+            @RequestBody(required = false) Map<String, Object> body,
+            @RequestHeader(value = "x-signature", required = false) String xSignature,
+            @RequestHeader(value = "x-request-id", required = false) String xRequestId) {
 
-        // MercadoPago puede enviar el paymentId como query param o en el body
         String resolvedType = type;
         String resolvedId = dataId;
 
@@ -103,6 +109,13 @@ public class ContributionController {
             if (resolvedType == null) resolvedType = (String) body.get("type");
             if (resolvedId == null && body.get("data") instanceof Map) {
                 resolvedId = String.valueOf(((Map<?, ?>) body.get("data")).get("id"));
+            }
+        }
+
+        if (xSignature != null && xRequestId != null && resolvedId != null) {
+            if (!webhookValidator.isValid(xSignature, xRequestId, resolvedId)) {
+                logger.warn("Webhook rechazado: firma invalida (dataId={})", resolvedId);
+                return ResponseEntity.badRequest().build();
             }
         }
 
@@ -114,7 +127,7 @@ public class ContributionController {
             }
         }
 
-        // Siempre responder 200 a MercadoPago para que no reintente
+        // Siempre responder 200 para que Mercado Pago no reintente
         return ResponseEntity.ok().build();
     }
 
