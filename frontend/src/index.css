@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "./assets/styles/variables.css";
 @import "./assets/styles/global.css";
+/* Fuente display de las landings (hero, pasos, CTA, features) */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&display=swap');
 
 @theme {
   --color-primary: #EC4899;

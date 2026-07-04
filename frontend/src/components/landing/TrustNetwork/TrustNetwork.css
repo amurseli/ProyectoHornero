@@ -1,0 +1,166 @@
+.tn {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  max-width: 100vw;
+  aspect-ratio: 1440 / 460;
+}
+
+.tn-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transition: opacity 0.35s ease;
+}
+
+/* al hover de un hub, la red se atenúa (foco) */
+.tn:has(.tn-hub:hover) .tn-svg { opacity: 0.32; }
+
+/* ── líneas: se dibujan al entrar ── */
+.tn-edges line {
+  stroke: url(#tn-grad);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.7s ease;
+}
+.tn.is-in .tn-edges line { stroke-dashoffset: 0; }
+
+/* ── nodos decorativos ── */
+.tn-dots circle {
+  fill: var(--color-text-primary);
+  opacity: 0;
+  transform: scale(0);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tn.is-in .tn-dots circle { opacity: 1; transform: scale(1); }
+
+/* ── hubs interactivos ── */
+.tn-hub {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 2;
+}
+.tn.is-in .tn-hub { opacity: 1; }
+
+/* al hover de un hub, los demás hubs se atenúan */
+.tn:has(.tn-hub:hover) .tn-hub:not(:hover) { opacity: 0.35; }
+.tn-hub:hover { z-index: 3; }
+
+.tn-hub-dot {
+  position: relative;
+  z-index: 1;                 /* nodo 100% blanco opaco, TAPA el glow */
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 50%;
+  background: var(--color-white);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
+  box-shadow: 0 6px 20px rgba(17, 24, 39, 0.14);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+}
+
+/* iluminación DETRÁS del nodo: elemento hermano con z-index menor. El nodo blanco
+   la tapa en el centro y solo asoma como aro. Sutil, permanente, pulse desfasado. */
+.tn-hub-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: 4.4rem;
+  height: 4.4rem;
+  border-radius: 50%;
+  background: var(--gradient-warm);
+  filter: blur(11px);
+  opacity: 0.3;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1);
+  animation: tn-pulse 2.8s ease-in-out infinite;
+  animation-delay: var(--pulse-delay, 0s);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@keyframes tn-pulse {
+  0%, 100% { opacity: 0.22; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 0.4;  transform: translate(-50%, -50%) scale(1.12); }
+}
+
+.tn-hub:hover .tn-hub-dot {
+  transform: scale(1.15);
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.18);
+}
+
+/* en hover: se corta el pulse y el aro crece (sigue detrás del nodo) */
+.tn-hub:hover .tn-hub-glow {
+  animation: none;
+  opacity: 0.6;
+  transform: translate(-50%, -50%) scale(1.4);
+}
+
+/* tooltip */
+.tn-hub-tip {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  width: max-content;
+  max-width: 15rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+/* hubs en la mitad inferior: tooltip arriba */
+.tn-hub.is-lower .tn-hub-tip {
+  top: auto;
+  bottom: calc(100% + 0.6rem);
+  transform: translateX(-50%) translateY(-6px);
+}
+
+.tn-hub:hover .tn-hub-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.tn-hub-tip strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 0.15rem;
+}
+.tn-hub-tip span {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .tn-hub-dot { width: 3rem; height: 3rem; }
+  .tn-hub-tip { max-width: 12rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-edges line { stroke-dashoffset: 0; transition: none; }
+  .tn-dots circle { opacity: 1; transform: none; transition: none; }
+  .tn-hub { opacity: 1; transition: opacity 0.25s ease; }
+  .tn-hub-glow { animation: none; opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+}
