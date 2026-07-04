@@ -1,0 +1,67 @@
+.tc {
+  background: var(--color-bg-primary);
+  padding: clamp(1rem, 3vh, 2rem) 0 clamp(3rem, 8vh, 5.5rem);
+}
+
+.tc-intro {
+  max-width: 900px;
+  margin: 0 auto clamp(2.5rem, 6vh, 4rem);
+  padding: 0 clamp(1.5rem, 6vw, 3rem);
+  text-align: center;
+}
+
+.tc-grid {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 clamp(1.5rem, 6vw, 3rem);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(2rem, 4vw, 3.5rem);
+}
+
+.tc-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tc-col-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+}
+
+.tc-col-num {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.tc-col-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.tc-col-desc {
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .tc-grid { grid-template-columns: 1fr; gap: 2rem; }
+}

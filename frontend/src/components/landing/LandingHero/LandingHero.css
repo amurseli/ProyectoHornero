@@ -1,0 +1,118 @@
+.lh-hero {
+  position: relative;
+  width: 100%;
+  height: calc((100vh - var(--navbar-height)) * var(--lh-scale, 1));
+  min-height: calc(560px * var(--lh-scale, 1));
+  max-height: calc(860px * var(--lh-scale, 1));
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--color-bg-primary);
+}
+
+.lh-hero-img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  animation: lh-img-in 1.5s ease both;
+}
+
+@keyframes lh-img-in {
+  from { transform: scale(1.06); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+/* scrim de legibilidad (abajo-izquierda) */
+.lh-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(105deg,
+      rgba(28, 20, 12, 0.62) 0%,
+      rgba(28, 20, 12, 0.34) 38%,
+      rgba(28, 20, 12, 0.05) 62%,
+      transparent 78%);
+}
+
+/* fundido inferior con el fondo de la página */
+.lh-hero-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--color-bg-primary) 55%, transparent) 58%,
+    var(--color-bg-primary) 94%);
+}
+
+.lh-hero-content {
+  position: absolute;
+  z-index: 3;
+  left: clamp(1.5rem, 6vw, 6rem);
+  /* el offset baja proporcional al alto del hero (--lh-scale): en heroes
+     recortados el bloque queda más abajo y el eyebrow despeja la navbar */
+  bottom: calc(clamp(6rem, 24vh, 12rem) * var(--lh-scale, 1));
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.5rem;
+  animation: lh-content-in 1s ease 0.35s both;
+}
+
+@keyframes lh-content-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.lh-hero-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
+  margin-bottom: -0.5rem;
+}
+
+.lh-hero-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-optical-sizing: auto;
+  font-weight: 450;
+  font-size: clamp(3rem, 8.5vw, 6.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 0;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);
+}
+
+.lh-hero-sub {
+  font-family: var(--font-sans);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0;
+  max-width: 460px;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 640px) {
+  .lh-hero {
+    height: auto;
+    min-height: calc(100vh - var(--navbar-height));
+  }
+  .lh-hero-content {
+    left: 1.5rem;
+    right: 1.5rem;
+    bottom: clamp(4rem, 16vh, 7rem);
+    max-width: none;
+  }
+}
