@@ -47,6 +47,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/campaigns/*/current-amount").permitAll()
                 .requestMatchers(HttpMethod.PATCH, "/api/campaigns/*/money-status").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/users/*/payout-info").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/transactions/history").permitAll() // Public transaction history / transparency page
                 .requestMatchers("/internal/**").permitAll()
                 .requestMatchers("/api/users/me").authenticated() // Require authentication for /me endpoint
                 .requestMatchers("/api/**").authenticated()

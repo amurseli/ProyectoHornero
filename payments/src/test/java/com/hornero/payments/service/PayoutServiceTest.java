@@ -36,7 +36,7 @@ class PayoutServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(service, "platformRate", new BigDecimal("0.05"));
-        ReflectionTestUtils.setField(service, "providerRate", new BigDecimal("0.0299"));
+        ReflectionTestUtils.setField(service, "providerRate", new BigDecimal("0.046"));
     }
 
     @Test
@@ -73,11 +73,11 @@ class PayoutServiceTest {
 
         PayoutStatusResponse response = service.executePayout(1L, 10L);
 
-        // gross=1000, platform=50.00 (5%), provider=29.90 (2.99%), net=920.10
+        // gross=1000, platform=50.00 (5%), provider=46.00 (4.60%), net=904.00
         assertThat(response.getGrossAmount()).isEqualByComparingTo("1000");
         assertThat(response.getPlatformFee()).isEqualByComparingTo("50.00");
-        assertThat(response.getProviderFee()).isEqualByComparingTo("29.90");
-        assertThat(response.getNetAmount()).isEqualByComparingTo("920.10");
+        assertThat(response.getProviderFee()).isEqualByComparingTo("46.00");
+        assertThat(response.getNetAmount()).isEqualByComparingTo("904.00");
     }
 
     @Test

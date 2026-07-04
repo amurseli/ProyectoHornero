@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Menu, ChevronDown, CircleUserRound, FolderOpen, LogOut, ShieldCheck, Bookmark, Blocks } from "lucide-react"
+import { User, Menu, ChevronDown, CircleUserRound, FolderOpen, LogOut, ShieldCheck, Bookmark, Compass, Users, Blocks, Receipt } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../ui"
@@ -59,10 +59,22 @@ function Navbar() {
 
         <div className="navbar-actions">
           <Link to="/explorar" className="navbar-creators-link">
-            <Button variant="ghost" className="navbar-creators-btn">Explorar</Button>
+            <Button variant="ghost" className="navbar-creators-btn">
+              <Compass size={16} aria-hidden="true" />
+              Explorar
+            </Button>
           </Link>
           <Link to="/for-creators" className="navbar-creators-link">
-            <Button variant="ghost" className="navbar-creators-btn">Para creadores</Button>
+            <Button variant="ghost" className="navbar-creators-btn">
+              <Users size={16} aria-hidden="true" />
+              Para creadores
+            </Button>
+          </Link>
+          <Link to="/transactions" className="navbar-creators-link">
+            <Button variant="ghost" className="navbar-creators-btn">
+              <Blocks size={16} aria-hidden="true" />
+              Transacciones
+            </Button>
           </Link>
 
           {user && <NotificationBell />}
@@ -113,12 +125,12 @@ function Navbar() {
                     Mis guardados
                   </Link>
                   <Link
-                    to="/transactions"
+                    to={`/transactions?user=${encodeURIComponent(user.userName)}`}
                     className="navbar-dropdown-item"
                     onClick={() => setUserDropdownOpen(false)}
                   >
-                    <Blocks size={16} aria-hidden="true" />
-                    Transacciones
+                    <Receipt size={16} aria-hidden="true" />
+                    Mis transacciones
                   </Link>
                   {user.role === 'ADMIN' && (
                     <a
@@ -176,6 +188,9 @@ function Navbar() {
           <Link to="/for-creators" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
             Para creadores
           </Link>
+          <Link to="/transactions" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+            Transacciones
+          </Link>
           {user ? (
             <>
               <Link to="/configuracion" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
@@ -187,8 +202,8 @@ function Navbar() {
               <Link to="/my-saved-campaigns" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
                 Mis guardados
               </Link>
-              <Link to="/transactions" className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
-                Transacciones
+              <Link to={`/transactions?user=${encodeURIComponent(user.userName)}`} className="navbar-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+                Mis transacciones
               </Link>
               {user.role === 'ADMIN' && (
                 <a

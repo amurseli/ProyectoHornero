@@ -46,6 +46,16 @@
   }
 }
 
+.transaction-history-content {
+  position: relative;
+  overflow: hidden;
+}
+
+.transaction-history-content .transaction-history-shell {
+  position: relative;
+  z-index: 1;
+}
+
 .transaction-history-section {
   padding: 2rem 0 4rem;
 }
@@ -56,13 +66,125 @@
   border-radius: 1.5rem;
   text-align: center;
   color: var(--color-text-secondary);
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(14px);
 }
 
 .transaction-history-state.error {
   color: #991b1b;
   border-color: rgba(220, 38, 38, 0.25);
   background: rgba(254, 242, 242, 0.95);
+}
+
+.transaction-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  align-items: end;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid color-mix(in srgb, var(--color-border) 75%, white);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+.transaction-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.transaction-filter-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.transaction-filter-field input,
+.transaction-filter-field select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, white);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-primary);
+  font-size: 0.92rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transaction-filter-field input:focus,
+.transaction-filter-field select:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-primary, #ec4899) 60%, white);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
+}
+
+.transaction-filter-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.transaction-filter-input-wrap input {
+  padding-right: 2.5rem;
+}
+
+.transaction-filter-toggle {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.transaction-filter-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+
+.transaction-filter-toggle:hover {
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--color-text-primary);
+}
+
+.transaction-filter-toggle.active {
+  background: rgba(236, 72, 153, 0.15);
+  border-color: color-mix(in srgb, var(--color-primary, #ec4899) 45%, white);
+  color: var(--color-primary, #ec4899);
+}
+
+.transaction-filter-clear {
+  padding: 0.6rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, white);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.transaction-filter-clear:hover {
+  background: rgba(226, 232, 240, 0.95);
+  color: var(--color-text-primary);
 }
 
 .transaction-history-list {
@@ -73,7 +195,7 @@
 .transaction-card {
   padding: 1.4rem;
   border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.55);
   border: 1px solid color-mix(in srgb, var(--color-border) 75%, white);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
   backdrop-filter: blur(14px);
