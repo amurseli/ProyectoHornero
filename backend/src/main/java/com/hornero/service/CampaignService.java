@@ -342,6 +342,8 @@ public class CampaignService {
             campaign.setStatus("FAILED");
             campaign.setMoneyStatus("REFUND_PENDING");
         }
+        // Una campaña finalizada deja de estar destacada: limpia el flag para no dejar dato colgado.
+        campaign.setIsSpotlight(false);
         campaignRepository.save(campaign);
         publishCampaignFinalizedEvent(campaign, reachedGoal);
         return true;

@@ -22,6 +22,7 @@ public class AdminCampaignSummaryResponse {
     private boolean ended;
     private boolean transferReady;
     private boolean transferCompleted;
+    private boolean isSpotlight;
     private long approvedContributionCount;
 
     public static AdminCampaignSummaryResponse fromEntity(Campaign campaign, LocalDate today, long approvedContributionCount) {
@@ -45,6 +46,7 @@ public class AdminCampaignSummaryResponse {
         response.reachedGoal = target != null && current.compareTo(target) >= 0;
         response.ended = campaign.getEndDate() != null && today.isAfter(campaign.getEndDate());
         response.transferCompleted = "PAYOUT_COMPLETED".equals(campaign.getMoneyStatus());
+        response.isSpotlight = campaign.getIsSpotlight();
         response.approvedContributionCount = approvedContributionCount;
         response.transferReady = response.ended
                 && response.reachedGoal
@@ -73,5 +75,6 @@ public class AdminCampaignSummaryResponse {
     public boolean isEnded() { return ended; }
     public boolean isTransferReady() { return transferReady; }
     public boolean isTransferCompleted() { return transferCompleted; }
+    public boolean getIsSpotlight() { return isSpotlight; }
     public long getApprovedContributionCount() { return approvedContributionCount; }
 }
