@@ -114,6 +114,7 @@
   line-height: 1.6;
   color: var(--color-text-muted);
   margin: 0 0 1.75rem;
+  white-space: pre-line;   /* respeta los saltos de línea (\n) del texto */
 }
 
 /* ── link (texto subrayado + flecha) — reemplaza al botón pill ── */

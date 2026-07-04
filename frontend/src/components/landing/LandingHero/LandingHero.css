@@ -1,9 +1,9 @@
 .lh-hero {
   position: relative;
   width: 100%;
-  height: calc(100vh - var(--navbar-height));
-  min-height: 560px;
-  max-height: 860px;
+  height: calc((100vh - var(--navbar-height)) * var(--lh-scale, 1));
+  min-height: calc(560px * var(--lh-scale, 1));
+  max-height: calc(860px * var(--lh-scale, 1));
   overflow: hidden;
   isolation: isolate;
   background: var(--color-bg-primary);
@@ -56,7 +56,9 @@
   position: absolute;
   z-index: 3;
   left: clamp(1.5rem, 6vw, 6rem);
-  bottom: clamp(6rem, 24vh, 12rem);
+  /* el offset baja proporcional al alto del hero (--lh-scale): en heroes
+     recortados el bloque queda más abajo y el eyebrow despeja la navbar */
+  bottom: calc(clamp(6rem, 24vh, 12rem) * var(--lh-scale, 1));
   max-width: 640px;
   display: flex;
   flex-direction: column;

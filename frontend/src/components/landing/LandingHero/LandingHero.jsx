@@ -6,6 +6,7 @@ import "./LandingHero.css"
 //  fundido inferior y un HeroButton. Reutilizable (ForCreators, HowItWorks, …).
 //    <LandingHero image="/foo.jpg" title={<>Dale vuelo<br/>a tus ideas</>}
 //                 subtitle="…" buttonLabel="Crear" onButton={() => nav(...)} />
+//  heightScale (default 1): escala la altura del hero (ej. 0.7 = 30% más bajo).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function LandingHero({
@@ -16,9 +17,10 @@ function LandingHero({
   subtitle,
   buttonLabel,
   onButton,
+  heightScale = 1,
 }) {
   return (
-    <section className="lh-hero">
+    <section className="lh-hero" style={{ "--lh-scale": heightScale }}>
       <div
         className="lh-hero-img"
         style={{ backgroundImage: `url(${image})`, backgroundPosition: imagePosition }}
