@@ -6,6 +6,7 @@ import com.hornero.dto.AdminCampaignDetailResponse;
 import com.hornero.dto.AdminCampaignContributionResponse;
 import com.hornero.dto.AdminCampaignSummaryResponse;
 import com.hornero.dto.AdminCampaignTransferResponse;
+import com.hornero.dto.CuratorCampaignResponse;
 import com.hornero.dto.ErrorResponse;
 import com.hornero.model.Campaign;
 import com.hornero.model.CreatorBankInfo;
@@ -13,6 +14,7 @@ import com.hornero.model.User;
 import com.hornero.repository.CampaignRepository;
 import com.hornero.repository.CreatorBankInfoRepository;
 import com.hornero.repository.UserRepository;
+import com.hornero.service.AppImageService;
 import com.hornero.service.CampaignService;
 import com.hornero.service.EncryptionService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/campaigns")
 public class AdminCampaignController {
+
+    private static final int MAX_SPOTLIGHT = 2;
 
     @Autowired
     private CampaignRepository campaignRepository;
@@ -48,6 +52,9 @@ public class AdminCampaignController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private AppImageService appImageService;
+
     @GetMapping
     public ResponseEntity<?> listCampaigns(HttpServletRequest request) {
         if (!isAdmin(request)) {
@@ -64,6 +71,26 @@ public class AdminCampaignController {
                         campaign,
                         today,
                         paymentSummaries.getOrDefault(campaign.getId(), new PaymentsServiceClient.PaymentCampaignSummary()).getApprovedContributionCount()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(items);
+    }
+
+    @GetMapping("/curator")
+    public ResponseEntity<?> listCuratorCampaigns(HttpServletRequest request) {
+        if (!isAdmin(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponse("Acceso denegado", HttpStatus.FORBIDDEN.value()));
+        }
+
+        List<Campaign> campaigns = campaignRepository.findAllPublicWithRelations();
+        appImageService.hydrateCampaigns(campaigns);
+        List<CuratorCampaignResponse> items = campaigns.stream()
+                .map(CuratorCampaignResponse::fromEntity)
+                // destacadas primero, luego alfabético para una grilla estable
+                .sorted(java.util.Comparator
+                        .comparing(CuratorCampaignResponse::getIsSpotlight).reversed()
+                        .thenComparing(item -> item.getTitle() != null ? item.getTitle().toLowerCase() : ""))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(items);
@@ -160,6 +187,47 @@ public class AdminCampaignController {
             Campaign refreshedCampaign = campaignRepository.findByIdWithRelations(id)
                     .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
             return ResponseEntity.ok(buildTransferResponse(refreshedCampaign, bankInfo, payout));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY.value()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    @PatchMapping("/{id}/spotlight")
+    public ResponseEntity<?> setSpotlight(
+            HttpServletRequest request,
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, Boolean> body) {
+        if (!isAdmin(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponse("Acceso denegado", HttpStatus.FORBIDDEN.value()));
+        }
+
+        try {
+            Campaign campaign = campaignRepository.findByIdWithRelations(id)
+                    .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
+
+            boolean desired = body != null && Boolean.TRUE.equals(body.get("isSpotlight"));
+
+            if (desired) {
+                if (!"CROWDFUNDING".equals(campaign.getStatus())) {
+                    throw new IllegalStateException("Solo se pueden destacar campañas activas");
+                }
+                if (!campaign.getIsSpotlight()
+                        && campaignRepository.countByIsSpotlightTrueAndStatus("CROWDFUNDING") >= MAX_SPOTLIGHT) {
+                    throw new IllegalStateException(
+                            "Ya hay " + MAX_SPOTLIGHT + " campañas destacadas. Quitá una antes de destacar otra.");
+                }
+            }
+
+            campaign.setIsSpotlight(desired);
+            campaignRepository.save(campaign);
+
+            return ResponseEntity.ok(AdminCampaignSummaryResponse.fromEntity(
+                    campaign, LocalDate.now(), resolveApprovedContributionCount(id)));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                     .body(new ErrorResponse(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY.value()));
