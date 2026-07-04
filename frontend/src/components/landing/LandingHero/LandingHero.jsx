@@ -2,7 +2,7 @@ import { HeroButton } from "$components/ui"
 import "./LandingHero.css"
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  LandingHero — hero de landing con imagen a sangre, título Fraunces, scrim +
+//  LandingHero — hero de landing con imagen a sangre, título grande (--font-display), scrim +
 //  fundido inferior y un HeroButton. Reutilizable (ForCreators, HowItWorks, …).
 //    <LandingHero image="/foo.jpg" title={<>Dale vuelo<br/>a tus ideas</>}
 //                 subtitle="…" buttonLabel="Crear" onButton={() => nav(...)} />

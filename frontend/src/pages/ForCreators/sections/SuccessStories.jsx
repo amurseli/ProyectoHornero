@@ -241,12 +241,11 @@ function SuccessStories() {
         }
 
         .ss-title {
-          font-family: 'Fraunces', Georgia, serif;
-          font-optical-sizing: auto;
-          font-weight: 450;
+          font-family: var(--font-display);
+          font-weight: 700;
           font-size: clamp(2rem, 4.5vw, 3.25rem);
-          line-height: 1.02;
-          letter-spacing: -0.02em;
+          line-height: 1.05;
+          letter-spacing: -0.03em;
           color: var(--color-text-primary);
           margin: 0;
         }
@@ -341,11 +340,11 @@ function SuccessStories() {
         }
 
         .ss-card-title {
-          font-family: 'Fraunces', Georgia, serif;
-          font-optical-sizing: auto;
-          font-weight: 500;
+          font-family: var(--font-display);
+          font-weight: 700;
           font-size: 1.5rem;
           line-height: 1.1;
+          letter-spacing: -0.02em;
           margin: 0 0 0.1rem;
         }
 

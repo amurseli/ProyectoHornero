@@ -9,12 +9,11 @@
 }
 
 .sh-title {
-  font-family: 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 450;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: clamp(1.85rem, 4.5vw, 2.85rem);
-  line-height: 1.02;
-  letter-spacing: -0.02em;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   color: var(--color-text-primary);
   margin: 0 0 0.75rem;
 }
