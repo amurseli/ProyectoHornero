@@ -31,10 +31,15 @@ frontend/.env.frontend
 payments/.env.payments
 notifications/.env.notifications
 scheduler/.env.scheduler
+backoffice/.env.backoffice
 !backend/.env.backend.example
 !frontend/.env.frontend.example
 !notifications/.env.notifications.example
 !scheduler/.env.scheduler.example
+!backoffice/.env.backoffice.example
+
+# SSH keys
+*.pem
 
 # IDE
 .vscode/

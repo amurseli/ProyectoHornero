@@ -164,6 +164,12 @@ jobs:
           FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
         run: printf '%s\n' "$FRONTEND_ENV" > ./frontend/.env.frontend
 
+      - name: Write payments env file
+        if: needs.detect.outputs[matrix.service] == 'true' && matrix.service == 'payments'
+        env:
+          PAYMENTS_ENV: ${{ secrets.PAYMENTS_ENV }}
+        run: printf '%s\n' "$PAYMENTS_ENV" > ./payments/.env.payments
+
       - name: Write backoffice env file
         if: needs.detect.outputs[matrix.service] == 'true' && matrix.service == 'backoffice'
         env:
