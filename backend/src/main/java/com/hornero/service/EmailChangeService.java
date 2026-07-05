@@ -1,11 +1,11 @@
 package com.hornero.service;
 
+import com.hornero.config.FrontendUrlProvider;
 import com.hornero.model.EmailChangeToken;
 import com.hornero.model.User;
 import com.hornero.repository.EmailChangeTokenRepository;
 import com.hornero.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +23,8 @@ public class EmailChangeService {
     @Autowired
     private EmailService emailService;
 
-    @Value("${app.frontend.url:http://localhost:5173}")
-    private String frontendUrl;
+    @Autowired
+    private FrontendUrlProvider frontendUrlProvider;
 
     /**
      * Initiates an email change request. Sends a verification email to the NEW address.
@@ -54,7 +54,7 @@ public class EmailChangeService {
         userRepository.save(user);
 
         // Build confirm link
-        String confirmLink = frontendUrl + "/confirm-email-change?token=" + token.getToken();
+        String confirmLink = frontendUrlProvider.getPrimaryFrontendUrl() + "/confirm-email-change?token=" + token.getToken();
 
         // Send verification to the NEW email
         emailService.sendEmailChangeVerification(newEmail, user.getFirstName(), confirmLink);

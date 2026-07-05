@@ -147,9 +147,18 @@ public class CampaignController {
     }
 
     @PostMapping
-    public ResponseEntity<Campaign> createCampaign(@RequestBody Campaign campaign) {
-        Campaign newCampaign = campaignService.createCampaign(campaign);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newCampaign);
+    public ResponseEntity<?> createCampaign(@RequestBody Campaign campaign, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            Campaign newCampaign = campaignService.createCampaignForUser(campaign, userId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(newCampaign);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
@@ -235,10 +244,19 @@ public class CampaignController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCampaign(@PathVariable Long id) {
+    public ResponseEntity<?> deleteCampaign(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        String userRole = (String) request.getAttribute("userRole");
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         try {
-            campaignService.deleteCampaign(id);
+            campaignService.deleteCampaignAsUser(id, userId, userRole);
             return ResponseEntity.noContent().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

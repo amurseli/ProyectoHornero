@@ -64,8 +64,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Value("${jwt.refresh.expiration}")
     private Long refreshTokenExpiration;
 
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
+    @Autowired
+    private FrontendUrlProvider frontendUrlProvider;
 
     // true en produccion (HTTPS), false en local (http://localhost)
     @Value("${COOKIE_SECURE:false}")
@@ -83,7 +83,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String sub = oAuth2User.getAttribute("sub"); // Google's user ID
 
         if (email == null) {
-          response.sendRedirect(frontendUrl + "/login?error=no_email");
+          response.sendRedirect(frontendUrlProvider.getPrimaryFrontendUrl() + "/login?error=no_email");
           return;
         }
 
@@ -119,7 +119,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
           response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
           // Redirect to frontend with success
-          String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/oauth2/redirect")
+          String targetUrl = UriComponentsBuilder.fromUriString(frontendUrlProvider.getPrimaryFrontendUrl() + "/oauth2/redirect")
                   .queryParam("success", "true")
                   .build()
                   .toUriString();
@@ -128,7 +128,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
       } catch (Exception e) {
           logger.error("Error during OAuth2 authentication", e);
-          response.sendRedirect(frontendUrl + "/login?error=authentication_failed");
+          response.sendRedirect(frontendUrlProvider.getPrimaryFrontendUrl() + "/login?error=authentication_failed");
       }
     }
 

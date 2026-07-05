@@ -1,11 +1,11 @@
 package com.hornero.service;
 
+import com.hornero.config.FrontendUrlProvider;
 import com.hornero.model.PasswordResetToken;
 import com.hornero.model.User;
 import com.hornero.repository.PasswordResetTokenRepository;
 import com.hornero.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,8 +24,8 @@ public class PasswordResetService {
     @Autowired
     private EmailService emailService;
 
-    @Value("${app.frontend.url:http://localhost:5173}")
-    private String frontendUrl;
+    @Autowired
+    private FrontendUrlProvider frontendUrlProvider;
 
     /**
      * Creates a password reset token for the given email and sends reset email.
@@ -73,7 +73,7 @@ public class PasswordResetService {
         passwordResetTokenRepository.save(resetToken);
 
         // Build and return reset link
-        return frontendUrl + "/reset-password?token=" + resetToken.getToken();
+        return frontendUrlProvider.getPrimaryFrontendUrl() + "/reset-password?token=" + resetToken.getToken();
     }
 
     /**

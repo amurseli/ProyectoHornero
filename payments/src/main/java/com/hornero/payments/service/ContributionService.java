@@ -401,14 +401,29 @@ public class ContributionService {
     // corresponda; si no encuentra nada, recien ahi es seguro cancelar (nunca se pago).
     private boolean reconcileFromExternalReference(Contribution c) {
         try {
-            List<Payment> found = mercadoPagoGateway.searchByExternalReference(String.valueOf(c.getId()));
-            if (found.isEmpty()) {
+            String expectedExternalReference = String.valueOf(c.getId());
+            List<Payment> found = mercadoPagoGateway.searchByExternalReference(expectedExternalReference);
+
+            // El search de MP no siempre filtra por igualdad exacta de external_reference:
+            // descartamos cualquier resultado que no calce exacto para no adoptar por error
+            // el pago de OTRA contribucion (ver incidente: contribuciones nunca pagadas que
+            // el cleanup marco como APPROVED usando el pago de otra referencia).
+            List<Payment> exactMatches = found.stream()
+                    .filter(p -> expectedExternalReference.equals(p.getExternalReference()))
+                    .toList();
+
+            if (exactMatches.isEmpty()) {
+                if (!found.isEmpty()) {
+                    logger.warn("Cleanup: search por external_reference={} devolvio {} resultado(s) sin external_reference exacto, se descartan: {}",
+                            expectedExternalReference, found.size(),
+                            found.stream().map(p -> String.valueOf(p.getId())).toList());
+                }
                 c.setStatus("CANCELLED");
                 contributionRepository.save(c);
                 return true;
             }
 
-            Payment mpPayment = found.stream()
+            Payment mpPayment = exactMatches.stream()
                     .max(Comparator.comparing(Payment::getDateCreated))
                     .orElseThrow();
             String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
