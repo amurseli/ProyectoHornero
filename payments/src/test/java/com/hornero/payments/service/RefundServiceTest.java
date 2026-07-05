@@ -53,6 +53,7 @@ class RefundServiceTest {
     @Test
     void refundAll_whenContributionHasNoTransaction_marksRefundFailed() {
         Contribution c = contribution(null);
+        c.setIdUser(2L);
         when(contributionRepository.findByIdCampaignAndStatus(1L, "APPROVED")).thenReturn(List.of(c));
         when(backendClient.getCampaignTitle(1L)).thenReturn("Campaña Solar");
         when(backendClient.getUsername(2L)).thenReturn("mateo");

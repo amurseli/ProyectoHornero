@@ -31,6 +31,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,7 @@ public class ContributionService {
     private final MercadoPagoGateway mercadoPagoGateway;
     private final PaymentEventLogService eventLog;
     private final NotificationEventPublisher notificationPublisher;
+    private final TransactionPersistenceService transactionPersistenceService;
 
     @Value("${mercadopago.public-key}")
     private String mpPublicKey;
@@ -62,7 +64,8 @@ public class ContributionService {
                                LedgerClient ledgerClient,
                                MercadoPagoGateway mercadoPagoGateway,
                                PaymentEventLogService eventLog,
-                               NotificationEventPublisher notificationPublisher) {
+                               NotificationEventPublisher notificationPublisher,
+                               TransactionPersistenceService transactionPersistenceService) {
         this.contributionRepository = contributionRepository;
         this.transactionRepository = transactionRepository;
         this.backendClient = backendClient;
@@ -70,6 +73,7 @@ public class ContributionService {
         this.mercadoPagoGateway = mercadoPagoGateway;
         this.eventLog = eventLog;
         this.notificationPublisher = notificationPublisher;
+        this.transactionPersistenceService = transactionPersistenceService;
     }
 
     // Crea el registro PENDING y devuelve la publicKey para que el frontend inicialice el Payment Brick
@@ -178,7 +182,19 @@ public class ContributionService {
             transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
 
             String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
-            transactionRepository.save(transaction);
+
+            try {
+                transactionPersistenceService.saveNew(transaction);
+            } catch (DataIntegrityViolationException dup) {
+                // Otra llamada concurrente (retorno del checkout duplicado, webhook en paralelo)
+                // ya registro esta misma transaccion de MercadoPago primero. En vez de fallar o
+                // duplicar el pago aprobado, devolvemos el estado que ese otro llamado ya dejo.
+                logger.warn("Transaccion duplicada detectada para payment {} en contribucion {}, probablemente por una llamada concurrente al retorno/webhook: {}",
+                        transaction.getIdTransactionExternal(), contributionId, dup.getMessage());
+                Transaction existing = transactionRepository.findByIdTransactionExternal(transaction.getIdTransactionExternal())
+                        .orElseThrow(() -> dup);
+                return buildStatusResponse(existing.getContribution(), existing);
+            }
 
             contribution.setStatus(newStatus);
             contributionRepository.save(contribution);
@@ -245,25 +261,71 @@ public class ContributionService {
             Payment mpPayment = mercadoPagoGateway.get(paymentId);
             String newStatus = mapProviderStatus(mpPayment.getStatus().toString());
 
-            transactionRepository.findByIdTransactionExternal(String.valueOf(paymentId)).ifPresent(transaction -> {
-                Contribution contribution = transaction.getContribution();
-                String previousStatus = contribution.getStatus();
+            Transaction transaction = transactionRepository.findByIdTransactionExternal(String.valueOf(paymentId))
+                    .orElseGet(() -> createTransactionFromWebhookPayment(mpPayment));
+            if (transaction == null) {
+                // El pago no tiene Transaction local (aun) y no pudimos crearla: no hay nada que actualizar.
+                return;
+            }
 
-                if (!newStatus.equals(previousStatus)) {
-                    contribution.setStatus(newStatus);
-                    contributionRepository.save(contribution);
-                    logger.info("Contribucion {} actualizada via webhook: {} -> {}", contribution.getId(), previousStatus, newStatus);
-                    eventLog.logWebhookUpdate(contribution.getId(), previousStatus, newStatus, String.valueOf(paymentId));
+            Contribution contribution = transaction.getContribution();
+            String previousStatus = contribution.getStatus();
 
-                    if ("APPROVED".equals(newStatus) && !"APPROVED".equals(previousStatus)) {
-                        backendClient.updateCampaignAmount(contribution.getIdCampaign(), contribution.getAmount());
-                        publishContributionApprovedEvent(contribution);
-                    }
+            if (!newStatus.equals(previousStatus)) {
+                contribution.setStatus(newStatus);
+                contributionRepository.save(contribution);
+                logger.info("Contribucion {} actualizada via webhook: {} -> {}", contribution.getId(), previousStatus, newStatus);
+                eventLog.logWebhookUpdate(contribution.getId(), previousStatus, newStatus, String.valueOf(paymentId));
+
+                if ("APPROVED".equals(newStatus) && !"APPROVED".equals(previousStatus)) {
+                    backendClient.updateCampaignAmount(contribution.getIdCampaign(), contribution.getAmount());
+                    publishContributionApprovedEvent(contribution);
                 }
-            });
+            }
 
         } catch (Exception e) {
             logger.error("Error procesando webhook para payment {}: {}", paymentId, e.getMessage());
+        }
+    }
+
+    // Crea la Transaction cuando el webhook llega antes de que el usuario haya vuelto al
+    // checkout (ej: cerro el navegador apenas pago). Usa el external_reference del pago,
+    // que MP siempre devuelve igual al que seteamos al crear la Preference (= contributionId),
+    // para encontrar la contribucion y no perder el pago aunque el retorno nunca se procese.
+    private Transaction createTransactionFromWebhookPayment(Payment mpPayment) {
+        String externalReference = mpPayment.getExternalReference();
+        if (externalReference == null) {
+            logger.warn("Webhook: payment {} sin external_reference, no se puede asociar a una contribucion", mpPayment.getId());
+            return null;
+        }
+
+        Long contributionId;
+        try {
+            contributionId = Long.valueOf(externalReference);
+        } catch (NumberFormatException e) {
+            logger.warn("Webhook: payment {} con external_reference no numerico: {}", mpPayment.getId(), externalReference);
+            return null;
+        }
+
+        Contribution contribution = contributionRepository.findById(contributionId).orElse(null);
+        if (contribution == null) {
+            logger.warn("Webhook: payment {} referencia una contribucion inexistente {}", mpPayment.getId(), contributionId);
+            return null;
+        }
+
+        Transaction transaction = new Transaction();
+        transaction.setContribution(contribution);
+        transaction.setAmount(contribution.getAmount());
+        transaction.setTransactionMethod("account_money".equalsIgnoreCase(mpPayment.getPaymentMethodId()) ? "ACCOUNT_MONEY" : "CARD");
+        transaction.setPaymentProvider("MERCADO_PAGO");
+        transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
+
+        try {
+            return transactionPersistenceService.saveNew(transaction);
+        } catch (DataIntegrityViolationException dup) {
+            // El retorno del checkout (process()) gano la carrera y ya la creo primero.
+            logger.warn("Webhook: transaccion para payment {} ya registrada por otra via", mpPayment.getId());
+            return transactionRepository.findByIdTransactionExternal(String.valueOf(mpPayment.getId())).orElse(null);
         }
     }
 
@@ -362,7 +424,16 @@ public class ContributionService {
             transaction.setTransactionMethod("account_money".equalsIgnoreCase(mpPayment.getPaymentMethodId()) ? "ACCOUNT_MONEY" : "CARD");
             transaction.setPaymentProvider("MERCADO_PAGO");
             transaction.setIdTransactionExternal(String.valueOf(mpPayment.getId()));
-            transactionRepository.save(transaction);
+
+            try {
+                transactionPersistenceService.saveNew(transaction);
+            } catch (DataIntegrityViolationException dup) {
+                // process() (retorno del checkout o webhook) ya registro esta transaccion
+                // mientras corria este cleanup; la contribucion ya quedo resuelta por esa via.
+                logger.warn("Cleanup: transaccion duplicada para payment {} en contribucion {}, ya resuelta por otra via: {}",
+                        transaction.getIdTransactionExternal(), c.getId(), dup.getMessage());
+                return false;
+            }
 
             c.setStatus(newStatus);
             contributionRepository.save(c);

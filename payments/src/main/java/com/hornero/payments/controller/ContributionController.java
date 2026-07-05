@@ -112,9 +112,10 @@ public class ContributionController {
             }
         }
 
-        if (xSignature != null && xRequestId != null && resolvedId != null) {
-            if (!webhookValidator.isValid(xSignature, xRequestId, resolvedId)) {
-                logger.warn("Webhook rechazado: firma invalida (dataId={})", resolvedId);
+        if (resolvedId != null) {
+            // MP siempre manda x-signature y x-request-id; si faltan, no es una notificacion legitima de MP
+            if (xSignature == null || xRequestId == null || !webhookValidator.isValid(xSignature, xRequestId, resolvedId)) {
+                logger.warn("Webhook rechazado: firma ausente o invalida (dataId={})", resolvedId);
                 return ResponseEntity.badRequest().build();
             }
         }

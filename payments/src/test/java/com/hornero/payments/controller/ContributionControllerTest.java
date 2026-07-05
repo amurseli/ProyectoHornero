@@ -5,6 +5,7 @@ import com.hornero.payments.dto.InitiateContributionResponse;
 import com.hornero.payments.dto.ProcessContributionRequest;
 import com.hornero.payments.service.ContributionService;
 import com.hornero.payments.util.JwtUtil;
+import com.hornero.payments.util.WebhookSignatureValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -17,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,6 +32,7 @@ class ContributionControllerTest {
     @Autowired StubContributionService contributionService;
 
     @org.springframework.boot.test.mock.mockito.MockBean JwtUtil jwtUtil;
+    @org.springframework.boot.test.mock.mockito.MockBean WebhookSignatureValidator webhookValidator;
 
     @TestConfiguration
     static class Config {
@@ -45,7 +48,7 @@ class ContributionControllerTest {
         private boolean webhookCalled;
 
         StubContributionService() {
-            super(null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -104,11 +107,36 @@ class ContributionControllerTest {
     @Test
     void webhook_alwaysReturns200EvenIfServiceThrows() throws Exception {
         contributionService.webhookException = new RuntimeException("webhook processing error");
+        when(webhookValidator.isValid(anyString(), anyString(), anyString())).thenReturn(true);
 
         mockMvc.perform(post("/api/payments/notifications")
                         .param("type", "payment")
-                        .param("data.id", "12345"))
+                        .param("data.id", "12345")
+                        .header("x-signature", "ts=1,v1=fake")
+                        .header("x-request-id", "req-1"))
                 .andExpect(status().isOk());
         org.assertj.core.api.Assertions.assertThat(contributionService.webhookCalled).isTrue();
+    }
+
+    @Test
+    void webhook_withoutSignatureHeaders_isRejectedAndServiceNotCalled() throws Exception {
+        mockMvc.perform(post("/api/payments/notifications")
+                        .param("type", "payment")
+                        .param("data.id", "12345"))
+                .andExpect(status().isBadRequest());
+        org.assertj.core.api.Assertions.assertThat(contributionService.webhookCalled).isFalse();
+    }
+
+    @Test
+    void webhook_withInvalidSignature_isRejectedAndServiceNotCalled() throws Exception {
+        when(webhookValidator.isValid(anyString(), anyString(), anyString())).thenReturn(false);
+
+        mockMvc.perform(post("/api/payments/notifications")
+                        .param("type", "payment")
+                        .param("data.id", "12345")
+                        .header("x-signature", "ts=1,v1=bad")
+                        .header("x-request-id", "req-1"))
+                .andExpect(status().isBadRequest());
+        org.assertj.core.api.Assertions.assertThat(contributionService.webhookCalled).isFalse();
     }
 }
