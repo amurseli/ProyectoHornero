@@ -1,11 +1,11 @@
 package com.hornero.service;
 
+import com.hornero.config.FrontendUrlProvider;
 import com.hornero.model.EmailVerificationToken;
 import com.hornero.model.User;
 import com.hornero.repository.EmailVerificationTokenRepository;
 import com.hornero.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,8 +24,8 @@ public class EmailVerificationService {
     @Autowired
     private EmailService emailService;
 
-    @Value("${app.frontend.url:http://localhost:5173}")
-    private String frontendUrl;
+    @Autowired
+    private FrontendUrlProvider frontendUrlProvider;
 
     /**
      * Creates an email verification token for a user and sends verification email.
@@ -39,7 +39,7 @@ public class EmailVerificationService {
         emailVerificationTokenRepository.save(verificationToken);
 
         // Build verification link
-        String verificationLink = frontendUrl + "/verify-email?token=" + verificationToken.getToken();
+        String verificationLink = frontendUrlProvider.getPrimaryFrontendUrl() + "/verify-email?token=" + verificationToken.getToken();
 
         // Send verification email
         emailService.sendEmailVerificationEmail(user.getEmail(), user.getFirstName(), verificationLink);

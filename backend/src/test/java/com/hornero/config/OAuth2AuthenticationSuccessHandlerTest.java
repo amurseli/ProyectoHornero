@@ -41,6 +41,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     @Mock EmailService emailService;
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtUtil jwtUtil;
+    @Mock FrontendUrlProvider frontendUrlProvider;
 
     @Mock HttpServletRequest request;
     @Mock HttpServletResponse response;
@@ -53,7 +54,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     void setUp() {
         ReflectionTestUtils.setField(handler, "jwtExpiration", 900000L);
         ReflectionTestUtils.setField(handler, "refreshTokenExpiration", 604800000L);
-        ReflectionTestUtils.setField(handler, "frontendUrl", "https://app.hornero.com");
+        when(frontendUrlProvider.getPrimaryFrontendUrl()).thenReturn("https://app.hornero.com");
     }
 
     private void stubGoogleAttributes(String email) {
@@ -100,6 +101,26 @@ class OAuth2AuthenticationSuccessHandlerTest {
         verify(userRepository).save(user);
         org.assertj.core.api.Assertions.assertThat(user.getEmailVerified()).isTrue();
         verify(response, atLeastOnce()).addHeader(eq("Set-Cookie"), anyString());
+    }
+
+    @Test
+    void onAuthenticationSuccess_whenFrontendUrlHasMultipleOrigins_usesPrimaryOriginForRedirect() throws Exception {
+        stubGoogleAttributes("user@hornero.com");
+        User user = new User();
+        user.setId(5L);
+        UserConnection conn = new UserConnection(user, "google", "google-sub-1",
+                "user@hornero.com", "Mateo", "https://pic");
+        when(userConnectionRepository.findByProviderAndProviderId("google", "google-sub-1"))
+                .thenReturn(Optional.of(conn));
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        stubTokenIssuance(user);
+        when(frontendUrlProvider.getPrimaryFrontendUrl())
+                .thenReturn("https://proyecto-hornero.com");
+
+        handler.onAuthenticationSuccess(request, response, authentication);
+
+        verify(response).sendRedirect("https://proyecto-hornero.com/oauth2/redirect?success=true");
     }
 
     @Test
