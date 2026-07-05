@@ -94,6 +94,10 @@ public class UserController {
 
     @Value("${jwt.refresh.expiration}")
     private Long refreshTokenExpiration;
+
+    // true en produccion (HTTPS), false en local (http://localhost)
+    @Value("${COOKIE_SECURE:false}")
+    private boolean cookieSecure;
     
     // GET /api/users - Obtener todos los usuarios
     @GetMapping
@@ -242,7 +246,7 @@ public class UserController {
             // Set JWT access token as HttpOnly cookie (always 15 min)
             ResponseCookie jwtCookie = ResponseCookie.from("jwt", accessToken)
                     .httpOnly(true)
-                    .secure(false) // Set to true in production with HTTPS
+                    .secure(cookieSecure)
                     .path("/")
                     .maxAge(jwtExpiration / 1000) // Always 15 min
                     .sameSite("Lax")
@@ -252,7 +256,7 @@ public class UserController {
             // Set refresh token as HttpOnly cookie
             ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken.getToken())
                     .httpOnly(true)
-                    .secure(false) // Set to true in production with HTTPS
+                    .secure(cookieSecure)
                     .path("/")
                     .maxAge(refreshTokenMaxAge)
                     .sameSite("Lax")
@@ -294,7 +298,7 @@ public class UserController {
         // Clear JWT access token cookie
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(0)
                 .sameSite("Lax")
@@ -304,7 +308,7 @@ public class UserController {
         // Clear refresh token cookie
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(0)
                 .sameSite("Lax")
@@ -496,7 +500,7 @@ public class UserController {
 
             ResponseCookie jwtCookie = ResponseCookie.from("jwt", accessToken)
                     .httpOnly(true)
-                    .secure(false)
+                    .secure(cookieSecure)
                     .path("/")
                     .maxAge(jwtExpiration / 1000)
                     .sameSite("Lax")
