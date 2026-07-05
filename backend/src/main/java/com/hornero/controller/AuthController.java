@@ -37,6 +37,10 @@ public class AuthController {
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
 
+    // true en produccion (HTTPS), false en local (http://localhost)
+    @Value("${COOKIE_SECURE:false}")
+    private boolean cookieSecure;
+
     /**
      * Refresh access token using refresh token from cookie
      * POST /api/auth/refresh
@@ -72,7 +76,7 @@ public class AuthController {
             // Set new access token as HttpOnly cookie (15 min)
             Cookie jwtCookie = new Cookie("jwt", newAccessToken);
             jwtCookie.setHttpOnly(true);
-            jwtCookie.setSecure(false); // Set to true in production with HTTPS
+            jwtCookie.setSecure(cookieSecure);
             jwtCookie.setPath("/");
             jwtCookie.setMaxAge((int) (jwtExpiration / 1000));
             response.addCookie(jwtCookie);

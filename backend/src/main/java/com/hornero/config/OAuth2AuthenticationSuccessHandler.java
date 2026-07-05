@@ -67,6 +67,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
+    // true en produccion (HTTPS), false en local (http://localhost)
+    @Value("${COOKIE_SECURE:false}")
+    private boolean cookieSecure;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
@@ -97,7 +101,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
           // Set JWT token as HttpOnly cookie (15 min)
           ResponseCookie jwtCookie = ResponseCookie.from("jwt", accessToken)
                   .httpOnly(true)
-                  .secure(false) // Set to true in production with HTTPS
+                  .secure(cookieSecure)
                   .path("/")
                   .maxAge(jwtExpiration / 1000)
                   .sameSite("Lax")
@@ -107,7 +111,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
           // Set refresh token as HttpOnly cookie (7 days)
           ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken.getToken())
                   .httpOnly(true)
-                  .secure(false) // Set to true in production with HTTPS
+                  .secure(cookieSecure)
                   .path("/")
                   .maxAge(refreshTokenExpiration / 1000)
                   .sameSite("Lax")

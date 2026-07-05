@@ -14,6 +14,11 @@ function normalizeAmount(value, fallback = 1) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+function sanitizeAmountInput(raw) {
+  const digitsOnly = raw.replace(/[^0-9]/g, '')
+  return digitsOnly.replace(/^0+(?=\d)/, '')
+}
+
 const AMOUNT_SUGGESTIONS = [500, 1000, 2000, 5000]
 
 const STEPS = ['Aporte', 'Pago', 'Resultado']
@@ -36,6 +41,7 @@ export default function ContributionModal({
   const [step, setStep] = useState(initialStep)
   const [selectedReward, setSelectedReward] = useState(forcedReward)
   const [amount, setAmount] = useState(Number(initialAmount) || 1)
+  const [amountInput, setAmountInput] = useState(String(Number(initialAmount) || 1))
   const [contributionId, setContributionId] = useState(null)
   const [preferenceId, setPreferenceId] = useState(null)
   const [mpReady, setMpReady] = useState(false)
@@ -57,7 +63,9 @@ export default function ContributionModal({
         mpInitialized.current = true
       }
       setContributionId(data.contributionId)
-      setAmount(normalizeAmount(data.amount))
+      const nextAmountValue = normalizeAmount(data.amount)
+      setAmount(nextAmountValue)
+      setAmountInput(String(nextAmountValue))
       setRewardMeta(data.reward || null)
       setPreferenceId(data.preferenceId ?? null)
       if (data.status === 'APPROVED' && Number(data.amount) === 0) {
@@ -96,6 +104,18 @@ export default function ContributionModal({
     setError(null)
     setSelectedReward(null)
     setStep('select')
+  }
+
+  function handleAmountInputChange(e) {
+    const sanitized = sanitizeAmountInput(e.target.value)
+    setAmountInput(sanitized)
+    const parsed = Number(sanitized)
+    setAmount(Number.isFinite(parsed) ? parsed : 0)
+  }
+
+  function selectSuggestedAmount(value) {
+    setAmount(value)
+    setAmountInput(String(value))
   }
 
   async function handleAmountSubmit(e) {
@@ -219,7 +239,7 @@ export default function ContributionModal({
                   key={s}
                   type="button"
                   className={`cm-chip ${amount === s ? 'cm-chip--active' : ''}`}
-                  onClick={() => setAmount(s)}
+                  onClick={() => selectSuggestedAmount(s)}
                 >
                   ${s.toLocaleString('es-AR')}
                 </button>
@@ -230,12 +250,11 @@ export default function ContributionModal({
               <div className="cm-amount-row">
                 <span className="cm-amount-prefix">ARS $</span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   className="cm-amount-input"
-                  value={amount}
-                  onChange={(e) => setAmount(Number(e.target.value))}
-                  min={1}
-                  step="1"
+                  value={amountInput}
+                  onChange={handleAmountInputChange}
                   required
                   autoFocus
                 />

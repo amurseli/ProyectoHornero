@@ -40,12 +40,21 @@ class PayoutServiceTest {
     }
 
     @Test
-    void executePayout_whenPayoutAlreadyExists_throwsIllegalState() {
-        when(payoutRepository.existsByIdCampaign(1L)).thenReturn(true);
+    void executePayout_whenPayoutAlreadyExists_returnsExistingPayoutWithoutRecalculating() {
+        Payout existing = new Payout();
+        existing.setIdCampaign(1L);
+        existing.setStatus("PENDING_MANUAL_TRANSFER");
+        ReflectionTestUtils.setField(existing, "id", 5L);
 
-        assertThatThrownBy(() -> service.executePayout(1L, 10L))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Ya existe");
+        when(payoutRepository.existsByIdCampaign(1L)).thenReturn(true);
+        when(payoutRepository.findByIdCampaign(1L)).thenReturn(java.util.Optional.of(existing));
+
+        PayoutStatusResponse response = service.executePayout(1L, 10L);
+
+        assertThat(response.getPayoutId()).isEqualTo(5L);
+        assertThat(response.getStatus()).isEqualTo("PENDING_MANUAL_TRANSFER");
+        verify(backendClient, never()).validateCampaignSuccessful(any());
+        verify(payoutRepository, never()).save(any());
     }
 
     @Test
@@ -114,7 +123,7 @@ class PayoutServiceTest {
 
         PayoutStatusResponse response = service.executePayout(1L, 10L);
 
-        assertThat(response.getStatus()).isEqualTo("PROCESSING");
+        assertThat(response.getStatus()).isEqualTo("PENDING_MANUAL_TRANSFER");
     }
 
     private Contribution contribution(BigDecimal amount) {

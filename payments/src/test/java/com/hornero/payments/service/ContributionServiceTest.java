@@ -40,6 +40,7 @@ class ContributionServiceTest {
     @Mock LedgerClient ledgerClient;
     @Mock MercadoPagoGateway mercadoPagoGateway;
     @Mock PaymentEventLogService paymentEventLogService;
+    @Mock TransactionPersistenceService transactionPersistenceService;
 
     @InjectMocks ContributionService service;
 
@@ -117,6 +118,7 @@ class ContributionServiceTest {
         ReflectionTestUtils.setField(approvedReward, "createdAt", LocalDateTime.now().minusDays(1));
 
         when(contributionRepository.findByIdUserAndIdCampaign(2L, 5L)).thenReturn(List.of(approvedReward));
+        when(contributionRepository.sumApprovedAmountByUserAndCampaign(2L, 5L)).thenReturn(new BigDecimal("1000"));
         when(backendClient.getCampaignReward(5L, 9L))
                 .thenReturn(new BackendClient.RewardSummary(9L, "Tier Oro", new BigDecimal("2500")));
         when(contributionRepository.save(any())).thenAnswer(inv -> {
@@ -208,8 +210,6 @@ class ContributionServiceTest {
         c.setAmount(new BigDecimal("100"));
         c.setIdCampaign(10L);
         when(contributionRepository.findById(1L)).thenReturn(Optional.of(c));
-        when(backendClient.getCampaignTitle(10L)).thenReturn("Campaña Solar");
-        when(backendClient.getUsername(1L)).thenReturn("mateo");
 
         Payment mockPayment = mock(Payment.class);
         when(mockPayment.getStatus()).thenReturn("rejected");
@@ -225,7 +225,7 @@ class ContributionServiceTest {
     }
 
     @Test
-    void process_whenMPApiExceptionThrown_setsRejectedAndRethrows() throws Exception {
+    void process_whenMPApiExceptionThrown_setsRejected() throws Exception {
         Contribution c = contributionWithStatus("PENDING", 1L);
         when(contributionRepository.findById(1L)).thenReturn(Optional.of(c));
 
@@ -236,21 +236,23 @@ class ContributionServiceTest {
         when(apiEx.getApiResponse()).thenReturn(apiResponse);
         when(mercadoPagoGateway.create(any())).thenThrow(apiEx);
 
-        assertThatThrownBy(() -> service.process(1L, 1L, buildRequest()))
-                .isInstanceOf(RuntimeException.class);
+        // process() atrapa los errores del proveedor y responde REJECTED en vez de
+        // relanzar, para que el frontend reciba un estado prolijo y no un 500.
+        ContributionStatusResponse response = service.process(1L, 1L, buildRequest());
 
+        assertThat(response.getStatus()).isEqualTo("REJECTED");
         verify(contributionRepository, atLeastOnce()).save(argThat(con -> "REJECTED".equals(con.getStatus())));
     }
 
     @Test
-    void process_whenMPExceptionThrown_setsRejectedAndRethrows() throws Exception {
+    void process_whenMPExceptionThrown_setsRejected() throws Exception {
         Contribution c = contributionWithStatus("PENDING", 1L);
         when(contributionRepository.findById(1L)).thenReturn(Optional.of(c));
         when(mercadoPagoGateway.create(any())).thenThrow(new MPException("network error"));
 
-        assertThatThrownBy(() -> service.process(1L, 1L, buildRequest()))
-                .isInstanceOf(RuntimeException.class);
+        ContributionStatusResponse response = service.process(1L, 1L, buildRequest());
 
+        assertThat(response.getStatus()).isEqualTo("REJECTED");
         verify(contributionRepository, atLeastOnce()).save(argThat(con -> "REJECTED".equals(con.getStatus())));
     }
 
