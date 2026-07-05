@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -30,6 +31,7 @@ class PayoutServiceTest {
     @Mock BackendClient backendClient;
     @Mock LedgerClient ledgerClient;
     @Mock PaymentEventLogService paymentEventLogService;
+    @Mock PayoutPersistenceService payoutPersistenceService;
 
     @InjectMocks PayoutService service;
 
@@ -74,7 +76,7 @@ class PayoutServiceTest {
         when(backendClient.getCreatorPayoutCbu(10L)).thenReturn("0000000000000000000000");
         when(contributionRepository.findByIdCampaignAndStatus(1L, "APPROVED"))
                 .thenReturn(List.of(contribution(new BigDecimal("1000"))));
-        when(payoutRepository.save(any())).thenAnswer(inv -> {
+        when(payoutPersistenceService.saveNew(any())).thenAnswer(inv -> {
             Payout p = inv.getArgument(0);
             ReflectionTestUtils.setField(p, "id", 1L);
             return p;
@@ -115,7 +117,7 @@ class PayoutServiceTest {
         when(backendClient.getCreatorPayoutCbu(10L)).thenReturn("0000000000000000000000");
         when(contributionRepository.findByIdCampaignAndStatus(1L, "APPROVED"))
                 .thenReturn(List.of(contribution(new BigDecimal("500"))));
-        when(payoutRepository.save(any())).thenAnswer(inv -> {
+        when(payoutPersistenceService.saveNew(any())).thenAnswer(inv -> {
             Payout p = inv.getArgument(0);
             ReflectionTestUtils.setField(p, "id", 1L);
             return p;
@@ -123,6 +125,27 @@ class PayoutServiceTest {
 
         PayoutStatusResponse response = service.executePayout(1L, 10L);
 
+        assertThat(response.getStatus()).isEqualTo("PENDING_MANUAL_TRANSFER");
+    }
+
+    @Test
+    void executePayout_whenConcurrentInsertViolatesUniqueConstraint_returnsExistingPayout() {
+        when(payoutRepository.existsByIdCampaign(1L)).thenReturn(false);
+        when(backendClient.getCreatorPayoutCbu(10L)).thenReturn("0000000000000000000000");
+        when(contributionRepository.findByIdCampaignAndStatus(1L, "APPROVED"))
+                .thenReturn(List.of(contribution(new BigDecimal("1000"))));
+        when(payoutPersistenceService.saveNew(any()))
+                .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint uq_payout_campaign"));
+
+        Payout existing = new Payout();
+        existing.setIdCampaign(1L);
+        existing.setStatus("PENDING_MANUAL_TRANSFER");
+        ReflectionTestUtils.setField(existing, "id", 3L);
+        when(payoutRepository.findByIdCampaign(1L)).thenReturn(java.util.Optional.of(existing));
+
+        PayoutStatusResponse response = service.executePayout(1L, 10L);
+
+        assertThat(response.getPayoutId()).isEqualTo(3L);
         assertThat(response.getStatus()).isEqualTo("PENDING_MANUAL_TRANSFER");
     }
 

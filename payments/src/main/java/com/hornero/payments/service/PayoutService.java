@@ -12,6 +12,7 @@ import com.hornero.payments.repository.PayoutRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class PayoutService {
     private final LedgerClient ledgerClient;
     private final PaymentEventLogService eventLog;
     private final NotificationEventPublisher notificationPublisher;
+    private final PayoutPersistenceService payoutPersistenceService;
 
     @Value("${app.fees.platform-rate}")
     private BigDecimal platformRate;
@@ -43,13 +45,15 @@ public class PayoutService {
                          BackendClient backendClient,
                          LedgerClient ledgerClient,
                          PaymentEventLogService eventLog,
-                         NotificationEventPublisher notificationPublisher) {
+                         NotificationEventPublisher notificationPublisher,
+                         PayoutPersistenceService payoutPersistenceService) {
         this.payoutRepository = payoutRepository;
         this.contributionRepository = contributionRepository;
         this.backendClient = backendClient;
         this.ledgerClient = ledgerClient;
         this.eventLog = eventLog;
         this.notificationPublisher = notificationPublisher;
+        this.payoutPersistenceService = payoutPersistenceService;
     }
 
     // Ejecuta el payout al creador para una campaña SUCCESSFUL.
@@ -92,7 +96,17 @@ public class PayoutService {
         payout.setNetAmount(netAmount);
         payout.setPaymentProvider("MERCADO_PAGO");
         payout.setStatus("PENDING_MANUAL_TRANSFER");
-        payoutRepository.save(payout);
+
+        try {
+            payoutPersistenceService.saveNew(payout);
+        } catch (DataIntegrityViolationException dup) {
+            // Otra llamada concurrente (ej: reintento del cron de finalize-campaigns mientras
+            // la corrida anterior todavia procesaba esta campaña) ya registro el payout primero.
+            // Devolvemos ese, en vez de crear un segundo payout y transferir el dinero dos veces.
+            logger.warn("Payout duplicado detectado para campaña {}, probablemente por una llamada concurrente: {}",
+                    campaignId, dup.getMessage());
+            return buildResponse(payoutRepository.findByIdCampaign(campaignId).orElseThrow(() -> dup));
+        }
 
         logger.info("Payout registrado para campaña {} — transferencia manual pendiente: gross={} net={} CBU={}",
                 campaignId, grossAmount, netAmount, creatorCbu);

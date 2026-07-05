@@ -235,18 +235,70 @@ class CampaignControllerTest {
     // --- deleteCampaign ---
 
     @Test
-    void deleteCampaign_whenSuccessful_returns204() throws Exception {
+    void deleteCampaign_withoutUserId_returns401() throws Exception {
         mockMvc.perform(delete("/api/campaigns/1"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(campaignService);
+    }
+
+    @Test
+    void deleteCampaign_whenSuccessful_returns204() throws Exception {
+        mockMvc.perform(delete("/api/campaigns/1")
+                        .requestAttr("userId", 9L)
+                        .requestAttr("userRole", "USER"))
                 .andExpect(status().isNoContent());
 
-        verify(campaignService).deleteCampaign(1L);
+        verify(campaignService).deleteCampaignAsUser(1L, 9L, "USER");
+    }
+
+    @Test
+    void deleteCampaign_whenNotOwner_returns403() throws Exception {
+        doThrow(new SecurityException("No tenés permiso para eliminar esta campaña"))
+                .when(campaignService).deleteCampaignAsUser(1L, 9L, "USER");
+
+        mockMvc.perform(delete("/api/campaigns/1")
+                        .requestAttr("userId", 9L)
+                        .requestAttr("userRole", "USER"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void deleteCampaign_whenServiceThrows_returns404() throws Exception {
-        doThrow(new RuntimeException("Campaña no encontrada")).when(campaignService).deleteCampaign(1L);
+        doThrow(new RuntimeException("Campaña no encontrada"))
+                .when(campaignService).deleteCampaignAsUser(1L, 9L, "USER");
 
-        mockMvc.perform(delete("/api/campaigns/1"))
+        mockMvc.perform(delete("/api/campaigns/1")
+                        .requestAttr("userId", 9L)
+                        .requestAttr("userRole", "USER"))
                 .andExpect(status().isNotFound());
+    }
+
+    // --- createCampaign ---
+
+    @Test
+    void createCampaign_withoutUserId_returns401() throws Exception {
+        mockMvc.perform(post("/api/campaigns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(campaignService);
+    }
+
+    @Test
+    void createCampaign_withUserId_delegatesWithRequestingUserId() throws Exception {
+        Campaign created = campaign("DRAFT");
+        ReflectionTestUtils.setField(created, "id", 42L);
+        when(campaignService.createCampaignForUser(any(), eq(9L))).thenReturn(created);
+
+        mockMvc.perform(post("/api/campaigns")
+                        .requestAttr("userId", 9L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(42));
+
+        verify(campaignService).createCampaignForUser(any(), eq(9L));
     }
 }

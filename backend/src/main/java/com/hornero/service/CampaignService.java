@@ -69,6 +69,25 @@ public class CampaignService {
     @Autowired
     private NotificationEventPublisher notificationEventPublisher;
 
+    // Usado por el endpoint público (POST /api/campaigns): fuerza server-side los campos
+    // que nunca deben venir del cliente, para que el body no pueda crear una campaña ya
+    // "SUCCESSFUL", con currentAmount arbitrario, en spotlight, o a nombre de otro usuario.
+    public Campaign createCampaignForUser(Campaign campaign, Long requestingUserId) {
+        User owner = userRepository.findById(requestingUserId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        campaign.setOwner(owner);
+        campaign.setStatus("DRAFT");
+        campaign.setCurrentAmount(BigDecimal.ZERO);
+        campaign.setMoneyStatus(null);
+        campaign.setIsSpotlight(false);
+
+        return createCampaign(campaign);
+    }
+
+    // Sin restricciones de ownership/campos: uso interno (seeders, scripts de test data)
+    // que arma el Campaign completo a mano. No exponer directamente detrás de un endpoint
+    // público — para eso está createCampaignForUser.
     public Campaign createCampaign(Campaign campaign) {
         if (campaign.getMedia() != null) {
             List<CampaignMedia> incomingMedia = new ArrayList<>(campaign.getMedia());
@@ -272,6 +291,24 @@ public class CampaignService {
         return saved;
     }
 
+    // Usado por el endpoint público (DELETE /api/campaigns/{id}): exige ser el dueño o admin.
+    public void deleteCampaignAsUser(Long id, Long requestingUserId, String requestingUserRole) {
+        Campaign campaign = campaignRepository.findByIdWithRelations(id)
+                .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
+
+        boolean isAdmin = "ADMIN".equals(requestingUserRole);
+        boolean isOwner = requestingUserId != null
+                && campaign.getOwner() != null
+                && campaign.getOwner().getId().equals(requestingUserId);
+        if (!isAdmin && !isOwner) {
+            throw new SecurityException("No tenés permiso para eliminar esta campaña");
+        }
+
+        deleteCampaign(id);
+    }
+
+    // Sin chequeo de ownership: uso interno (limpieza de campañas de test en el arranque).
+    // No exponer directamente detrás de un endpoint público — para eso está deleteCampaignAsUser.
     public void deleteCampaign(Long id) {
         Campaign campaign = campaignRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));

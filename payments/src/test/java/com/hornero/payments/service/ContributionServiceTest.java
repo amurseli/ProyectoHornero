@@ -256,6 +256,63 @@ class ContributionServiceTest {
         verify(contributionRepository, atLeastOnce()).save(argThat(con -> "REJECTED".equals(con.getStatus())));
     }
 
+    // --- cleanupStalePending / reconcileFromExternalReference ---
+
+    @Test
+    void cleanupStalePending_whenSearchReturnsPaymentWithDifferentExternalReference_cancelsInsteadOfApproving() throws Exception {
+        // Contribucion 1 nunca se pago (el usuario abrio el modal, tipeo un monto, nunca
+        // efectuo el pago). El search de MP por external_reference="1" devuelve un pago
+        // real, pero de OTRA contribucion (external_reference distinto) — no debe adoptarse.
+        Contribution stale = contributionWithStatus("PENDING", 1L);
+        when(contributionRepository.findByStatus("PENDING")).thenReturn(List.of(stale));
+        when(contributionRepository.findByStatus("IN_PROCESS")).thenReturn(List.of());
+
+        Payment unrelatedPayment = mock(Payment.class);
+        when(unrelatedPayment.getExternalReference()).thenReturn("999");
+        when(mercadoPagoGateway.searchByExternalReference("1")).thenReturn(List.of(unrelatedPayment));
+
+        int resolved = service.cleanupStalePending();
+
+        assertThat(resolved).isEqualTo(1);
+        verify(contributionRepository).save(argThat(c -> "CANCELLED".equals(c.getStatus())));
+        verify(transactionPersistenceService, never()).saveNew(any());
+        verify(backendClient, never()).updateCampaignAmount(any(), any());
+    }
+
+    @Test
+    void cleanupStalePending_whenSearchReturnsMatchingExternalReference_approvesContribution() throws Exception {
+        Contribution stale = contributionWithStatus("PENDING", 1L);
+        when(contributionRepository.findByStatus("PENDING")).thenReturn(List.of(stale));
+        when(contributionRepository.findByStatus("IN_PROCESS")).thenReturn(List.of());
+
+        Payment realPayment = mock(Payment.class);
+        when(realPayment.getExternalReference()).thenReturn("1");
+        when(realPayment.getStatus()).thenReturn("approved");
+        when(realPayment.getId()).thenReturn(555L);
+        when(realPayment.getPaymentMethodId()).thenReturn("visa");
+        when(mercadoPagoGateway.searchByExternalReference("1")).thenReturn(List.of(realPayment));
+
+        int resolved = service.cleanupStalePending();
+
+        assertThat(resolved).isEqualTo(1);
+        verify(contributionRepository).save(argThat(c -> "APPROVED".equals(c.getStatus())));
+        verify(transactionPersistenceService).saveNew(any());
+        verify(backendClient).updateCampaignAmount(eq(10L), eq(new BigDecimal("100")));
+    }
+
+    @Test
+    void cleanupStalePending_whenSearchFindsNothing_cancelsContribution() throws Exception {
+        Contribution stale = contributionWithStatus("PENDING", 1L);
+        when(contributionRepository.findByStatus("PENDING")).thenReturn(List.of(stale));
+        when(contributionRepository.findByStatus("IN_PROCESS")).thenReturn(List.of());
+        when(mercadoPagoGateway.searchByExternalReference("1")).thenReturn(List.of());
+
+        int resolved = service.cleanupStalePending();
+
+        assertThat(resolved).isEqualTo(1);
+        verify(contributionRepository).save(argThat(c -> "CANCELLED".equals(c.getStatus())));
+    }
+
     // --- getStatus ---
 
     @Test
