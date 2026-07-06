@@ -1139,6 +1139,7 @@ export default function CampaignPage() {
             initialAmount={modalConfig.amount}
             reward={modalConfig.reward}
             rewards={rewards}
+            contributionSummary={contributionSummary}
             onCompleted={handleContributionCompleted}
             onClose={() => setModalOpen(false)}
           />
