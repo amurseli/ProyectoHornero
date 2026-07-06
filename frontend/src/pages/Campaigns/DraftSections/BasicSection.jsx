@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Save, Upload, X } from 'lucide-react'
-import { Button } from '$components/ui'
+import { Button, InfoTooltip } from '$components/ui'
 import api from '$utils/api/api'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
 import { getMediaImageSrc } from '$utils/imageSources'
 import { browserDiffersFromArgentina, argentinaYmd, formatArgentinaCloseDateTime } from '$utils/datetime'
+import { useFeeRates } from '../../../hooks/useFeeRates'
 import {
   TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
   GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
   sanitizeDuration, formatAmountInput, parseAmount, amountToInput, formatMoney,
+  computeNetAmount, computeGrossAmount,
 } from '../campaignFormUtils'
 
 function daysBetween(start, end) {
@@ -59,6 +61,8 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
     || (countries[0] && countries[0].name)
     || 'Argentina'
 
+  const { feeRates } = useFeeRates()
+
   const [form, setForm] = useState({
     title: campaign.title || '',
     shortDescription: campaign.shortDescription || '',
@@ -66,7 +70,19 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
     country: initialCountryName,
     duration: initialDuration,
     goal: amountToInput(campaign.targetAmount),
+    netAmount: '',
   })
+
+  // Una vez que llegan las tasas vigentes, calculamos el "monto a recibir"
+  // inicial a partir de la meta ya cargada (si la campaña ya tenía una).
+  useEffect(() => {
+    if (!feeRates) return
+    setForm(prev => {
+      if (prev.netAmount !== '') return prev
+      const g = parseAmount(prev.goal)
+      return Number.isFinite(g) ? { ...prev, netAmount: amountToInput(computeNetAmount(g, feeRates)) } : prev
+    })
+  }, [feeRates])
 
   // Once categories load, make sure a valid one is selected (no empty option).
   useEffect(() => {
@@ -118,6 +134,32 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
     form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN || goalNum > GOAL_MAX)
       ? `La meta debe estar entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}`
       : ''
+
+  // Meta y "monto a recibir" son dos vistas del mismo valor: al editar una se
+  // recalcula la otra usando las tasas de comisión vigentes.
+  const handleGoalChange = (raw) => {
+    const formatted = formatAmountInput(raw)
+    const g = parseAmount(formatted)
+    setForm(prev => ({
+      ...prev,
+      goal: formatted,
+      netAmount: feeRates && Number.isFinite(g) ? amountToInput(computeNetAmount(g, feeRates)) : '',
+    }))
+    setSaved(false)
+    setError('')
+  }
+
+  const handleNetChange = (raw) => {
+    const formatted = formatAmountInput(raw)
+    const n = parseAmount(formatted)
+    setForm(prev => ({
+      ...prev,
+      netAmount: formatted,
+      goal: feeRates && Number.isFinite(n) ? amountToInput(computeGrossAmount(n, feeRates)) : '',
+    }))
+    setSaved(false)
+    setError('')
+  }
 
   const validate = () => {
     if (!form.title.trim()) return 'El título es obligatorio.'
@@ -292,7 +334,7 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
               placeholder="100.000"
               value={form.goal}
               disabled={immutableFieldsLocked}
-              onChange={e => onChange('goal', formatAmountInput(e.target.value))}
+              onChange={e => handleGoalChange(e.target.value)}
             />
           </div>
           <span className="edc-hint edc-hint--left">
@@ -302,6 +344,36 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
           </span>
           {goalError && <span className="edc-hint edc-hint--left" style={{ color: '#c44' }}>{goalError}</span>}
         </div>
+      </div>
+
+      <div className="edc-field">
+        <label className="edc-label">
+          Vas a recibir <span className="edc-optional">(estimado)</span>
+          <InfoTooltip label="Cómo se calcula el monto a recibir">
+            {feeRates
+              ? <>De cada aporte se descuenta un {(feeRates.platformRate * 100).toLocaleString('es-AR')}%
+                  de comisión de la plataforma y un {(feeRates.providerRate * 100).toLocaleString('es-AR')}%
+                  de comisión de Mercado Pago. Este monto es una estimación asumiendo que la campaña
+                  recauda exactamente la meta y no la supera.</>
+              : 'Calculando comisiones vigentes...'}
+          </InfoTooltip>
+        </label>
+        <div className={`edc-input-prefix ${immutableFieldsLocked ? 'edc-input-prefix--disabled' : ''}`}>
+          <span className="edc-prefix-symbol">{currency.symbol}</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="90.000"
+            value={form.netAmount}
+            disabled={immutableFieldsLocked || !feeRates}
+            onChange={e => handleNetChange(e.target.value)}
+          />
+        </div>
+        <span className="edc-hint edc-hint--left">
+          {immutableFieldsLocked
+            ? 'No se puede modificar una vez publicada la campaña.'
+            : 'Ya con las comisiones de la plataforma y de Mercado Pago descontadas'}
+        </span>
       </div>
 
       {error && (

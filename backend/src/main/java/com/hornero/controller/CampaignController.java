@@ -1,5 +1,7 @@
 package com.hornero.controller;
 
+import com.hornero.client.PaymentsServiceClient;
+import com.hornero.dto.PublicFeeRatesResponse;
 import com.hornero.model.Campaign;
 import com.hornero.model.CampaignCategory;
 import com.hornero.model.Country;
@@ -34,6 +36,9 @@ public class CampaignController {
 
     @Autowired
     private CurrencyRepository currencyRepository;
+
+    @Autowired
+    private PaymentsServiceClient paymentsServiceClient;
 
     @Value("${app.service-key:internal-secret-dev}")
     private String serviceKey;
@@ -107,6 +112,15 @@ public class CampaignController {
     @GetMapping("/currencies")
     public List<Currency> getCurrencies() {
         return currencyRepository.findAll();
+    }
+
+    // Tasas de comisión vigentes, para que el creador vea una estimación de cuánto
+    // va a recibir al crear/editar una campaña. Solo expone las tasas, no metadata
+    // de auditoría (eso queda para el panel admin en AdminFeeConfigController).
+    @GetMapping("/fee-rates")
+    public ResponseEntity<PublicFeeRatesResponse> getFeeRates() {
+        PaymentsServiceClient.FeeConfigInfo feeConfig = paymentsServiceClient.fetchFeeConfig();
+        return ResponseEntity.ok(new PublicFeeRatesResponse(feeConfig.getPlatformRate(), feeConfig.getProviderRate()));
     }
 
     @GetMapping("/{id}")
