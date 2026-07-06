@@ -24,11 +24,28 @@ const AMOUNT_SUGGESTIONS = [500, 1000, 2000, 5000]
 const STEPS = ['Aporte', 'Pago', 'Resultado']
 const STEP_INDEX = { select: 0, amount: 0, reward: 0, payment: 1, result: 2 }
 
+// Mirrors the gating in CampaignPage's getRewardAccessState so a tier the user
+// already owns (or one of equal/lower value) can't be re-selected in the modal.
+function getTierAccess(tier, contributionSummary) {
+  const currentRewardId = contributionSummary?.currentReward?.rewardId || null
+  const currentRewardPrice = Number(contributionSummary?.currentReward?.rewardPrice || 0)
+  const tierPrice = Number(tier?.price || 0)
+
+  if (currentRewardId === tier.id) {
+    return { disabled: true, badge: '¡Ya formás parte de esta tier!' }
+  }
+  if (currentRewardId && tierPrice <= currentRewardPrice) {
+    return { disabled: true, badge: 'Ya tenés una recompensa de igual o mayor valor.' }
+  }
+  return { disabled: false, badge: null }
+}
+
 export default function ContributionModal({
   campaignId,
   initialAmount = 1,
   reward = null,
   rewards = [],
+  contributionSummary = null,
   onClose,
   onCompleted,
 }) {
@@ -200,22 +217,34 @@ export default function ContributionModal({
             <p className="cm-subtitle">Sumate al proyecto eligiendo una recompensa. El monto se completa automáticamente.</p>
 
             <div className="cm-tier-list">
-              {availableRewards.map((tier) => (
-                <button
-                  key={tier.id}
-                  type="button"
-                  className="cm-tier"
-                  onClick={() => handleSelectReward(tier)}
-                >
-                  <div className="cm-tier-main">
-                    <span className="cm-tier-price">{formatMoney(tier.price)}</span>
-                    <span className="cm-tier-title">{tier.title}</span>
-                    {tier.description && <span className="cm-tier-desc">{tier.description}</span>}
-                  </div>
-                  <ChevronRight size={18} className="cm-tier-arrow" />
-                </button>
-              ))}
+              {availableRewards.map((tier) => {
+                const access = getTierAccess(tier, contributionSummary)
+                return (
+                  <button
+                    key={tier.id}
+                    type="button"
+                    className={`cm-tier ${access.disabled ? 'cm-tier--disabled' : ''}`}
+                    onClick={() => !access.disabled && handleSelectReward(tier)}
+                    disabled={access.disabled}
+                    aria-disabled={access.disabled}
+                  >
+                    <div className="cm-tier-main">
+                      <span className="cm-tier-price">{formatMoney(tier.price)}</span>
+                      <span className="cm-tier-title">{tier.title}</span>
+                      {tier.description && <span className="cm-tier-desc">{tier.description}</span>}
+                      {access.badge && <span className="cm-tier-badge">{access.badge}</span>}
+                    </div>
+                    {!access.disabled && <ChevronRight size={18} className="cm-tier-arrow" />}
+                  </button>
+                )
+              })}
             </div>
+
+            {contributionSummary?.currentReward?.rewardId && (
+              <p className="cm-tier-hint">
+                Si querés seguir apoyando sin cambiar de recompensa, podés aportar el monto que quieras.
+              </p>
+            )}
 
             <button type="button" className="cm-link-btn" onClick={goToFreeAmount}>
               Prefiero aportar otro monto
