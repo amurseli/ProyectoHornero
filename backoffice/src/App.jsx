@@ -6,6 +6,7 @@ import Verifications from './pages/Verifications/Verifications.jsx'
 import UsersPage from './pages/Users/Users.jsx'
 import CampaignsPage from './pages/Campaigns/Campaigns.jsx'
 import Curador from './pages/Curador/Curador.jsx'
+import Comisiones from './pages/Comisiones/Comisiones.jsx'
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/campanas" element={<CampaignsPage />} />
             <Route path="/curador" element={<Curador />} />
             <Route path="/usuarios" element={<UsersPage />} />
+            <Route path="/comisiones" element={<Comisiones />} />
             <Route path="/" element={<Navigate to="/verificaciones" replace />} />
           </Route>
 

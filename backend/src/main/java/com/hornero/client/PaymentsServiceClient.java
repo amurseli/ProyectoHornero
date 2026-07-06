@@ -149,6 +149,51 @@ public class PaymentsServiceClient {
         }
     }
 
+    public FeeConfigInfo fetchFeeConfig() {
+        String url = paymentsUrl + "/api/internal/payments/fee-config";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Service-Key", serviceKey);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<FeeConfigInfo> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, FeeConfigInfo.class);
+            return response.getBody();
+        } catch (HttpStatusCodeException e) {
+            String detail = extractErrorMessage(e.getResponseBodyAsString());
+            logger.error("Error al obtener configuración de comisiones: {}", detail);
+            throw new RuntimeException(detail);
+        } catch (Exception e) {
+            logger.error("Error al obtener configuración de comisiones: {}", e.getMessage());
+            throw new RuntimeException("Error al obtener configuración de comisiones", e);
+        }
+    }
+
+    public FeeConfigInfo updateFeeConfig(java.math.BigDecimal platformRate, java.math.BigDecimal providerRate, Long updatedByUserId) {
+        String url = paymentsUrl + "/api/internal/payments/fee-config";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Service-Key", serviceKey);
+        Map<String, Object> body = Map.of(
+                "platformRate", platformRate,
+                "providerRate", providerRate,
+                "updatedByUserId", updatedByUserId);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            ResponseEntity<FeeConfigInfo> response = restTemplate.exchange(
+                    url, HttpMethod.PUT, entity, FeeConfigInfo.class);
+            return response.getBody();
+        } catch (HttpStatusCodeException e) {
+            String detail = extractErrorMessage(e.getResponseBodyAsString());
+            logger.error("Error al actualizar configuración de comisiones: {}", detail);
+            throw new RuntimeException(detail);
+        } catch (Exception e) {
+            logger.error("Error al actualizar configuración de comisiones: {}", e.getMessage());
+            throw new RuntimeException("Error al actualizar configuración de comisiones", e);
+        }
+    }
+
     public Map<Long, PaymentCampaignSummary> fetchCampaignSummaries(List<Long> campaignIds) {
         if (campaignIds == null || campaignIds.isEmpty()) {
             return Map.of();
@@ -260,6 +305,25 @@ public class PaymentsServiceClient {
         }
 
         return body;
+    }
+
+    public static class FeeConfigInfo {
+        private Long id;
+        private java.math.BigDecimal platformRate;
+        private java.math.BigDecimal providerRate;
+        private Long updatedByUserId;
+        private java.time.LocalDateTime createdAt;
+
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public java.math.BigDecimal getPlatformRate() { return platformRate; }
+        public void setPlatformRate(java.math.BigDecimal platformRate) { this.platformRate = platformRate; }
+        public java.math.BigDecimal getProviderRate() { return providerRate; }
+        public void setProviderRate(java.math.BigDecimal providerRate) { this.providerRate = providerRate; }
+        public Long getUpdatedByUserId() { return updatedByUserId; }
+        public void setUpdatedByUserId(Long updatedByUserId) { this.updatedByUserId = updatedByUserId; }
+        public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+        public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
     }
 
     public static class PaymentCampaignSummary {
