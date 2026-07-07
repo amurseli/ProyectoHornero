@@ -54,7 +54,7 @@ public class EmailChangeService {
         userRepository.save(user);
 
         // Build confirm link
-        String confirmLink = frontendUrlProvider.getPrimaryFrontendUrl() + "/confirm-email-change?token=" + token.getToken();
+        String confirmLink = frontendUrlProvider.getFrontendUrl() + "/confirm-email-change?token=" + token.getToken();
 
         // Send verification to the NEW email
         emailService.sendEmailChangeVerification(newEmail, user.getFirstName(), confirmLink);
