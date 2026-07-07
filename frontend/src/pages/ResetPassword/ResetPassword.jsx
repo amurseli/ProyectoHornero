@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useSearchParams, Link } from "react-router-dom"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "../../components/ui"
+import PasswordRequirements from "../../components/PasswordRequirements/PasswordRequirements"
+import { evaluatePassword } from "../../utils/passwordPolicy"
 import api from "../../utils/api/api"
 import "../auth.css"
 
@@ -15,6 +18,10 @@ function ResetPassword() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const [invalidToken, setInvalidToken] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const isPasswordValid = evaluatePassword(newPassword).allValid
 
   useEffect(() => {
     // Check if token exists in URL
@@ -29,15 +36,15 @@ function ResetPassword() {
 
     setError("")
 
-    // Validate passwords match
-    if (newPassword !== confirmPassword) {
-      setError("Las contraseñas no coinciden")
+    // Validate password against the security policy
+    if (!isPasswordValid) {
+      setError("La contraseña no cumple con los requisitos de seguridad.")
       return
     }
 
-    // Validate password length
-    if (newPassword.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres")
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      setError("Las contraseñas no coinciden")
       return
     }
 
@@ -100,39 +107,65 @@ function ResetPassword() {
             <form className="auth-form" onSubmit={handleSubmit}>
               <div className="auth-form-group">
                 <label htmlFor="newPassword" className="auth-label">Nueva contraseña</label>
-                <input
-                  id="newPassword"
-                  className="auth-input"
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
-                  disabled={loading}
-                  minLength={8}
-                  autoComplete="new-password"
-                />
+                <div className="auth-password-wrapper">
+                  <input
+                    id="newPassword"
+                    className="auth-input"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Creá una contraseña segura"
+                    disabled={loading}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="auth-password-toggle"
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <PasswordRequirements password={newPassword} />
               </div>
 
               <div className="auth-form-group">
                 <label htmlFor="confirmPassword" className="auth-label">Confirmar contraseña</label>
-                <input
-                  id="confirmPassword"
-                  className="auth-input"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repetí tu contraseña"
-                  disabled={loading}
-                  minLength={8}
-                  autoComplete="new-password"
-                />
+                <div className="auth-password-wrapper">
+                  <input
+                    id="confirmPassword"
+                    className="auth-input"
+                    type={showConfirm ? "text" : "password"}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repetí tu contraseña"
+                    disabled={loading}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="auth-password-toggle"
+                    onClick={() => setShowConfirm((v) => !v)}
+                    tabIndex={-1}
+                    aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {confirmPassword && newPassword !== confirmPassword && (
+                  <span className="auth-field-hint auth-field-hint--error">
+                    Las contraseñas no coinciden
+                  </span>
+                )}
               </div>
 
               {error && <div className="auth-error" role="alert">{error}</div>}
 
-              <Button type="submit" disabled={loading} className="auth-submit">
+              <Button type="submit" disabled={loading || !isPasswordValid} className="auth-submit">
                 {loading ? "Guardando..." : "Restablecer contraseña"}
               </Button>
 

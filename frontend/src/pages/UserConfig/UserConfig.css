@@ -263,6 +263,17 @@
   color: var(--color-text-secondary);
 }
 
+.config-field-hint {
+  display: block;
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.config-field-hint--error {
+  color: var(--color-error);
+}
+
 /* ═══════ Actions ═══════ */
 .config-actions {
   display: flex;

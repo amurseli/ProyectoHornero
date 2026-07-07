@@ -4,6 +4,8 @@ import { Eye, EyeOff, Mail, X, AlertTriangle, Rocket, ShieldCheck, Info, CheckCi
 import { useUser } from '../../store/useUser'
 import { Button } from '../../components/ui'
 import ImageCropModal from '../../components/ImageCropModal/ImageCropModal'
+import PasswordRequirements from '../../components/PasswordRequirements/PasswordRequirements'
+import { evaluatePassword } from '../../utils/passwordPolicy'
 import api from '../../utils/api/api'
 import { getEntityImageSrc } from '../../utils/imageSources'
 import './UserConfig.css'
@@ -77,6 +79,8 @@ function UserConfig() {
   const [showCurrentPwd, setShowCurrentPwd] = useState(false)
   const [showNewPwd, setShowNewPwd] = useState(false)
   const [showConfirmPwd, setShowConfirmPwd] = useState(false)
+
+  const isNewPasswordValid = evaluatePassword(passwords.newPassword).allValid
 
   const [profileMsg, setProfileMsg] = useState(null)
   const [passwordMsg, setPasswordMsg] = useState(null)
@@ -278,13 +282,13 @@ function UserConfig() {
     e.preventDefault()
     setPasswordMsg(null)
 
-    if (passwords.newPassword !== passwords.confirmPassword) {
-      setPasswordMsg({ type: 'error', text: 'Las contraseñas no coinciden.' })
+    if (!isNewPasswordValid) {
+      setPasswordMsg({ type: 'error', text: 'La contraseña no cumple con los requisitos de seguridad.' })
       return
     }
 
-    if (passwords.newPassword.length < 6) {
-      setPasswordMsg({ type: 'error', text: 'La contraseña debe tener al menos 6 caracteres.' })
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setPasswordMsg({ type: 'error', text: 'Las contraseñas no coinciden.' })
       return
     }
 
@@ -312,6 +316,10 @@ function UserConfig() {
   const avatarHelpText = hasAvatar
     ? 'Actualizá tu foto de perfil cuando quieras.'
     : 'Subí una foto de perfil para completar tu cuenta.'
+
+  // El backend devuelve `verificationStatus` cuando existe una verificación y
+  // `status` (NOT_SUBMITTED) cuando no. Normalizamos igual que en MyCampaigns.
+  const verifStatus = verification?.verificationStatus ?? verification?.status ?? 'NOT_SUBMITTED'
 
   if (initialLoading) {
     return (
@@ -611,7 +619,7 @@ function UserConfig() {
                   Tu cuenta está verificada como creador. Podés publicar y gestionar campañas.
                 </p>
               </div>
-            ) : (!verification || verification.verificationStatus === 'NOT_SUBMITTED') ? (
+            ) : verifStatus === 'NOT_SUBMITTED' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
@@ -623,19 +631,19 @@ function UserConfig() {
                   Hacete Creador
                 </Button>
               </div>
-            ) : verification.verificationStatus === 'PENDING' ? (
+            ) : verifStatus === 'PENDING' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                 <Info size={20} style={{ color: '#92400e', flexShrink: 0 }} />
                 <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
                   Tu solicitud de verificación está siendo evaluada por nuestro equipo. Te notificaremos cuando haya una respuesta.
                 </p>
               </div>
-            ) : verification.verificationStatus === 'REJECTED' ? (
+            ) : verifStatus === 'REJECTED' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                 <AlertTriangle size={20} style={{ color: '#991b1b', flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                    Tu verificación fue rechazada. {verification.rejectionReason || 'Podés volver a intentarlo.'}
+                    Tu verificación fue rechazada. {verification?.rejectionReason || 'Podés volver a intentarlo.'}
                   </p>
                 </div>
                 <Button variant="primary" size="sm" onClick={() => navigate('/become-creator')}>
@@ -694,7 +702,7 @@ function UserConfig() {
                     onChange={handlePasswordChange}
                     autoComplete="new-password"
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                   <button
                     type="button"
@@ -706,6 +714,7 @@ function UserConfig() {
                     {showNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <PasswordRequirements password={passwords.newPassword} />
               </div>
 
               <div className="config-field">
@@ -719,7 +728,7 @@ function UserConfig() {
                     onChange={handlePasswordChange}
                     autoComplete="new-password"
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                   <button
                     type="button"
@@ -731,11 +740,16 @@ function UserConfig() {
                     {showConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                {passwords.confirmPassword && passwords.newPassword !== passwords.confirmPassword && (
+                  <span className="config-field-hint config-field-hint--error">
+                    Las contraseñas no coinciden
+                  </span>
+                )}
               </div>
             </div>
 
             <div className="config-actions">
-              <Button type="submit" variant="primary" size="sm" disabled={passwordLoading}>
+              <Button type="submit" variant="primary" size="sm" disabled={passwordLoading || !isNewPasswordValid}>
                 {passwordLoading ? 'Actualizando...' : 'Cambiar contraseña'}
               </Button>
             </div>

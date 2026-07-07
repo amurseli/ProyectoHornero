@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate, Link, useSearchParams } from "react-router-dom"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "../../components/ui"
 import { useUser } from "../../store/useUser"
 import { initiateGoogleLogin } from "../../utils/auth/oauth"
@@ -28,6 +29,7 @@ function Login() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -127,16 +129,27 @@ function Login() {
 
             <div className="auth-form-group">
               <label htmlFor="password" className="auth-label">Contraseña</label>
-              <input
-                id="password"
-                className="auth-input"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
+              <div className="auth-password-wrapper">
+                <input
+                  id="password"
+                  className="auth-input"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div className="auth-options">

@@ -1,11 +1,18 @@
 package com.hornero.dto;
 
+import com.hornero.validation.StrongPassword;
+import jakarta.validation.constraints.NotBlank;
+
 public class RegisterRequest {
     private String userName;
     private String firstName;
     private String lastName;
     private String email;
+
+    @NotBlank(message = "La contraseña es obligatoria")
+    @StrongPassword
     private String password;
+
     private Boolean enabled;
 
     public RegisterRequest() {}
