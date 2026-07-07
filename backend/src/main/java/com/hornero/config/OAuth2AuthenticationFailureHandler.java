@@ -20,7 +20,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
-        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrlProvider.getPrimaryFrontendUrl() + "/login")
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrlProvider.getFrontendUrl() + "/login")
                 .queryParam("error", "oauth_failed")
                 .build()
                 .toUriString();

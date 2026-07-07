@@ -73,7 +73,7 @@ public class PasswordResetService {
         passwordResetTokenRepository.save(resetToken);
 
         // Build and return reset link
-        return frontendUrlProvider.getPrimaryFrontendUrl() + "/reset-password?token=" + resetToken.getToken();
+        return frontendUrlProvider.getFrontendUrl() + "/reset-password?token=" + resetToken.getToken();
     }
 
     /**

@@ -39,7 +39,7 @@ public class EmailVerificationService {
         emailVerificationTokenRepository.save(verificationToken);
 
         // Build verification link
-        String verificationLink = frontendUrlProvider.getPrimaryFrontendUrl() + "/verify-email?token=" + verificationToken.getToken();
+        String verificationLink = frontendUrlProvider.getFrontendUrl() + "/verify-email?token=" + verificationToken.getToken();
 
         // Send verification email
         emailService.sendEmailVerificationEmail(user.getEmail(), user.getFirstName(), verificationLink);
