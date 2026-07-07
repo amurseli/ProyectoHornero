@@ -1,7 +1,13 @@
 package com.hornero.dto;
 
+import com.hornero.validation.StrongPassword;
+import jakarta.validation.constraints.NotBlank;
+
 public class ChangePasswordRequest {
     private String currentPassword;
+
+    @NotBlank(message = "La contraseña es obligatoria")
+    @StrongPassword
     private String newPassword;
 
     public ChangePasswordRequest() {}

@@ -143,7 +143,7 @@ public class UserController {
     
     // POST /api/users/register - Register new user and send verification email
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody com.hornero.dto.RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody com.hornero.dto.RegisterRequest request) {
         try {
             // Create User from RegisterRequest
             User user = new User();
@@ -461,7 +461,7 @@ public class UserController {
 
     @PutMapping("/me/password")
     public ResponseEntity<?> changeMyPassword(HttpServletRequest request,
-                                               @RequestBody ChangePasswordRequest passwordRequest) {
+                                               @Valid @RequestBody ChangePasswordRequest passwordRequest) {
         try {
             Long userId = (Long) request.getAttribute("userId");
             if (userId == null) {
