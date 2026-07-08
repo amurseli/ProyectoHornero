@@ -7,6 +7,7 @@ import { evaluatePassword } from "../../utils/passwordPolicy"
 import api from "../../utils/api/api"
 import { useUser } from "../../store/useUser"
 import { initiateGoogleLogin } from "../../utils/auth/oauth"
+import { usePostLoginNavigate } from "../../utils/auth/usePostLoginNavigate"
 import "../auth.css"
 
 // Google SVG icon
@@ -22,7 +23,8 @@ const GoogleIcon = () => (
 function Register() {
   const navigate = useNavigate()
   const { user } = useUser()
-  
+  const goPostLogin = usePostLoginNavigate()
+
   const [formData, setFormData] = useState({
     userName: "",
     firstName: "",
@@ -40,10 +42,8 @@ function Register() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
-      navigate("/")
-    }
-  }, [user, navigate])
+    if (user) goPostLogin()
+  }, [user, goPostLogin])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
