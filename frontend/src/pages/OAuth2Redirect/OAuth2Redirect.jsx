@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { handleOAuth2Redirect } from "../../utils/auth/oauth"
 import { consumePostLoginRedirect } from "../../utils/auth/postLoginRedirect"
@@ -11,14 +11,28 @@ function OAuth2Redirect() {
   const { login } = useUser()
   const [status, setStatus] = useState("processing")
 
+  // `login` gets a new identity on every UserProvider render, so it can't sit in
+  // the dep array: calling it here would re-trigger this effect, and the second
+  // pass would find the post-login redirect already consumed and fall back to "/".
+  const loginRef = useRef(login)
+  loginRef.current = login
+
+  // The callback is a one-shot side effect (it consumes a single-use redirect
+  // target and a single-use OAuth code). Guard it so neither a re-render nor
+  // StrictMode's double-invoke can run it twice.
+  const startedRef = useRef(false)
+
   useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+
     const processOAuth2Callback = async () => {
       try {
         const result = await handleOAuth2Redirect()
 
         if (result && result.success) {
           // User data is saved, update global store
-          login(result.user)
+          loginRef.current(result.user)
           setStatus("success")
 
           const target = consumePostLoginRedirect() || "/"
@@ -48,7 +62,7 @@ function OAuth2Redirect() {
     }
 
     processOAuth2Callback()
-  }, [navigate, login])
+  }, [navigate])
 
   return (
     <div className="auth-page">

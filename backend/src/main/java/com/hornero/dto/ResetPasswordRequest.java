@@ -1,7 +1,7 @@
 package com.hornero.dto;
 
+import com.hornero.validation.StrongPassword;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 public class ResetPasswordRequest {
 
@@ -9,7 +9,7 @@ public class ResetPasswordRequest {
     private String token;
 
     @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+    @StrongPassword
     private String newPassword;
 
     public ResetPasswordRequest() {}

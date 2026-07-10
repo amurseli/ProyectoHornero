@@ -2,7 +2,7 @@
 // Single interceptor for all requests - handles JWT refresh automatically
 // Similar to SvelteKit's hooks.server.ts
 
-import { savePostLoginRedirect } from '../auth/postLoginRedirect'
+import { savePostLoginRedirect, isAuthFunnelPath } from '../auth/postLoginRedirect'
 
 const BASE_URL = import.meta.env.VITE_API_URL
 
@@ -44,14 +44,12 @@ function handleSessionExpired() {
   window.dispatchEvent(new CustomEvent('auth:logout'))
 
   // Redirect to login only if on protected route
-  const publicRoutes = ['/', '/explorar', '/for-creators', '/how-it-works', '/transactions', '/verify-email', '/confirm-email-change', '/reset-password', '/forgot-password', '/email-sent', '/help', '/contact', '/about', '/terms', '/privacy', '/cookies']
+  const publicRoutes = ['/', '/explorar', '/for-creators', '/how-it-works', '/transactions', '/confirm-email-change', '/reset-password', '/forgot-password', '/help', '/contact', '/about', '/terms', '/privacy', '/cookies']
   const publicPatterns = [/^\/campaigns\/\d+$/, /^\/campaign\/[^/]+\/[^/]+$/]
   const currentPath = window.location.pathname
   const isPublicRoute = publicRoutes.includes(currentPath) ||
                         publicPatterns.some(p => p.test(currentPath)) ||
-                        currentPath.includes('/login') ||
-                        currentPath.includes('/register') ||
-                        currentPath.includes('/oauth2/redirect')
+                        isAuthFunnelPath(currentPath)
 
   if (!isPublicRoute) {
     // Remember the page the user was on so they return there after re-login.

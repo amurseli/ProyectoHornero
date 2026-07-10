@@ -54,7 +54,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     void setUp() {
         ReflectionTestUtils.setField(handler, "jwtExpiration", 900000L);
         ReflectionTestUtils.setField(handler, "refreshTokenExpiration", 604800000L);
-        when(frontendUrlProvider.getPrimaryFrontendUrl()).thenReturn("https://app.hornero.com");
+        when(frontendUrlProvider.getFrontendUrl()).thenReturn("https://app.hornero.com");
     }
 
     private void stubGoogleAttributes(String email) {
@@ -115,7 +115,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
         when(userRepository.findById(5L)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         stubTokenIssuance(user);
-        when(frontendUrlProvider.getPrimaryFrontendUrl())
+        when(frontendUrlProvider.getFrontendUrl())
                 .thenReturn("https://proyecto-hornero.com");
 
         handler.onAuthenticationSuccess(request, response, authentication);

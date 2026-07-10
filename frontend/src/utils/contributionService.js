@@ -8,7 +8,7 @@ async function request(path, options = {}) {
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.message || `Error ${res.status}`)
+    throw new Error(body.error || body.message || `Error ${res.status}`)
   }
   return res.json()
 }

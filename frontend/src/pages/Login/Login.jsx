@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react"
-import { useNavigate, Link, useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "../../components/ui"
 import { useUser } from "../../store/useUser"
 import { initiateGoogleLogin } from "../../utils/auth/oauth"
-import { consumePostLoginRedirect } from "../../utils/auth/postLoginRedirect"
+import { usePostLoginNavigate } from "../../utils/auth/usePostLoginNavigate"
 import api from "../../utils/api/api"
 import "../auth.css"
 
@@ -18,23 +19,23 @@ const GoogleIcon = () => (
 )
 
 function Login() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { login, user } = useUser()
-  
+  const goPostLogin = usePostLoginNavigate()
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-  // Redirect if already authenticated
+  // Covers both "already authenticated on arrival" and "just logged in":
+  // goPostLogin is idempotent, so this cannot fight handleSubmit's own call.
   useEffect(() => {
-    if (user) {
-      navigate(consumePostLoginRedirect() || "/", { replace: true })
-    }
-  }, [user, navigate])
+    if (user) goPostLogin()
+  }, [user, goPostLogin])
 
   // Check for OAuth errors in URL
   useEffect(() => {
@@ -70,7 +71,7 @@ function Login() {
       // Set user data in context
       login(response)
 
-      navigate(consumePostLoginRedirect() || "/", { replace: true })
+      goPostLogin()
     } catch (err) {
       console.error("Error al iniciar sesion:", err)
       setError(err.message || "Credenciales inválidas. Verificá tu email y contraseña.")
@@ -127,16 +128,27 @@ function Login() {
 
             <div className="auth-form-group">
               <label htmlFor="password" className="auth-label">Contraseña</label>
-              <input
-                id="password"
-                className="auth-input"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
+              <div className="auth-password-wrapper">
+                <input
+                  id="password"
+                  className="auth-input"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div className="auth-options">

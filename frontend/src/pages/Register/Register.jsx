@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "../../components/ui"
+import PasswordRequirements from "../../components/PasswordRequirements/PasswordRequirements"
+import { evaluatePassword } from "../../utils/passwordPolicy"
 import api from "../../utils/api/api"
 import { useUser } from "../../store/useUser"
 import { initiateGoogleLogin } from "../../utils/auth/oauth"
+import { usePostLoginNavigate } from "../../utils/auth/usePostLoginNavigate"
 import "../auth.css"
 
 // Google SVG icon
@@ -19,7 +23,8 @@ const GoogleIcon = () => (
 function Register() {
   const navigate = useNavigate()
   const { user } = useUser()
-  
+  const goPostLogin = usePostLoginNavigate()
+
   const [formData, setFormData] = useState({
     userName: "",
     firstName: "",
@@ -30,13 +35,15 @@ function Register() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const isPasswordValid = evaluatePassword(formData.password).allValid
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
-      navigate("/")
-    }
-  }, [user, navigate])
+    if (user) goPostLogin()
+  }, [user, goPostLogin])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -46,13 +53,13 @@ function Register() {
     e.preventDefault()
     setError("")
 
-    if (formData.password !== formData.confirm) {
-      setError("Las contraseñas no coinciden")
+    if (!isPasswordValid) {
+      setError("La contraseña no cumple con los requisitos de seguridad.")
       return
     }
 
-    if (formData.password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres")
+    if (formData.password !== formData.confirm) {
+      setError("Las contraseñas no coinciden")
       return
     }
 
@@ -159,37 +166,65 @@ function Register() {
 
             <div className="auth-form-group">
               <label htmlFor="password" className="auth-label">Contraseña</label>
-              <input
-                id="password"
-                name="password"
-                className="auth-input"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Mínimo 8 caracteres"
-                autoComplete="new-password"
-              />
+              <div className="auth-password-wrapper">
+                <input
+                  id="password"
+                  name="password"
+                  className="auth-input"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Creá una contraseña segura"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <PasswordRequirements password={formData.password} />
             </div>
 
             <div className="auth-form-group">
               <label htmlFor="confirm" className="auth-label">Confirmar contraseña</label>
-              <input
-                id="confirm"
-                name="confirm"
-                className="auth-input"
-                type="password"
-                required
-                value={formData.confirm}
-                onChange={handleChange}
-                placeholder="Repetí tu contraseña"
-                autoComplete="new-password"
-              />
+              <div className="auth-password-wrapper">
+                <input
+                  id="confirm"
+                  name="confirm"
+                  className="auth-input"
+                  type={showConfirm ? "text" : "password"}
+                  required
+                  value={formData.confirm}
+                  onChange={handleChange}
+                  placeholder="Repetí tu contraseña"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {formData.confirm && formData.password !== formData.confirm && (
+                <span className="auth-field-hint auth-field-hint--error">
+                  Las contraseñas no coinciden
+                </span>
+              )}
             </div>
 
             {error && <div className="auth-error" role="alert">{error}</div>}
 
-            <Button type="submit" disabled={loading} className="auth-submit">
+            <Button type="submit" disabled={loading || !isPasswordValid} className="auth-submit">
               {loading ? "Creando cuenta..." : "Crear cuenta"}
             </Button>
           </form>
