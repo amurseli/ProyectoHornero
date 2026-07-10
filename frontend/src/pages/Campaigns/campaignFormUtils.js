@@ -5,8 +5,7 @@ export const TITLE_MAX       = 80
 export const SHORT_DESC_MAX  = 200
 export const DURATION_MIN    = 1
 export const DURATION_MAX    = 60
-export const GOAL_MIN        = 1000          // $ 1.000
-export const GOAL_MAX        = 10_000_000    // $ 10.000.000
+export const GOAL_MIN        = 10_000        // $ 10.000
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024   // 10 MB
 export const CROP_ASPECT     = 16 / 9
 
@@ -37,7 +36,6 @@ export function formatAmountInput(raw) {
 
   intPart = intPart.replace(/^0+(?=\d)/, '')          // strip leading zeros
   if (intPart === '') intPart = hasComma ? '0' : ''
-  if (intPart !== '' && Number(intPart) > GOAL_MAX) intPart = String(GOAL_MAX)
 
   const groupedInt = intPart === '' ? '' : Number(intPart).toLocaleString('es-AR')
   return groupedInt + (hasComma ? ',' + decPart : '')

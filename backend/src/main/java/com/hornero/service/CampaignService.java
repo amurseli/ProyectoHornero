@@ -42,6 +42,8 @@ public class CampaignService {
 
     private static final Logger logger = LoggerFactory.getLogger(CampaignService.class);
 
+    private static final BigDecimal TARGET_AMOUNT_MAX = new BigDecimal("1000000000");
+
     @Autowired
     private CampaignRepository campaignRepository;
 
@@ -73,6 +75,8 @@ public class CampaignService {
     // que nunca deben venir del cliente, para que el body no pueda crear una campaña ya
     // "SUCCESSFUL", con currentAmount arbitrario, en spotlight, o a nombre de otro usuario.
     public Campaign createCampaignForUser(Campaign campaign, Long requestingUserId) {
+        validateTargetAmount(campaign.getTargetAmount());
+
         User owner = userRepository.findById(requestingUserId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
@@ -97,6 +101,13 @@ public class CampaignService {
         Campaign saved = campaignRepository.save(campaign);
         appImageService.hydrateCampaign(saved);
         return saved;
+    }
+
+    private void validateTargetAmount(BigDecimal targetAmount) {
+        if (targetAmount != null && targetAmount.compareTo(TARGET_AMOUNT_MAX) > 0) {
+            throw new IllegalArgumentException(
+                    "La meta no puede superar $" + TARGET_AMOUNT_MAX.toPlainString());
+        }
     }
 
     public List<Campaign> getAllCampaigns() {
@@ -266,6 +277,7 @@ public class CampaignService {
         existing.setCountry(details.getCountry());
 
         if (draftCampaign) {
+            validateTargetAmount(details.getTargetAmount());
             existing.setStartDate(details.getStartDate());
             existing.setEndDate(details.getEndDate());
             existing.setTargetAmount(details.getTargetAmount());

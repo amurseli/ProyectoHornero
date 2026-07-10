@@ -23,6 +23,7 @@ export default function ComisionesPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+  const [pendingChange, setPendingChange] = useState(null)
 
   const fetchConfig = async () => {
     setLoading(true)
@@ -43,7 +44,9 @@ export default function ComisionesPage() {
     fetchConfig()
   }, [])
 
-  const handleSubmit = async (event) => {
+  // Primer paso: valida y arma un resumen del cambio, pero todavía no guarda nada.
+  // El guardado real ocurre recién cuando el admin confirma en el aviso de impacto.
+  const handleSubmit = (event) => {
     event.preventDefault()
     setError(null)
     setSuccess(null)
@@ -56,11 +59,20 @@ export default function ComisionesPage() {
       return
     }
 
+    setPendingChange({ platformRate, providerRate })
+  }
+
+  const cancelChange = () => setPendingChange(null)
+
+  const confirmChange = async () => {
+    if (!pendingChange) return
     setSaving(true)
+    setError(null)
     try {
-      const updated = await api.put('/api/admin/fee-config', { platformRate, providerRate })
+      const updated = await api.put('/api/admin/fee-config', pendingChange)
       setCurrent(updated)
       setSuccess('Comisiones actualizadas correctamente')
+      setPendingChange(null)
     } catch (err) {
       setError(err.message || 'No se pudo actualizar la configuración de comisiones')
     } finally {
@@ -97,6 +109,7 @@ export default function ComisionesPage() {
                 max="99"
                 value={platformPercent}
                 onChange={(event) => setPlatformPercent(event.target.value)}
+                disabled={!!pendingChange}
                 required
               />
             </div>
@@ -111,13 +124,21 @@ export default function ComisionesPage() {
                 max="99"
                 value={providerPercent}
                 onChange={(event) => setProviderPercent(event.target.value)}
+                disabled={!!pendingChange}
                 required
               />
+              <p className="cf-field-warning">
+                Este porcentaje debe coincidir exactamente con la comisión que Mercado Pago
+                tiene configurada para esta aplicación. Si no coincide, el monto que se
+                transfiere a los creadores va a quedar mal calculado.
+              </p>
             </div>
 
-            <Button type="submit" variant="primary" disabled={saving}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
-            </Button>
+            {!pendingChange && (
+              <Button type="submit" variant="primary" disabled={saving}>
+                Guardar cambios
+              </Button>
+            )}
 
             {current && (
               <p className="cf-meta">
@@ -125,6 +146,42 @@ export default function ComisionesPage() {
               </p>
             )}
           </form>
+        )}
+
+        {pendingChange && (
+          <div className="cf-impact">
+            <h2>Confirmá el impacto de este cambio</h2>
+            <p>
+              Este cambio aplica de inmediato a <strong>todas las transacciones futuras</strong> de
+              la plataforma: nuevos aportes de contribuyentes y transferencias a creadores de
+              campañas que finalicen a partir de ahora. Las campañas y aportes ya procesados
+              con la comisión anterior no se recalculan.
+            </p>
+
+            <div className="cf-impact-diff">
+              <div>
+                <span className="cf-impact-label">Comisión de la plataforma</span>
+                <span className="cf-impact-values">
+                  {toPercentString(current?.platformRate)}% → <strong>{platformPercent}%</strong>
+                </span>
+              </div>
+              <div>
+                <span className="cf-impact-label">Comisión de Mercado Pago</span>
+                <span className="cf-impact-values">
+                  {toPercentString(current?.providerRate)}% → <strong>{providerPercent}%</strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="cf-impact-actions">
+              <Button type="button" variant="secondary" onClick={cancelChange} disabled={saving}>
+                Cancelar
+              </Button>
+              <Button type="button" variant="primary" onClick={confirmChange} disabled={saving}>
+                {saving ? 'Guardando...' : 'Confirmar y guardar'}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>
