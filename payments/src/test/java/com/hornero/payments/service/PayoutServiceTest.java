@@ -4,6 +4,7 @@ import com.hornero.payments.client.BackendClient;
 import com.hornero.payments.client.LedgerClient;
 import com.hornero.payments.dto.PayoutStatusResponse;
 import com.hornero.payments.model.Contribution;
+import com.hornero.payments.model.FeeConfig;
 import com.hornero.payments.model.Payout;
 import com.hornero.payments.repository.ContributionRepository;
 import com.hornero.payments.repository.PayoutRepository;
@@ -32,13 +33,16 @@ class PayoutServiceTest {
     @Mock LedgerClient ledgerClient;
     @Mock PaymentEventLogService paymentEventLogService;
     @Mock PayoutPersistenceService payoutPersistenceService;
+    @Mock FeeConfigService feeConfigService;
 
     @InjectMocks PayoutService service;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(service, "platformRate", new BigDecimal("0.05"));
-        ReflectionTestUtils.setField(service, "providerRate", new BigDecimal("0.046"));
+        FeeConfig feeConfig = new FeeConfig();
+        feeConfig.setPlatformRate(new BigDecimal("0.05"));
+        feeConfig.setProviderRate(new BigDecimal("0.046"));
+        lenient().when(feeConfigService.getCurrentConfig()).thenReturn(feeConfig);
     }
 
     @Test

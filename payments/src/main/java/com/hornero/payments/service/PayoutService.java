@@ -6,12 +6,12 @@ import com.hornero.payments.dto.PayoutStatusResponse;
 import com.hornero.payments.event.NotificationEventPublisher;
 import com.hornero.payments.event.PayoutCompletedEvent;
 import com.hornero.payments.model.Contribution;
+import com.hornero.payments.model.FeeConfig;
 import com.hornero.payments.model.Payout;
 import com.hornero.payments.repository.ContributionRepository;
 import com.hornero.payments.repository.PayoutRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,12 +33,7 @@ public class PayoutService {
     private final PaymentEventLogService eventLog;
     private final NotificationEventPublisher notificationPublisher;
     private final PayoutPersistenceService payoutPersistenceService;
-
-    @Value("${app.fees.platform-rate}")
-    private BigDecimal platformRate;
-
-    @Value("${app.fees.provider-rate}")
-    private BigDecimal providerRate;
+    private final FeeConfigService feeConfigService;
 
     public PayoutService(PayoutRepository payoutRepository,
                          ContributionRepository contributionRepository,
@@ -46,7 +41,8 @@ public class PayoutService {
                          LedgerClient ledgerClient,
                          PaymentEventLogService eventLog,
                          NotificationEventPublisher notificationPublisher,
-                         PayoutPersistenceService payoutPersistenceService) {
+                         PayoutPersistenceService payoutPersistenceService,
+                         FeeConfigService feeConfigService) {
         this.payoutRepository = payoutRepository;
         this.contributionRepository = contributionRepository;
         this.backendClient = backendClient;
@@ -54,6 +50,7 @@ public class PayoutService {
         this.eventLog = eventLog;
         this.notificationPublisher = notificationPublisher;
         this.payoutPersistenceService = payoutPersistenceService;
+        this.feeConfigService = feeConfigService;
     }
 
     // Ejecuta el payout al creador para una campaña SUCCESSFUL.
@@ -82,8 +79,9 @@ public class PayoutService {
             throw new IllegalStateException("La campaña no tiene contribuciones aprobadas para transferir");
         }
 
-        BigDecimal platformFee = grossAmount.multiply(platformRate).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal providerFee = grossAmount.multiply(providerRate).setScale(2, RoundingMode.HALF_UP);
+        FeeConfig feeConfig = feeConfigService.getCurrentConfig();
+        BigDecimal platformFee = grossAmount.multiply(feeConfig.getPlatformRate()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal providerFee = grossAmount.multiply(feeConfig.getProviderRate()).setScale(2, RoundingMode.HALF_UP);
         BigDecimal netAmount = grossAmount.subtract(platformFee).subtract(providerFee);
 
         // Crear el registro de payout

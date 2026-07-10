@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Save, Upload, X } from 'lucide-react'
-import { Button } from '$components/ui'
+import { Button, InfoTooltip } from '$components/ui'
 import api from '$utils/api/api'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
 import { getMediaImageSrc } from '$utils/imageSources'
 import { browserDiffersFromArgentina, argentinaYmd, formatArgentinaCloseDateTime } from '$utils/datetime'
+import { useFeeRates } from '../../../hooks/useFeeRates'
 import {
   TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
-  GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
+  GOAL_MIN, MAX_IMAGE_BYTES, CROP_ASPECT,
   sanitizeDuration, formatAmountInput, parseAmount, amountToInput, formatMoney,
+  computeNetAmount, computeGrossAmount,
 } from '../campaignFormUtils'
 
 function daysBetween(start, end) {
@@ -59,6 +61,8 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
     || (countries[0] && countries[0].name)
     || 'Argentina'
 
+  const { feeRates } = useFeeRates()
+
   const [form, setForm] = useState({
     title: campaign.title || '',
     shortDescription: campaign.shortDescription || '',
@@ -66,7 +70,19 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
     country: initialCountryName,
     duration: initialDuration,
     goal: amountToInput(campaign.targetAmount),
+    netAmount: '',
   })
+
+  // Una vez que llegan las tasas vigentes, calculamos el "monto a recibir"
+  // inicial a partir de la meta ya cargada (si la campaña ya tenía una).
+  useEffect(() => {
+    if (!feeRates) return
+    setForm(prev => {
+      if (prev.netAmount !== '') return prev
+      const g = parseAmount(prev.goal)
+      return Number.isFinite(g) ? { ...prev, netAmount: amountToInput(computeNetAmount(g, feeRates)) } : prev
+    })
+  }, [feeRates])
 
   // Once categories load, make sure a valid one is selected (no empty option).
   useEffect(() => {
@@ -115,9 +131,35 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
 
   const goalNum = parseAmount(form.goal)
   const goalError =
-    form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN || goalNum > GOAL_MAX)
-      ? `La meta debe estar entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}`
+    form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN)
+      ? `La meta debe ser de al menos ${formatMoney(GOAL_MIN, currency.symbol)}`
       : ''
+
+  // Meta y "monto a recibir" son dos vistas del mismo valor: al editar una se
+  // recalcula la otra usando las tasas de comisión vigentes.
+  const handleGoalChange = (raw) => {
+    const formatted = formatAmountInput(raw)
+    const g = parseAmount(formatted)
+    setForm(prev => ({
+      ...prev,
+      goal: formatted,
+      netAmount: feeRates && Number.isFinite(g) ? amountToInput(computeNetAmount(g, feeRates)) : '',
+    }))
+    setSaved(false)
+    setError('')
+  }
+
+  const handleNetChange = (raw) => {
+    const formatted = formatAmountInput(raw)
+    const n = parseAmount(formatted)
+    setForm(prev => ({
+      ...prev,
+      netAmount: formatted,
+      goal: feeRates && Number.isFinite(n) ? amountToInput(computeGrossAmount(n, feeRates)) : '',
+    }))
+    setSaved(false)
+    setError('')
+  }
 
   const validate = () => {
     if (!form.title.trim()) return 'El título es obligatorio.'
@@ -130,8 +172,8 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
       return `La duración debe estar entre ${DURATION_MIN} y ${DURATION_MAX} días.`
     }
     const g = parseAmount(form.goal)
-    if (!Number.isFinite(g) || g < GOAL_MIN || g > GOAL_MAX) {
-      return `La meta debe estar entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}.`
+    if (!Number.isFinite(g) || g < GOAL_MIN) {
+      return `La meta debe ser de al menos ${formatMoney(GOAL_MIN, currency.symbol)}.`
     }
     return ''
   }
@@ -254,36 +296,44 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
         </div>
       </div>
 
+      <div className="edc-field">
+        <label className="edc-label">Duración <span className="edc-optional">(días · {DURATION_MIN}–{DURATION_MAX})</span></label>
+        <input
+          className="edc-input"
+          type="number"
+          min={DURATION_MIN}
+          max={DURATION_MAX}
+          step={1}
+          value={form.duration}
+          disabled={immutableFieldsLocked}
+          onChange={e => onChange('duration', sanitizeDuration(e.target.value))}
+          onBlur={e => {
+            const n = Number(e.target.value)
+            onChange('duration', String(!n || n < DURATION_MIN ? DURATION_MIN : Math.min(DURATION_MAX, n)))
+          }}
+        />
+        <span className="edc-hint edc-hint--left">
+          {immutableFieldsLocked
+            ? <>La duración queda fija después de publicar la campaña. Finaliza el <strong>{formatArgentinaCloseDateTime(campaign.endDate)}</strong></>
+            : <>Si publicás hoy, finaliza el <strong>{formatArgentinaCloseDateTime(previewEndDate)}</strong></>}
+        </span>
+        {browserDiffersFromArgentina() && (
+          <span className="edc-hint edc-hint--tz">
+            Las fechas se cuentan en el horario de Argentina (GMT-3).
+          </span>
+        )}
+      </div>
+
       <div className="edc-row">
         <div className="edc-field">
-          <label className="edc-label">Duración <span className="edc-optional">(días · {DURATION_MIN}–{DURATION_MAX})</span></label>
-          <input
-            className="edc-input"
-            type="number"
-            min={DURATION_MIN}
-            max={DURATION_MAX}
-            step={1}
-            value={form.duration}
-            disabled={immutableFieldsLocked}
-            onChange={e => onChange('duration', sanitizeDuration(e.target.value))}
-            onBlur={e => {
-              const n = Number(e.target.value)
-              onChange('duration', String(!n || n < DURATION_MIN ? DURATION_MIN : Math.min(DURATION_MAX, n)))
-            }}
-          />
-          <span className="edc-hint edc-hint--left">
-            {immutableFieldsLocked
-              ? <>La duración queda fija después de publicar la campaña. Finaliza el <strong>{formatArgentinaCloseDateTime(campaign.endDate)}</strong></>
-              : <>Si publicás hoy, finaliza el <strong>{formatArgentinaCloseDateTime(previewEndDate)}</strong></>}
-          </span>
-          {browserDiffersFromArgentina() && (
-            <span className="edc-hint edc-hint--tz">
-              Las fechas se cuentan en el horario de Argentina (GMT-3).
-            </span>
-          )}
-        </div>
-        <div className="edc-field">
-          <label className="edc-label">Meta <span className="edc-optional">(monto objetivo a recaudar)</span></label>
+          <label className="edc-label">
+            Meta <span className="edc-optional">(monto objetivo a recaudar)</span>
+            <InfoTooltip label="Cuándo se transfiere el dinero">
+              Solo si la campaña alcanza a recaudar este monto,
+              el dinero será transferido a la cuenta configurada en su perfil en el plazo de 2
+              semanas desde la fecha de finalización de la campaña.
+            </InfoTooltip>
+          </label>
           <div className={`edc-input-prefix ${immutableFieldsLocked ? 'edc-input-prefix--disabled' : ''}`}>
             <span className="edc-prefix-symbol">{currency.symbol}</span>
             <input
@@ -292,15 +342,45 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
               placeholder="100.000"
               value={form.goal}
               disabled={immutableFieldsLocked}
-              onChange={e => onChange('goal', formatAmountInput(e.target.value))}
+              onChange={e => handleGoalChange(e.target.value)}
             />
           </div>
           <span className="edc-hint edc-hint--left">
             {immutableFieldsLocked
               ? 'La meta no se puede modificar una vez publicada la campaña.'
-              : `En pesos argentinos por el momento · entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}`}
+              : `En pesos argentinos · mínimo ${formatMoney(GOAL_MIN, currency.symbol)}`}
           </span>
           {goalError && <span className="edc-hint edc-hint--left" style={{ color: '#c44' }}>{goalError}</span>}
+        </div>
+        <div className="edc-field">
+          <label className="edc-label">
+            Monto aproximado a recibir
+            <InfoTooltip label="Cómo se calcula el monto a recibir">
+              {feeRates
+                ? <>De cada aporte se descuenta un {(feeRates.platformRate * 100).toLocaleString('es-AR')}%
+                    de comisión de la plataforma y un {(feeRates.providerRate * 100).toLocaleString('es-AR')}%
+                    de comisión de Mercado Pago. Este monto es una estimación asumiendo que la campaña
+                    recauda exactamente la meta y no la supera. Si la campaña no alcanza la meta, no se
+                    cobra ninguna comisión y el dinero se devuelve íntegro a los contribuyentes.</>
+                : 'Calculando comisiones vigentes...'}
+            </InfoTooltip>
+          </label>
+          <div className={`edc-input-prefix ${immutableFieldsLocked ? 'edc-input-prefix--disabled' : ''}`}>
+            <span className="edc-prefix-symbol">{currency.symbol}</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="90.000"
+              value={form.netAmount}
+              disabled={immutableFieldsLocked || !feeRates}
+              onChange={e => handleNetChange(e.target.value)}
+            />
+          </div>
+          <span className="edc-hint edc-hint--left">
+            {immutableFieldsLocked
+              ? 'No se puede modificar una vez publicada la campaña.'
+              : 'Monto mínimo que recibirás una vez descontadas las comisiones.'}
+          </span>
         </div>
       </div>
 

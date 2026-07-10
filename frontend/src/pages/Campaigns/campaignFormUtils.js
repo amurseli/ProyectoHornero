@@ -5,8 +5,7 @@ export const TITLE_MAX       = 80
 export const SHORT_DESC_MAX  = 200
 export const DURATION_MIN    = 1
 export const DURATION_MAX    = 60
-export const GOAL_MIN        = 1000          // $ 1.000
-export const GOAL_MAX        = 10_000_000    // $ 10.000.000
+export const GOAL_MIN        = 10_000        // $ 10.000
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024   // 10 MB
 export const CROP_ASPECT     = 16 / 9
 
@@ -37,7 +36,6 @@ export function formatAmountInput(raw) {
 
   intPart = intPart.replace(/^0+(?=\d)/, '')          // strip leading zeros
   if (intPart === '') intPart = hasComma ? '0' : ''
-  if (intPart !== '' && Number(intPart) > GOAL_MAX) intPart = String(GOAL_MAX)
 
   const groupedInt = intPart === '' ? '' : Number(intPart).toLocaleString('es-AR')
   return groupedInt + (hasComma ? ',' + decPart : '')
@@ -63,4 +61,31 @@ export function amountToInput(n) {
 // Human-readable money for hints/labels (no decimals): "$ 1.000".
 export function formatMoney(n, symbol = '$') {
   return `${symbol} ${Number(n).toLocaleString('es-AR')}`
+}
+
+// ── Vista previa "monto a recibir" ──────────────────────────────────────────
+// Replica la fórmula de PayoutService (payments): cada comisión se redondea a
+// 2 decimales por separado antes de restarla del bruto.
+function round2(n) {
+  return Math.round(n * 100) / 100
+}
+
+// Dado el monto a recaudar (bruto), estima cuánto recibiría el creador si la
+// campaña llega exactamente a esa meta y no la supera.
+export function computeNetAmount(grossAmount, feeRates) {
+  if (!Number.isFinite(grossAmount) || !feeRates) return NaN
+  const { platformRate, providerRate } = feeRates
+  const platformFee = round2(grossAmount * platformRate)
+  const providerFee = round2(grossAmount * providerRate)
+  return round2(grossAmount - platformFee - providerFee)
+}
+
+// Inversa: dado el monto que el creador quiere recibir, estima la meta bruta
+// necesaria. Es una estimación (la inversa exacta de un redondeo compuesto no
+// es perfecta), consistente con que ambos campos son solo una previsualización.
+export function computeGrossAmount(netAmount, feeRates) {
+  if (!Number.isFinite(netAmount) || !feeRates) return NaN
+  const { platformRate, providerRate } = feeRates
+  const combinedRate = platformRate + providerRate
+  return round2(netAmount / (1 - combinedRate))
 }

@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload, X } from 'lucide-react'
-import { Button } from '$components/ui'
+import { Button, InfoTooltip } from '$components/ui'
 import api from '$utils/api/api'
 import { browserDiffersFromArgentina, argentinaYmd, formatArgentinaCloseDateTime } from '$utils/datetime'
 import './CreateCampaign.css'
 import { useUser } from '../../store/useUser'
+import { useFeeRates } from '../../hooks/useFeeRates'
 import SouthAmericaMap from '$components/SouthAmericaMap/SouthAmericaMap'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
 import {
   TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
-  GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
-  sanitizeDuration, formatAmountInput, parseAmount, formatMoney,
+  GOAL_MIN, MAX_IMAGE_BYTES, CROP_ASPECT,
+  sanitizeDuration, formatAmountInput, parseAmount, amountToInput, formatMoney,
+  computeNetAmount, computeGrossAmount,
 } from './campaignFormUtils'
 
 import blobLeft from '$assets/textures/blob1.png'
@@ -33,6 +35,7 @@ const INITIAL_FORM = {
   countryCode: '',
   duration: '30',
   goal: '',              // es-AR formatted string ("1.234,56")
+  netAmount: '',         // estimado: lo que recibiría el creador si llega justo a la meta
   coverFile: null,
   coverPreview: '',
   coverError: '',
@@ -127,15 +130,32 @@ function StepPais({ form, countries, onChange }) {
 function StepDetalles({ form, currency, onChange }) {
   const coverRef = useRef()
   const [cropSrc, setCropSrc] = useState(null)
+  const { feeRates } = useFeeRates()
 
   const durationNum = Math.min(DURATION_MAX, Math.max(DURATION_MIN, Number(form.duration) || DURATION_MIN))
   const endDate = new Date(Date.now() + durationNum * 86400000)
 
   const goalNum = parseAmount(form.goal)
   const goalError =
-    form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN || goalNum > GOAL_MAX)
-      ? `La meta debe estar entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}`
+    form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN)
+      ? `La meta debe ser de al menos ${formatMoney(GOAL_MIN, currency.symbol)}`
       : ''
+
+  // Meta y "monto a recibir" son dos vistas del mismo valor: al editar una se
+  // recalcula la otra usando las tasas de comisión vigentes.
+  const handleGoalChange = (raw) => {
+    const formatted = formatAmountInput(raw)
+    onChange('goal', formatted)
+    const g = parseAmount(formatted)
+    onChange('netAmount', feeRates && Number.isFinite(g) ? amountToInput(computeNetAmount(g, feeRates)) : '')
+  }
+
+  const handleNetChange = (raw) => {
+    const formatted = formatAmountInput(raw)
+    onChange('netAmount', formatted)
+    const n = parseAmount(formatted)
+    onChange('goal', feeRates && Number.isFinite(n) ? amountToInput(computeGrossAmount(n, feeRates)) : '')
+  }
 
   const pickCover = (files) => {
     const file = files?.[0]
@@ -206,33 +226,41 @@ function StepDetalles({ form, currency, onChange }) {
         {form.coverError && <span className="wizard-helper wizard-helper--error">{form.coverError}</span>}
       </div>
 
+      <div className="wizard-form-group">
+        <label className="wizard-label">Duración <span>(días · {DURATION_MIN}–{DURATION_MAX})</span></label>
+        <input
+          className="wizard-input"
+          type="number"
+          min={DURATION_MIN}
+          max={DURATION_MAX}
+          step={1}
+          value={form.duration}
+          onChange={e => onChange('duration', sanitizeDuration(e.target.value))}
+          onBlur={e => {
+            const n = Number(e.target.value)
+            onChange('duration', String(!n || n < DURATION_MIN ? DURATION_MIN : Math.min(DURATION_MAX, n)))
+          }}
+        />
+        <span className="wizard-helper">
+          Si publicás hoy, finaliza el <strong>{formatArgentinaCloseDateTime(endDate)}</strong>
+        </span>
+        {browserDiffersFromArgentina() && (
+          <span className="wizard-helper wizard-helper--tz">
+            Las fechas se cuentan en el horario de Argentina (GMT-3).
+          </span>
+        )}
+      </div>
+
       <div className="wizard-form-row">
         <div className="wizard-form-group">
-          <label className="wizard-label">Duración <span>(días · {DURATION_MIN}–{DURATION_MAX})</span></label>
-          <input
-            className="wizard-input"
-            type="number"
-            min={DURATION_MIN}
-            max={DURATION_MAX}
-            step={1}
-            value={form.duration}
-            onChange={e => onChange('duration', sanitizeDuration(e.target.value))}
-            onBlur={e => {
-              const n = Number(e.target.value)
-              onChange('duration', String(!n || n < DURATION_MIN ? DURATION_MIN : Math.min(DURATION_MAX, n)))
-            }}
-          />
-          <span className="wizard-helper">
-            Si publicás hoy, finaliza el <strong>{formatArgentinaCloseDateTime(endDate)}</strong>
-          </span>
-          {browserDiffersFromArgentina() && (
-            <span className="wizard-helper wizard-helper--tz">
-              Las fechas se cuentan en el horario de Argentina (GMT-3).
-            </span>
-          )}
-        </div>
-        <div className="wizard-form-group">
-          <label className="wizard-label">Meta <span>(monto objetivo a recaudar)</span></label>
+          <label className="wizard-label">
+            Meta <span>(monto objetivo a recaudar)</span>
+            <InfoTooltip label="Cuándo se transfiere el dinero">
+              Solo si la campaña alcanza a recaudar este monto,
+              el dinero será transferido a la cuenta configurada en su perfil en el plazo de 2
+              semanas desde la fecha de finalización de la campaña.
+            </InfoTooltip>
+          </label>
           <div className="wizard-input-prefix">
             <span className="wizard-prefix-symbol">{currency.symbol}</span>
             <input
@@ -240,13 +268,41 @@ function StepDetalles({ form, currency, onChange }) {
               inputMode="decimal"
               placeholder="100.000"
               value={form.goal}
-              onChange={e => onChange('goal', formatAmountInput(e.target.value))}
+              onChange={e => handleGoalChange(e.target.value)}
             />
           </div>
           <span className="wizard-helper">
-            En pesos argentinos por el momento · entre {formatMoney(GOAL_MIN, currency.symbol)} y {formatMoney(GOAL_MAX, currency.symbol)}
+            En pesos argentinos · mínimo {formatMoney(GOAL_MIN, currency.symbol)}
           </span>
           {goalError && <span className="wizard-helper wizard-helper--error">{goalError}</span>}
+        </div>
+        <div className="wizard-form-group">
+          <label className="wizard-label">
+            Monto aproximado a recibir
+            <InfoTooltip label="Cómo se calcula el monto a recibir">
+              {feeRates
+                ? <>De cada aporte se descuenta un {(feeRates.platformRate * 100).toLocaleString('es-AR')}%
+                    de comisión de la plataforma y un {(feeRates.providerRate * 100).toLocaleString('es-AR')}%
+                    de comisión de Mercado Pago. Este monto es una estimación asumiendo que la campaña
+                    recauda exactamente la meta y no la supera. Si la campaña no alcanza la meta, no se
+                    cobra ninguna comisión y el dinero se devuelve íntegro a los contribuyentes.</>
+                : 'Calculando comisiones vigentes...'}
+            </InfoTooltip>
+          </label>
+          <div className="wizard-input-prefix">
+            <span className="wizard-prefix-symbol">{currency.symbol}</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="90.000"
+              disabled={!feeRates}
+              value={form.netAmount}
+              onChange={e => handleNetChange(e.target.value)}
+            />
+          </div>
+          <span className="wizard-helper">
+            Monto mínimo que recibirás una vez descontadas las comisiones.
+          </span>
         </div>
       </div>
 
@@ -288,6 +344,12 @@ function StepRevision({ form, currency }) {
           <span className="wizard-review-key">Meta</span>
           <span className="wizard-review-val">
             {Number.isFinite(goalNum) && goalNum > 0 ? `${currency.symbol} ${form.goal}` : '—'}
+          </span>
+        </div>
+        <div className="wizard-review-row">
+          <span className="wizard-review-key">Monto aproximado a recibir</span>
+          <span className="wizard-review-val">
+            {form.netAmount ? `${currency.symbol} ${form.netAmount}` : '—'}
           </span>
         </div>
       </div>
@@ -371,8 +433,8 @@ function CreateCampaign() {
           return `La duración debe estar entre ${DURATION_MIN} y ${DURATION_MAX} días.`
         }
         const g = parseAmount(form.goal)
-        if (!Number.isFinite(g) || g < GOAL_MIN || g > GOAL_MAX) {
-          return `La meta debe estar entre ${formatMoney(GOAL_MIN, currency.symbol)} y ${formatMoney(GOAL_MAX, currency.symbol)}.`
+        if (!Number.isFinite(g) || g < GOAL_MIN) {
+          return `La meta debe ser de al menos ${formatMoney(GOAL_MIN, currency.symbol)}.`
         }
         return ''
       }
