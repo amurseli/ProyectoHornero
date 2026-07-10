@@ -326,7 +326,14 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
 
       <div className="edc-row">
         <div className="edc-field">
-          <label className="edc-label">Meta <span className="edc-optional">(monto objetivo a recaudar)</span></label>
+          <label className="edc-label">
+            Meta <span className="edc-optional">(monto objetivo a recaudar)</span>
+            <InfoTooltip label="Cuándo se transfiere el dinero">
+              Solo si la campaña alcanza a recaudar este monto,
+              el dinero será transferido a la cuenta configurada en su perfil en el plazo de 2
+              semanas desde la fecha de finalización de la campaña.
+            </InfoTooltip>
+          </label>
           <div className={`edc-input-prefix ${immutableFieldsLocked ? 'edc-input-prefix--disabled' : ''}`}>
             <span className="edc-prefix-symbol">{currency.symbol}</span>
             <input
@@ -353,7 +360,8 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
                 ? <>De cada aporte se descuenta un {(feeRates.platformRate * 100).toLocaleString('es-AR')}%
                     de comisión de la plataforma y un {(feeRates.providerRate * 100).toLocaleString('es-AR')}%
                     de comisión de Mercado Pago. Este monto es una estimación asumiendo que la campaña
-                    recauda exactamente la meta y no la supera.</>
+                    recauda exactamente la meta y no la supera. Si la campaña no alcanza la meta, no se
+                    cobra ninguna comisión y el dinero se devuelve íntegro a los contribuyentes.</>
                 : 'Calculando comisiones vigentes...'}
             </InfoTooltip>
           </label>
@@ -371,7 +379,7 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
           <span className="edc-hint edc-hint--left">
             {immutableFieldsLocked
               ? 'No se puede modificar una vez publicada la campaña.'
-              : 'Ya con las comisiones de la plataforma y de Mercado Pago descontadas'}
+              : 'Monto mínimo que recibirás una vez descontadas las comisiones.'}
           </span>
         </div>
       </div>
