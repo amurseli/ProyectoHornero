@@ -4,8 +4,8 @@
 export const TITLE_MAX       = 80
 export const SHORT_DESC_MAX  = 200
 export const DURATION_MIN    = 1
-export const DURATION_MAX    = 60
-export const GOAL_MIN        = 10_000        // $ 10.000
+export const DURATION_MAX    = 150       // 5 meses
+export const GOAL_MIN        = 1_000        // $ 1.000
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024   // 10 MB
 export const CROP_ASPECT     = 16 / 9
 

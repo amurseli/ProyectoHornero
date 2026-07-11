@@ -1,16 +1,16 @@
 package com.hornero.service;
 
+import com.hornero.client.PaymentsServiceClient;
+import com.hornero.dto.AdminCampaignContributionResponse;
 import com.hornero.event.CampaignFinalizedEvent;
 import com.hornero.event.NotificationEventPublisher;
 import com.hornero.model.Campaign;
 import com.hornero.model.CampaignCategory;
 import com.hornero.model.CampaignMedia;
 import com.hornero.model.User;
-import com.hornero.model.payments.PaymentContribution;
 import com.hornero.repository.CampaignCategoryRepository;
 import com.hornero.repository.CampaignRepository;
 import com.hornero.repository.CampaignTeamMemberRepository;
-import com.hornero.repository.PaymentContributionRepository;
 import com.hornero.repository.RewardRepository;
 import com.hornero.repository.UserRepository;
 import com.hornero.service.validator.CampaignPublishValidator;
@@ -43,6 +43,7 @@ public class CampaignService {
     private static final Logger logger = LoggerFactory.getLogger(CampaignService.class);
 
     private static final BigDecimal TARGET_AMOUNT_MAX = new BigDecimal("1000000000");
+    private static final long DURATION_MAX_DAYS = 150; // 5 meses
 
     @Autowired
     private CampaignRepository campaignRepository;
@@ -63,7 +64,7 @@ public class CampaignService {
     private AppImageService appImageService;
 
     @Autowired
-    private PaymentContributionRepository paymentContributionRepository;
+    private PaymentsServiceClient paymentsServiceClient;
 
     @Autowired
     private UserRepository userRepository;
@@ -76,6 +77,7 @@ public class CampaignService {
     // "SUCCESSFUL", con currentAmount arbitrario, en spotlight, o a nombre de otro usuario.
     public Campaign createCampaignForUser(Campaign campaign, Long requestingUserId) {
         validateTargetAmount(campaign.getTargetAmount());
+        validateDuration(campaign.getStartDate(), campaign.getEndDate());
 
         User owner = userRepository.findById(requestingUserId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -107,6 +109,15 @@ public class CampaignService {
         if (targetAmount != null && targetAmount.compareTo(TARGET_AMOUNT_MAX) > 0) {
             throw new IllegalArgumentException(
                     "La meta no puede superar $" + TARGET_AMOUNT_MAX.toPlainString());
+        }
+    }
+
+    private void validateDuration(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) return;
+        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        if (days > DURATION_MAX_DAYS) {
+            throw new IllegalArgumentException(
+                    "La duración de la campaña no puede superar los " + DURATION_MAX_DAYS + " días");
         }
     }
 
@@ -278,6 +289,7 @@ public class CampaignService {
 
         if (draftCampaign) {
             validateTargetAmount(details.getTargetAmount());
+            validateDuration(details.getStartDate(), details.getEndDate());
             existing.setStartDate(details.getStartDate());
             existing.setEndDate(details.getEndDate());
             existing.setTargetAmount(details.getTargetAmount());
@@ -436,9 +448,10 @@ public class CampaignService {
 
     private List<CampaignFinalizedEvent.ContributorInfo> buildContributorInfos(Long campaignId) {
         Map<Long, BigDecimal> approvedAmountByUser = new LinkedHashMap<>();
-        for (PaymentContribution contribution : paymentContributionRepository.findDetailedByCampaignId(campaignId)) {
+        List<AdminCampaignContributionResponse> contributions = paymentsServiceClient.fetchCampaignDetail(campaignId).getContributions();
+        for (AdminCampaignContributionResponse contribution : contributions) {
             if (!"APPROVED".equals(contribution.getStatus())) continue;
-            approvedAmountByUser.merge(contribution.getIdUser(), contribution.getAmount(), BigDecimal::add);
+            approvedAmountByUser.merge(contribution.getContributorUserId(), contribution.getAmount(), BigDecimal::add);
         }
 
         List<CampaignFinalizedEvent.ContributorInfo> contributors = new ArrayList<>();
