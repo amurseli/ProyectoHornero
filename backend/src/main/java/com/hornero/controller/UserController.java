@@ -1,6 +1,8 @@
 package com.hornero.controller;
 
 import com.hornero.dto.AuthResponse;
+import com.hornero.dto.BankInfoRequest;
+import com.hornero.dto.BankInfoResponse;
 import com.hornero.dto.ChangePasswordRequest;
 import com.hornero.dto.ConnectionResponse;
 import com.hornero.dto.EmailChangeRequest;
@@ -19,6 +21,7 @@ import com.hornero.model.UserConnection;
 import com.hornero.repository.CreatorBankInfoRepository;
 import com.hornero.repository.UserConnectionRepository;
 import com.hornero.service.AppImageService;
+import com.hornero.service.BankInfoService;
 import com.hornero.service.CampaignService;
 import com.hornero.service.EncryptionService;
 import com.hornero.service.EmailVerificationService;
@@ -82,6 +85,9 @@ public class UserController {
 
     @Autowired
     private EncryptionService encryptionService;
+
+    @Autowired
+    private BankInfoService bankInfoService;
 
     @Autowired
     private AppImageService appImageService;
@@ -474,6 +480,58 @@ public class UserController {
             Map<String, String> response = new HashMap<>();
             response.put("message", "Contraseña actualizada exitosamente");
             return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    // ═══════ Bank Info Endpoints (creador: CBU/CVU para recibir payouts) ═══════
+
+    @GetMapping("/me/bank-info")
+    public ResponseEntity<?> getMyBankInfo(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+        }
+
+        BankInfoResponse bankInfo = bankInfoService.getBankInfo(userId);
+        return ResponseEntity.ok(bankInfo);
+    }
+
+    @PostMapping("/me/bank-info/request-code")
+    public ResponseEntity<?> requestBankInfoConfirmationCode(HttpServletRequest request) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            bankInfoService.requestConfirmationCode(userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Te enviamos un código de confirmación por email");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    @PutMapping("/me/bank-info")
+    public ResponseEntity<?> updateMyBankInfo(HttpServletRequest request,
+                                               @Valid @RequestBody BankInfoRequest bankInfoRequest) {
+        try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Not authenticated", HttpStatus.UNAUTHORIZED.value()));
+            }
+
+            BankInfoResponse updated = bankInfoService.updateBankInfo(userId, bankInfoRequest);
+            return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));

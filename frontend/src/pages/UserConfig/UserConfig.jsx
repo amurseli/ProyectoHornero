@@ -80,6 +80,25 @@ function UserConfig() {
   const [showNewPwd, setShowNewPwd] = useState(false)
   const [showConfirmPwd, setShowConfirmPwd] = useState(false)
 
+  // Bank info form state (solo creadores/admins)
+  const [bank, setBank] = useState({
+    accountType: 'CBU',
+    accountNumber: '',
+    accountAlias: '',
+    bankOrWalletName: '',
+    accountHolderName: '',
+  })
+  const [bankMsg, setBankMsg] = useState(null)
+  const [bankLoading, setBankLoading] = useState(false)
+
+  // Modal de confirmación del cambio: null | 'choose' | 'password' | 'code'
+  const [bankConfirmStep, setBankConfirmStep] = useState(null)
+  const [bankConfirmMsg, setBankConfirmMsg] = useState(null)
+  const [bankConfirmPassword, setBankConfirmPassword] = useState('')
+  const [showBankConfirmPwd, setShowBankConfirmPwd] = useState(false)
+  const [bankConfirmCode, setBankConfirmCode] = useState('')
+  const [bankCodeRequesting, setBankCodeRequesting] = useState(false)
+
   const isNewPasswordValid = evaluatePassword(passwords.newPassword).allValid
 
   const [profileMsg, setProfileMsg] = useState(null)
@@ -137,6 +156,23 @@ function UserConfig() {
   useEffect(() => {
     loadConnections()
   }, [])
+
+  // Load bank info (visible para CREATOR y ADMIN)
+  useEffect(() => {
+    if (user?.role !== 'CREATOR' && user?.role !== 'ADMIN') return
+    api.get('/api/users/me/bank-info')
+      .then(data => {
+        if (!data) return
+        setBank({
+          accountType: data.accountType || 'CBU',
+          accountNumber: data.accountNumber || '',
+          accountAlias: data.accountAlias || '',
+          bankOrWalletName: data.bankOrWalletName || '',
+          accountHolderName: data.accountHolderName || '',
+        })
+      })
+      .catch(() => {})
+  }, [user])
 
   async function loadConnections() {
     try {
@@ -276,6 +312,97 @@ function UserConfig() {
   const handleLinkGoogle = () => {
     // Redirect to the backend OAuth2 flow — on success the backend will link to the existing user by email
     window.location.href = `${import.meta.env.VITE_API_URL}/oauth2/authorization/google`
+  }
+
+  const handleBankChange = (e) => {
+    const { name, value } = e.target
+    setBank(prev => ({ ...prev, [name]: name === 'accountNumber' ? value.replace(/\D/g, '') : value }))
+  }
+
+  // Valida el formulario y abre el modal de confirmación — el guardado real
+  // recién ocurre cuando el usuario confirma con contraseña o código.
+  const handleBankSaveClick = (e) => {
+    e.preventDefault()
+    setBankMsg(null)
+
+    if (!/^\d{22}$/.test(bank.accountNumber)) {
+      setBankMsg({ type: 'error', text: 'El CBU/CVU debe tener 22 dígitos.' })
+      return
+    }
+
+    if (!bank.bankOrWalletName.trim() || !bank.accountHolderName.trim()) {
+      setBankMsg({ type: 'error', text: 'Completá el banco/billetera y el titular de la cuenta.' })
+      return
+    }
+
+    setBankConfirmMsg(null)
+    setBankConfirmPassword('')
+    setBankConfirmCode('')
+    setBankConfirmStep('choose')
+  }
+
+  const closeBankConfirm = () => {
+    if (bankLoading || bankCodeRequesting) return
+    setBankConfirmStep(null)
+    setBankConfirmMsg(null)
+    setBankConfirmPassword('')
+    setBankConfirmCode('')
+  }
+
+  const handleRequestBankCode = async () => {
+    setBankConfirmMsg(null)
+    setBankCodeRequesting(true)
+    try {
+      await api.post('/api/users/me/bank-info/request-code', {})
+      setBankConfirmStep('code')
+    } catch (err) {
+      setBankConfirmMsg({ type: 'error', text: err.message || 'No se pudo enviar el código.' })
+    } finally {
+      setBankCodeRequesting(false)
+    }
+  }
+
+  const confirmBankInfo = async (confirmFields) => {
+    setBankConfirmMsg(null)
+    setBankLoading(true)
+
+    try {
+      const data = await api.put('/api/users/me/bank-info', { ...bank, ...confirmFields })
+      setBank({
+        accountType: data.accountType || 'CBU',
+        accountNumber: data.accountNumber || '',
+        accountAlias: data.accountAlias || '',
+        bankOrWalletName: data.bankOrWalletName || '',
+        accountHolderName: data.accountHolderName || '',
+      })
+      setBankConfirmStep(null)
+      setBankConfirmPassword('')
+      setBankConfirmCode('')
+      setBankMsg({ type: 'success', text: 'Datos bancarios actualizados correctamente.' })
+    } catch (err) {
+      // El error queda dentro del modal (contraseña/código incorrectos), no se cierra.
+      setBankConfirmMsg({ type: 'error', text: err.message || 'Error al actualizar los datos bancarios.' })
+    } finally {
+      setBankLoading(false)
+    }
+  }
+
+  const handleConfirmWithPassword = (e) => {
+    e.preventDefault()
+    if (!bankConfirmPassword) {
+      setBankConfirmMsg({ type: 'error', text: 'Ingresá tu contraseña actual.' })
+      return
+    }
+    confirmBankInfo({ currentPassword: bankConfirmPassword })
+  }
+
+  const handleConfirmWithCode = (e) => {
+    e.preventDefault()
+    if (!/^\d{6}$/.test(bankConfirmCode)) {
+      setBankConfirmMsg({ type: 'error', text: 'Ingresá el código de 6 dígitos que te enviamos.' })
+      return
+    }
+    confirmBankInfo({ confirmationCode: bankConfirmCode })
   }
 
   const handlePasswordSubmit = async (e) => {
@@ -652,6 +779,234 @@ function UserConfig() {
                 </Button>
               </div>
             ) : null}
+          </div>
+        )}
+
+        {/* ═══════ Bank Info Section ═══════ */}
+        {(user?.role === 'CREATOR' || user?.role === 'ADMIN') && (
+          <form onSubmit={handleBankSaveClick}>
+            <div className="config-section">
+              <h2 className="config-section-title">Datos bancarios</h2>
+              <p style={{ marginTop: '-0.5rem', marginBottom: 'var(--space-md)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                Acá recibís el dinero de tus campañas exitosas. Por seguridad, te vamos a pedir que confirmes cualquier cambio con tu contraseña o con un código por email.
+              </p>
+
+              {bankMsg && (
+                <div className={`config-message config-message--${bankMsg.type}`}>
+                  {bankMsg.text}
+                </div>
+              )}
+
+              <div className="config-form-grid config-form-grid--two">
+                <div className="config-field">
+                  <label htmlFor="accountType">Tipo de cuenta</label>
+                  <select
+                    id="accountType"
+                    name="accountType"
+                    value={bank.accountType}
+                    onChange={handleBankChange}
+                  >
+                    <option value="CBU">CBU (Cuenta bancaria)</option>
+                    <option value="CVU">CVU (Billetera virtual)</option>
+                  </select>
+                </div>
+
+                <div className="config-field">
+                  <label htmlFor="accountNumber">{bank.accountType} (22 dígitos)</label>
+                  <input
+                    id="accountNumber"
+                    name="accountNumber"
+                    type="text"
+                    value={bank.accountNumber}
+                    onChange={handleBankChange}
+                    placeholder="22 dígitos"
+                    maxLength={22}
+                    inputMode="numeric"
+                  />
+                </div>
+
+                <div className="config-field">
+                  <label htmlFor="accountAlias">Alias (opcional)</label>
+                  <input
+                    id="accountAlias"
+                    name="accountAlias"
+                    type="text"
+                    value={bank.accountAlias}
+                    onChange={handleBankChange}
+                    placeholder="Ej: mi.alias.mp"
+                  />
+                </div>
+
+                <div className="config-field">
+                  <label htmlFor="bankOrWalletName">Banco / billetera</label>
+                  <input
+                    id="bankOrWalletName"
+                    name="bankOrWalletName"
+                    type="text"
+                    value={bank.bankOrWalletName}
+                    onChange={handleBankChange}
+                    placeholder="Ej: Mercado Pago, Brubank"
+                  />
+                </div>
+
+                <div className="config-field">
+                  <label htmlFor="accountHolderName">Titular de la cuenta</label>
+                  <input
+                    id="accountHolderName"
+                    name="accountHolderName"
+                    type="text"
+                    value={bank.accountHolderName}
+                    onChange={handleBankChange}
+                  />
+                </div>
+              </div>
+
+              <div className="config-actions">
+                <Button type="submit" variant="primary" size="sm">
+                  Guardar datos bancarios
+                </Button>
+              </div>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════ Bank Info Confirmation Modal ═══════ */}
+        {bankConfirmStep && (
+          <div className="config-overlay" onClick={closeBankConfirm}>
+            <div className="config-dialog" onClick={(e) => e.stopPropagation()}>
+              {bankConfirmStep === 'choose' && (
+                <>
+                  <h3 className="config-dialog-title">Confirmá el cambio</h3>
+                  <p className="config-dialog-text">
+                    Elegí cómo confirmar la actualización de tus datos bancarios.
+                  </p>
+
+                  {bankConfirmMsg && (
+                    <div className={`config-message config-message--${bankConfirmMsg.type}`}>
+                      {bankConfirmMsg.text}
+                    </div>
+                  )}
+
+                  <div className="config-dialog-actions" style={{ flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setBankConfirmStep('password')}
+                      disabled={bankCodeRequesting}
+                      style={{ width: '100%' }}
+                    >
+                      Ingresar mi contraseña
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleRequestBankCode}
+                      disabled={bankCodeRequesting}
+                      style={{ width: '100%' }}
+                    >
+                      {bankCodeRequesting ? 'Enviando código...' : 'Recibir código por email'}
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={closeBankConfirm} style={{ width: '100%' }}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {bankConfirmStep === 'password' && (
+                <form onSubmit={handleConfirmWithPassword}>
+                  <h3 className="config-dialog-title">Confirmá con tu contraseña</h3>
+
+                  {bankConfirmMsg && (
+                    <div className={`config-message config-message--${bankConfirmMsg.type}`}>
+                      {bankConfirmMsg.text}
+                    </div>
+                  )}
+
+                  <div className="config-field" style={{ textAlign: 'left', marginBottom: 'var(--space-lg)' }}>
+                    <label htmlFor="bankConfirmPassword">Contraseña actual</label>
+                    <div className="config-password-wrapper">
+                      <input
+                        id="bankConfirmPassword"
+                        type={showBankConfirmPwd ? 'text' : 'password'}
+                        value={bankConfirmPassword}
+                        onChange={(e) => setBankConfirmPassword(e.target.value)}
+                        autoComplete="current-password"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="config-password-toggle"
+                        onClick={() => setShowBankConfirmPwd(!showBankConfirmPwd)}
+                        tabIndex={-1}
+                        aria-label={showBankConfirmPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      >
+                        {showBankConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="config-dialog-actions">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setBankConfirmStep('choose')} disabled={bankLoading}>
+                      Volver
+                    </Button>
+                    <Button type="submit" variant="primary" size="sm" disabled={bankLoading}>
+                      {bankLoading ? 'Confirmando...' : 'Confirmar y guardar'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {bankConfirmStep === 'code' && (
+                <form onSubmit={handleConfirmWithCode}>
+                  <h3 className="config-dialog-title">Confirmá con el código</h3>
+                  <p className="config-dialog-text">
+                    Te enviamos un código de 6 dígitos por email. Expira en 10 minutos.
+                  </p>
+
+                  {bankConfirmMsg && (
+                    <div className={`config-message config-message--${bankConfirmMsg.type}`}>
+                      {bankConfirmMsg.text}
+                    </div>
+                  )}
+
+                  <div className="config-field" style={{ textAlign: 'left', marginBottom: 'var(--space-md)' }}>
+                    <label htmlFor="bankConfirmCode">Código de confirmación</label>
+                    <input
+                      id="bankConfirmCode"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="123456"
+                      value={bankConfirmCode}
+                      onChange={(e) => setBankConfirmCode(e.target.value.replace(/\D/g, ''))}
+                      autoFocus
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    className="config-avatar-link"
+                    onClick={handleRequestBankCode}
+                    disabled={bankCodeRequesting}
+                    style={{ marginBottom: 'var(--space-md)' }}
+                  >
+                    {bankCodeRequesting ? 'Reenviando...' : 'Reenviar código'}
+                  </button>
+
+                  <div className="config-dialog-actions">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setBankConfirmStep('choose')} disabled={bankLoading}>
+                      Volver
+                    </Button>
+                    <Button type="submit" variant="primary" size="sm" disabled={bankLoading}>
+                      {bankLoading ? 'Confirmando...' : 'Confirmar y guardar'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         )}
 
