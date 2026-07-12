@@ -229,4 +229,98 @@ public class EmailService {
             confirmLink
         );
     }
+
+    /**
+     * Sends the 6-digit confirmation code used as an alternative to the current
+     * password when confirming a change to payout bank info. Unlike
+     * sendBankInfoChangedEmail, a failure here DOES matter — the user has no other
+     * way to get the code — so this rethrows like the other verification emails.
+     */
+    public void sendBankInfoConfirmationCode(String email, String firstName, String code) {
+        try {
+            String subject = "Código de confirmación - Proyecto Hornero";
+            String body = buildBankInfoConfirmationCodeBody(firstName, code);
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(email);
+            message.setSubject(subject);
+            message.setText(body);
+
+            mailSender.send(message);
+
+            logger.info("Bank info confirmation code sent to: {}", email);
+        } catch (Exception e) {
+            logger.error("Failed to send bank info confirmation code to: {}", email, e);
+            throw new RuntimeException("Error al enviar el código de confirmación", e);
+        }
+    }
+
+    private String buildBankInfoConfirmationCodeBody(String firstName, String code) {
+        String name = (firstName != null && !firstName.isEmpty()) ? firstName : "Usuario";
+
+        return String.format(
+            """
+            Hola %s,
+
+            Usá este código para confirmar el cambio de tus datos bancarios en Proyecto Hornero:
+
+            %s
+
+            Este código expira en 10 minutos. Si no fuiste vos quien solicitó este cambio,
+            ignorá este correo y revisá la seguridad de tu cuenta.
+
+            Saludos,
+            El equipo de Proyecto Hornero
+            """,
+            name,
+            code
+        );
+    }
+
+    /**
+     * Notifies the creator that their payout bank info was changed. Best-effort:
+     * unlike the other methods here, a failure to send must NOT block the actual
+     * bank-info update, so this only logs instead of rethrowing.
+     */
+    public void sendBankInfoChangedEmail(String email, String firstName, String maskedAccountNumber) {
+        try {
+            String subject = "Tus datos bancarios fueron actualizados - Proyecto Hornero";
+            String body = buildBankInfoChangedBody(firstName, maskedAccountNumber);
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(email);
+            message.setSubject(subject);
+            message.setText(body);
+
+            mailSender.send(message);
+
+            logger.info("Bank info changed email sent to: {}", email);
+        } catch (Exception e) {
+            logger.error("Failed to send bank info changed email to: {}", email, e);
+        }
+    }
+
+    private String buildBankInfoChangedBody(String firstName, String maskedAccountNumber) {
+        String name = (firstName != null && !firstName.isEmpty()) ? firstName : "Usuario";
+
+        return String.format(
+            """
+            Hola %s,
+
+            Te avisamos que los datos bancarios de tu cuenta en Proyecto Hornero fueron
+            actualizados. La cuenta donde ahora vas a recibir el dinero de tus campañas
+            termina en %s.
+
+            Si no fuiste vos quien hizo este cambio, cambiá tu contraseña de inmediato y
+            contactanos.
+
+            Saludos,
+            El equipo de Proyecto Hornero
+            """,
+            name,
+            maskedAccountNumber
+        );
+    }
 }

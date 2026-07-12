@@ -39,7 +39,8 @@ public class UserService {
 
     @Autowired
     private AppImageService appImageService;
-    
+
+
     @Transactional
     public User createUser(User user) {        
         // Validar que no exista el email
