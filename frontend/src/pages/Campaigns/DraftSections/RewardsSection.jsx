@@ -58,6 +58,11 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }))
   }
 
+  // Valida un solo campo al perder el foco, reutilizando validate().
+  const handleFieldBlur = (key) => {
+    setErrors(prev => ({ ...prev, [key]: validate(form)[key] }))
+  }
+
   const handleImage = (files) => {
     const file = files?.[0]
     if (!file) return
@@ -142,6 +147,7 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
           maxLength={TITLE_MAX}
           value={form.title}
           onChange={e => onChange('title', e.target.value)}
+          onBlur={() => handleFieldBlur('title')}
         />
         {errors.title && <span className="edc-error"><AlertCircle size={12} /> {errors.title}</span>}
         <span className="edc-hint">{form.title.length}/{TITLE_MAX}</span>
@@ -157,6 +163,7 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
           placeholder="5000"
           value={form.price}
           onChange={e => onChange('price', e.target.value)}
+          onBlur={() => handleFieldBlur('price')}
         />
         {errors.price && <span className="edc-error"><AlertCircle size={12} /> {errors.price}</span>}
       </div>
@@ -170,6 +177,7 @@ function RewardEditForm({ initial, onSave, onCancel, saving }) {
           placeholder="Detallá qué incluye esta recompensa, fechas estimadas de entrega, etc."
           value={form.description}
           onChange={e => onChange('description', e.target.value)}
+          onBlur={() => handleFieldBlur('description')}
         />
         {errors.description && <span className="edc-error"><AlertCircle size={12} /> {errors.description}</span>}
         <span className="edc-hint">

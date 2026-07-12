@@ -11,6 +11,10 @@ export const PASSWORD_POLICY = {
   special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
 }
 
+// BCrypt (usado por el backend) sólo considera los primeros 72 bytes: limitamos
+// la entrada para que el usuario no escriba una contraseña que se truncaría.
+export const PASSWORD_MAX_LENGTH = 72
+
 const RULES = [
   {
     id: 'minLength',

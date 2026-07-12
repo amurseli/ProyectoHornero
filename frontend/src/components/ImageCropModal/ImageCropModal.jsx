@@ -3,8 +3,8 @@ import { Check, X, ZoomIn } from 'lucide-react'
 import { Button } from '$components/ui'
 import './ImageCropModal.css'
 
-// Base output width for the cropped image — the height is derived from the
-// crop aspect so every surface shows the result identically.
+// Fallback output width when there's no size budget (maxBytes). The height is
+// derived from the crop aspect so every surface shows the result identically.
 const OUT_WIDTH = 1600
 const MAX_ZOOM  = 3
 
@@ -22,6 +22,11 @@ function clamp(v, min, max) {
  *   src        — object/data URL of the image being cropped
  *   aspect     — crop aspect ratio (default 16/9)
  *   fileName   — name for the resulting File
+ *   maxBytes   — optional size budget for the exported file. When set, the
+ *                output resolution scales to use that budget (full quality is
+ *                kept; only the dimensions shrink if the file would exceed it).
+ *   title      — heading shown above the stage
+ *   description— instructional text below the heading (section-specific)
  *   onCancel() — user dismissed without cropping
  *   onConfirm({ file, previewUrl }) — user accepted the crop
  */
@@ -29,6 +34,9 @@ export default function ImageCropModal({
   src,
   aspect = 16 / 9,
   fileName = 'imagen.jpg',
+  maxBytes = 0,
+  title = 'Recortá tu imagen',
+  description = 'Arrastrá y usá el zoom para encuadrar la imagen — así se verá igual en todo el sitio.',
   onCancel,
   onConfirm,
 }) {
@@ -118,6 +126,24 @@ export default function ImageCropModal({
     return () => window.removeEventListener('keydown', onKey)
   }, [onCancel])
 
+  // Wheel-to-zoom sobre la imagen. Usamos un listener nativo no-pasivo para poder
+  // hacer preventDefault (así la rueda hace zoom en vez de scrollear la página).
+  // Refs para leer siempre el zoom/applyZoom más recientes desde el listener.
+  const zoomRef = useRef(zoom)
+  zoomRef.current = zoom
+  const applyZoomRef = useRef(applyZoom)
+  applyZoomRef.current = applyZoom
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    const onWheel = (e) => {
+      e.preventDefault()
+      applyZoomRef.current(zoomRef.current - e.deltaY * 0.0015)
+    }
+    stage.addEventListener('wheel', onWheel, { passive: false })
+    return () => stage.removeEventListener('wheel', onWheel)
+  }, [])
+
   const handleConfirm = async () => {
     if (!ready) return
     setBusy(true)
@@ -130,23 +156,39 @@ export default function ImageCropModal({
       const sw = Math.min(stageW / scale, natW - sx)
       const sh = Math.min(stageH / scale, natH - sy)
 
-      const outW = OUT_WIDTH
-      const outH = Math.round(OUT_WIDTH / aspect)
-      const canvas = document.createElement('canvas')
-      canvas.width = outW
-      canvas.height = outH
-      const ctx = canvas.getContext('2d')
-      ctx.imageSmoothingQuality = 'high'
-      ctx.drawImage(imgRef.current, sx, sy, sw, sh, 0, 0, outW, outH)
+      // Codifica el recorte a un ancho dado, manteniendo la calidad JPEG constante.
+      const renderBlob = (outW) => {
+        const w = Math.max(1, Math.round(outW))
+        const h = Math.max(1, Math.round(outW / aspect))
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        ctx.imageSmoothingQuality = 'high'
+        ctx.drawImage(imgRef.current, sx, sy, sw, sh, 0, 0, w, h)
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
+      }
 
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          setBusy(false)
-          return
-        }
-        const file = new File([blob], fileName, { type: 'image/jpeg' })
-        onConfirm({ file, previewUrl: URL.createObjectURL(blob) })
-      }, 'image/jpeg', 0.9)
+      // Sin presupuesto de peso: ancho fijo (OUT_WIDTH). Con presupuesto: partimos
+      // de la resolución natural del recorte y, si el archivo supera el máximo,
+      // achicamos SOLO las dimensiones (la calidad no cambia) hasta que entre.
+      let outW = maxBytes ? sw : OUT_WIDTH
+      let blob = await renderBlob(outW)
+      let guard = 0
+      while (maxBytes && blob && blob.size > maxBytes && outW > 320 && guard < 20) {
+        // El peso ~ área ~ ancho², así que escalamos por la raíz de la relación
+        // (con un pequeño margen) para converger en pocas iteraciones.
+        outW = outW * Math.sqrt(maxBytes / blob.size) * 0.95
+        blob = await renderBlob(outW)
+        guard++
+      }
+
+      if (!blob) {
+        setBusy(false)
+        return
+      }
+      const file = new File([blob], fileName, { type: 'image/jpeg' })
+      onConfirm({ file, previewUrl: URL.createObjectURL(blob) })
     } catch {
       setBusy(false)
     }
@@ -158,8 +200,8 @@ export default function ImageCropModal({
     <div className="crop-overlay" onClick={onCancel}>
       <div className={`crop-modal ${isSquare ? 'crop-modal--square' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="crop-header">
-          <h3>Recortá tu imagen</h3>
-          <p>Arrastrá y usá el zoom para encuadrar la imagen — así se verá igual en todo el sitio.</p>
+          <h3>{title}</h3>
+          <p>{description}</p>
         </div>
 
         <div

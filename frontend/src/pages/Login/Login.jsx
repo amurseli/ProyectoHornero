@@ -5,8 +5,11 @@ import { Button } from "../../components/ui"
 import { useUser } from "../../store/useUser"
 import { initiateGoogleLogin } from "../../utils/auth/oauth"
 import { usePostLoginNavigate } from "../../utils/auth/usePostLoginNavigate"
+import { PASSWORD_MAX_LENGTH } from "../../utils/passwordPolicy"
 import api from "../../utils/api/api"
 import "../auth.css"
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Google SVG icon
 const GoogleIcon = () => (
@@ -27,9 +30,15 @@ function Login() {
   const [password, setPassword] = useState("")
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState("")
+  const [emailError, setEmailError] = useState("")
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Valida el formato del email al perder el foco.
+  const handleEmailBlur = () => {
+    setEmailError(!email.trim() || EMAIL_RE.test(email.trim()) ? "" : "Ingresá un correo electrónico válido")
+  }
 
   // Covers both "already authenticated on arrival" and "just logged in":
   // goPostLogin is idempotent, so this cannot fight handleSubmit's own call.
@@ -119,11 +128,16 @@ function Login() {
                 className="auth-input"
                 type="email"
                 required
+                maxLength={255}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError("") }}
+                onBlur={handleEmailBlur}
                 placeholder="tu@email.com"
                 autoComplete="email"
               />
+              {emailError && (
+                <span className="auth-field-hint auth-field-hint--error">{emailError}</span>
+              )}
             </div>
 
             <div className="auth-form-group">
@@ -134,6 +148,7 @@ function Login() {
                   className="auth-input"
                   type={showPassword ? "text" : "password"}
                   required
+                  maxLength={PASSWORD_MAX_LENGTH}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"

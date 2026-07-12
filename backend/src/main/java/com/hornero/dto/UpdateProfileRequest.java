@@ -1,11 +1,23 @@
 package com.hornero.dto;
 
+import jakarta.validation.constraints.Size;
+
 public class UpdateProfileRequest {
+    @Size(max = 50, message = "El nombre de usuario no puede superar los 50 caracteres")
     private String userName;
+
+    @Size(max = 100, message = "El nombre no puede superar los 100 caracteres")
     private String firstName;
+
+    @Size(max = 100, message = "El apellido no puede superar los 100 caracteres")
     private String lastName;
+
+    @Size(max = 20, message = "El género no puede superar los 20 caracteres")
     private String gender;
+
+    @Size(max = 30, message = "El teléfono no puede superar los 30 caracteres")
     private String phone;
+
     private String avatarBase64;
     private Boolean removeAvatar;
 

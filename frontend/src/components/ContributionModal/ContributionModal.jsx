@@ -66,6 +66,7 @@ export default function ContributionModal({
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [amountError, setAmountError] = useState('')
   const mpInitialized = useRef(false)
 
   const rewardMode = !!selectedReward
@@ -128,6 +129,12 @@ export default function ContributionModal({
     setAmountInput(sanitized)
     const parsed = Number(sanitized)
     setAmount(Number.isFinite(parsed) ? parsed : 0)
+    if (amountError) setAmountError('')
+  }
+
+  // Valida el monto al perder el foco: mínimo $1.
+  function handleAmountBlur() {
+    setAmountError(amount >= 1 ? '' : 'Ingresá un monto de al menos $1.')
   }
 
   function selectSuggestedAmount(value) {
@@ -284,10 +291,12 @@ export default function ContributionModal({
                   className="cm-amount-input"
                   value={amountInput}
                   onChange={handleAmountInputChange}
+                  onBlur={handleAmountBlur}
                   required
                   autoFocus
                 />
               </div>
+              {amountError && <p className="cm-error-msg">{amountError}</p>}
               {error && <p className="cm-error-msg">{error}</p>}
               <Button type="submit" variant="primary" className="cm-btn" disabled={loading}>
                 {loading

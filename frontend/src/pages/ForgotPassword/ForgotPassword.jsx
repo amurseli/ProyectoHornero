@@ -4,11 +4,18 @@ import { Button } from "../../components/ui"
 import api from "../../utils/api/api"
 import "../auth.css"
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 function ForgotPassword() {
   const [email, setEmail] = useState("")
   const [error, setError] = useState("")
+  const [emailError, setEmailError] = useState("")
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  const handleEmailBlur = () => {
+    setEmailError(!email.trim() || EMAIL_RE.test(email.trim()) ? "" : "Ingresá un correo electrónico válido")
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -58,12 +65,17 @@ function ForgotPassword() {
                   className="auth-input"
                   type="email"
                   required
+                  maxLength={255}
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError("") }}
+                  onBlur={handleEmailBlur}
                   placeholder="tu@email.com"
                   disabled={loading}
                   autoComplete="email"
                 />
+                {emailError && (
+                  <span className="auth-field-hint auth-field-hint--error">{emailError}</span>
+                )}
               </div>
 
               {error && <div className="auth-error" role="alert">{error}</div>}

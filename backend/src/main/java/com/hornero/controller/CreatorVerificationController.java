@@ -10,6 +10,8 @@ import com.hornero.model.CreatorVerification;
 import com.hornero.service.CreatorVerificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,6 +25,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 public class CreatorVerificationController {
+
+    private static final Logger logger = LoggerFactory.getLogger(CreatorVerificationController.class);
 
     @Autowired
     private CreatorVerificationService verificationService;
@@ -140,14 +144,15 @@ public class CreatorVerificationController {
                         CreatorBankInfo bankInfo = verificationService.getBankInfo(v.getUser().getId());
                         List<CreatorIdentityDocument> docs = verificationService.getDocuments(v.getUser().getId());
                         CreatorVerificationResponse resp = CreatorVerificationResponse.forAdmin(v, bankInfo, docs);
-                        // Decrypt sensitive fields for admin
-                        resp.setDniNumberMasked(verificationService.decryptField(v.getDniNumber()));
-                        resp.setCuilNumberMasked(verificationService.decryptField(v.getCuilNumber()));
+                        // Decrypt sensitive fields for admin. Aislado por registro: si uno solo
+                        // tiene datos corruptos/con otra clave, no debe tumbar el listado entero.
+                        resp.setDniNumberMasked(safeDecrypt(v.getDniNumber()));
+                        resp.setCuilNumberMasked(safeDecrypt(v.getCuilNumber()));
                         if (v.getCuitNumber() != null) {
-                            resp.setCuitNumberMasked(verificationService.decryptField(v.getCuitNumber()));
+                            resp.setCuitNumberMasked(safeDecrypt(v.getCuitNumber()));
                         }
                         if (bankInfo != null) {
-                            resp.setAccountNumberMasked(verificationService.decryptField(bankInfo.getAccountNumber()));
+                            resp.setAccountNumberMasked(safeDecrypt(bankInfo.getAccountNumber()));
                         }
                         return resp;
                     })
@@ -191,14 +196,14 @@ public class CreatorVerificationController {
             List<CreatorIdentityDocument> docs = verificationService.getDocuments(verification.getUser().getId());
             CreatorVerificationResponse resp = CreatorVerificationResponse.forAdmin(verification, bankInfo, docs);
 
-            // Decrypt sensitive fields for admin
-            resp.setDniNumberMasked(verificationService.decryptField(verification.getDniNumber()));
-            resp.setCuilNumberMasked(verificationService.decryptField(verification.getCuilNumber()));
+            // Decrypt sensitive fields for admin (aislado campo a campo, ver safeDecrypt)
+            resp.setDniNumberMasked(safeDecrypt(verification.getDniNumber()));
+            resp.setCuilNumberMasked(safeDecrypt(verification.getCuilNumber()));
             if (verification.getCuitNumber() != null) {
-                resp.setCuitNumberMasked(verificationService.decryptField(verification.getCuitNumber()));
+                resp.setCuitNumberMasked(safeDecrypt(verification.getCuitNumber()));
             }
             if (bankInfo != null) {
-                resp.setAccountNumberMasked(verificationService.decryptField(bankInfo.getAccountNumber()));
+                resp.setAccountNumberMasked(safeDecrypt(bankInfo.getAccountNumber()));
             }
 
             return ResponseEntity.ok(resp);
@@ -267,6 +272,17 @@ public class CreatorVerificationController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(new ErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        }
+    }
+
+    // Desencripta un campo sensible para el admin sin tumbar toda la respuesta si
+    // falla (clave distinta a la que se usó para encriptar, dato corrupto, etc.).
+    private String safeDecrypt(String encryptedValue) {
+        try {
+            return verificationService.decryptField(encryptedValue);
+        } catch (RuntimeException e) {
+            logger.warn("No se pudo desencriptar un campo sensible: {}", e.getMessage());
+            return "(no se pudo desencriptar)";
         }
     }
 }

@@ -444,7 +444,7 @@ public class UserController {
 
     @PutMapping("/me/profile")
     public ResponseEntity<?> updateMyProfile(HttpServletRequest request,
-                                              @RequestBody UpdateProfileRequest profileRequest) {
+                                              @Valid @RequestBody UpdateProfileRequest profileRequest) {
         try {
             Long userId = (Long) request.getAttribute("userId");
             if (userId == null) {
@@ -576,7 +576,7 @@ public class UserController {
 
     @PostMapping("/me/email-change")
     public ResponseEntity<?> requestEmailChange(HttpServletRequest request,
-                                                 @RequestBody EmailChangeRequest emailRequest) {
+                                                 @Valid @RequestBody EmailChangeRequest emailRequest) {
         try {
             Long userId = (Long) request.getAttribute("userId");
             if (userId == null) {
