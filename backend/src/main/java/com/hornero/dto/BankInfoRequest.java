@@ -1,6 +1,8 @@
 package com.hornero.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class BankInfoRequest {
 
@@ -8,14 +10,18 @@ public class BankInfoRequest {
     private String accountType;
 
     @NotBlank(message = "El CBU/CVU es obligatorio")
+    @Pattern(regexp = "^\\d{22}$", message = "El CBU/CVU debe tener 22 dígitos")
     private String accountNumber;
 
+    @Size(max = 100, message = "El alias no puede superar los 100 caracteres")
     private String accountAlias;
 
     @NotBlank(message = "El banco o billetera es obligatorio")
+    @Size(max = 100, message = "El banco o billetera no puede superar los 100 caracteres")
     private String bankOrWalletName;
 
     @NotBlank(message = "El titular de la cuenta es obligatorio")
+    @Size(max = 255, message = "El titular de la cuenta no puede superar los 255 caracteres")
     private String accountHolderName;
 
     // Confirmación: exactamente una de las dos, validado en el service (no acá con

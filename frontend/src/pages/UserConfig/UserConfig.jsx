@@ -5,12 +5,13 @@ import { useUser } from '../../store/useUser'
 import { Button } from '../../components/ui'
 import ImageCropModal from '../../components/ImageCropModal/ImageCropModal'
 import PasswordRequirements from '../../components/PasswordRequirements/PasswordRequirements'
-import { evaluatePassword } from '../../utils/passwordPolicy'
+import { evaluatePassword, PASSWORD_MAX_LENGTH } from '../../utils/passwordPolicy'
 import api from '../../utils/api/api'
 import { getEntityImageSrc } from '../../utils/imageSources'
 import './UserConfig.css'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const GENDER_OPTIONS = [
   { value: '', label: 'Seleccionar...' },
@@ -61,6 +62,7 @@ function UserConfig() {
 
   // Email change state
   const [newEmail, setNewEmail] = useState('')
+  const [newEmailError, setNewEmailError] = useState('')
   const [emailMsg, setEmailMsg] = useState(null)
   const [emailLoading, setEmailLoading] = useState(false)
 
@@ -89,6 +91,7 @@ function UserConfig() {
     accountHolderName: '',
   })
   const [bankMsg, setBankMsg] = useState(null)
+  const [bankErrors, setBankErrors] = useState({})
   const [bankLoading, setBankLoading] = useState(false)
 
   // Modal de confirmación del cambio: null | 'choose' | 'password' | 'code'
@@ -254,6 +257,15 @@ function UserConfig() {
     }
   }
 
+  // Valida el nuevo email al perder el foco (formato + distinto al actual).
+  const handleNewEmailBlur = () => {
+    const v = newEmail.trim()
+    if (!v) { setNewEmailError(''); return }
+    if (!EMAIL_RE.test(v)) { setNewEmailError('Ingresá un email válido.'); return }
+    if (v === currentEmail) { setNewEmailError('El nuevo email es igual al actual.'); return }
+    setNewEmailError('')
+  }
+
   const handleEmailChangeSubmit = async (e) => {
     e.preventDefault()
     setEmailMsg(null)
@@ -314,9 +326,29 @@ function UserConfig() {
     window.location.href = `${import.meta.env.VITE_API_URL}/oauth2/authorization/google`
   }
 
+  // Reglas alineadas con el backend (BankInfoRequest + validación del service).
+  const validateBankField = (name, value) => {
+    const v = (value ?? '').trim()
+    switch (name) {
+      case 'accountNumber':
+        if (!v) return 'El CBU/CVU es obligatorio'
+        return /^\d{22}$/.test(v) ? '' : 'El CBU/CVU debe tener 22 dígitos'
+      case 'bankOrWalletName': return v ? '' : 'El banco o billetera es obligatorio'
+      case 'accountHolderName': return v ? '' : 'El titular de la cuenta es obligatorio'
+      default: return ''
+    }
+  }
+
   const handleBankChange = (e) => {
     const { name, value } = e.target
-    setBank(prev => ({ ...prev, [name]: name === 'accountNumber' ? value.replace(/\D/g, '') : value }))
+    const next = name === 'accountNumber' ? value.replace(/\D/g, '') : value
+    setBank(prev => ({ ...prev, [name]: next }))
+    setBankErrors(prev => (prev[name] ? { ...prev, [name]: validateBankField(name, next) } : prev))
+  }
+
+  const handleBankBlur = (e) => {
+    const { name, value } = e.target
+    setBankErrors(prev => ({ ...prev, [name]: validateBankField(name, value) }))
   }
 
   // Valida el formulario y abre el modal de confirmación — el guardado real
@@ -523,6 +555,7 @@ function UserConfig() {
                   id="userName"
                   name="userName"
                   type="text"
+                  maxLength={50}
                   value={profile.userName}
                   onChange={handleProfileChange}
                   autoComplete="username"
@@ -535,6 +568,7 @@ function UserConfig() {
                   id="phone"
                   name="phone"
                   type="tel"
+                  maxLength={30}
                   value={profile.phone}
                   onChange={handleProfileChange}
                   placeholder="+54 11 1234-5678"
@@ -548,6 +582,7 @@ function UserConfig() {
                   id="firstName"
                   name="firstName"
                   type="text"
+                  maxLength={100}
                   value={profile.firstName}
                   onChange={handleProfileChange}
                   autoComplete="given-name"
@@ -560,6 +595,7 @@ function UserConfig() {
                   id="lastName"
                   name="lastName"
                   type="text"
+                  maxLength={100}
                   value={profile.lastName}
                   onChange={handleProfileChange}
                   autoComplete="family-name"
@@ -623,12 +659,17 @@ function UserConfig() {
                 <input
                   id="newEmail"
                   type="email"
+                  maxLength={255}
                   value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
+                  onChange={(e) => { setNewEmail(e.target.value); if (newEmailError) setNewEmailError('') }}
+                  onBlur={handleNewEmailBlur}
                   placeholder="nuevo@email.com"
                   autoComplete="email"
                   required
                 />
+                {newEmailError && (
+                  <span className="config-field-hint config-field-hint--error">{newEmailError}</span>
+                )}
               </div>
               <Button type="submit" variant="primary" size="sm" disabled={emailLoading} style={{ marginBottom: '2px' }}>
                 {emailLoading ? 'Enviando...' : 'Cambiar email'}
@@ -819,10 +860,14 @@ function UserConfig() {
                     type="text"
                     value={bank.accountNumber}
                     onChange={handleBankChange}
+                    onBlur={handleBankBlur}
                     placeholder="22 dígitos"
                     maxLength={22}
                     inputMode="numeric"
                   />
+                  {bankErrors.accountNumber && (
+                    <span className="config-field-hint config-field-hint--error">{bankErrors.accountNumber}</span>
+                  )}
                 </div>
 
                 <div className="config-field">
@@ -831,6 +876,7 @@ function UserConfig() {
                     id="accountAlias"
                     name="accountAlias"
                     type="text"
+                    maxLength={100}
                     value={bank.accountAlias}
                     onChange={handleBankChange}
                     placeholder="Ej: mi.alias.mp"
@@ -843,10 +889,15 @@ function UserConfig() {
                     id="bankOrWalletName"
                     name="bankOrWalletName"
                     type="text"
+                    maxLength={100}
                     value={bank.bankOrWalletName}
                     onChange={handleBankChange}
+                    onBlur={handleBankBlur}
                     placeholder="Ej: Mercado Pago, Brubank"
                   />
+                  {bankErrors.bankOrWalletName && (
+                    <span className="config-field-hint config-field-hint--error">{bankErrors.bankOrWalletName}</span>
+                  )}
                 </div>
 
                 <div className="config-field">
@@ -855,9 +906,14 @@ function UserConfig() {
                     id="accountHolderName"
                     name="accountHolderName"
                     type="text"
+                    maxLength={255}
                     value={bank.accountHolderName}
                     onChange={handleBankChange}
+                    onBlur={handleBankBlur}
                   />
+                  {bankErrors.accountHolderName && (
+                    <span className="config-field-hint config-field-hint--error">{bankErrors.accountHolderName}</span>
+                  )}
                 </div>
               </div>
 
@@ -931,6 +987,7 @@ function UserConfig() {
                       <input
                         id="bankConfirmPassword"
                         type={showBankConfirmPwd ? 'text' : 'password'}
+                        maxLength={PASSWORD_MAX_LENGTH}
                         value={bankConfirmPassword}
                         onChange={(e) => setBankConfirmPassword(e.target.value)}
                         autoComplete="current-password"
@@ -1029,6 +1086,7 @@ function UserConfig() {
                     id="currentPassword"
                     name="currentPassword"
                     type={showCurrentPwd ? 'text' : 'password'}
+                    maxLength={PASSWORD_MAX_LENGTH}
                     value={passwords.currentPassword}
                     onChange={handlePasswordChange}
                     autoComplete="current-password"
@@ -1058,6 +1116,7 @@ function UserConfig() {
                     autoComplete="new-password"
                     required
                     minLength={8}
+                    maxLength={PASSWORD_MAX_LENGTH}
                   />
                   <button
                     type="button"
@@ -1084,6 +1143,7 @@ function UserConfig() {
                     autoComplete="new-password"
                     required
                     minLength={8}
+                    maxLength={PASSWORD_MAX_LENGTH}
                   />
                   <button
                     type="button"

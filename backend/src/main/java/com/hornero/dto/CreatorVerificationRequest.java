@@ -4,11 +4,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public class CreatorVerificationRequest {
 
     @NotBlank(message = "El nombre legal completo es obligatorio")
+    @Size(max = 255, message = "El nombre legal no puede superar los 255 caracteres")
     private String fullLegalName;
 
     @NotBlank(message = "El número de DNI es obligatorio")
@@ -27,18 +29,23 @@ public class CreatorVerificationRequest {
     private LocalDate dateOfBirth;
 
     @NotBlank(message = "El teléfono es obligatorio")
+    @Size(max = 30, message = "El teléfono no puede superar los 30 caracteres")
     private String phoneNumber;
 
     @NotBlank(message = "La dirección es obligatoria")
+    @Size(max = 255, message = "La dirección no puede superar los 255 caracteres")
     private String addressStreet;
 
     @NotBlank(message = "La ciudad es obligatoria")
+    @Size(max = 100, message = "La ciudad no puede superar los 100 caracteres")
     private String addressCity;
 
     @NotBlank(message = "La provincia es obligatoria")
+    @Size(max = 100, message = "La provincia no puede superar los 100 caracteres")
     private String addressProvince;
 
     @NotBlank(message = "El código postal es obligatorio")
+    @Size(max = 20, message = "El código postal no puede superar los 20 caracteres")
     private String addressZipCode;
 
     @NotNull(message = "La condición fiscal es obligatoria")
@@ -52,12 +59,15 @@ public class CreatorVerificationRequest {
     @Pattern(regexp = "^\\d{22}$", message = "El CBU/CVU debe tener 22 dígitos")
     private String accountNumber;
 
+    @Size(max = 100, message = "El alias no puede superar los 100 caracteres")
     private String accountAlias;
 
     @NotBlank(message = "El nombre del banco o billetera es obligatorio")
+    @Size(max = 100, message = "El banco o billetera no puede superar los 100 caracteres")
     private String bankOrWalletName;
 
     @NotBlank(message = "El nombre del titular es obligatorio")
+    @Size(max = 255, message = "El titular de la cuenta no puede superar los 255 caracteres")
     private String accountHolderName;
 
     @NotNull(message = "Debe aceptar los términos y condiciones")

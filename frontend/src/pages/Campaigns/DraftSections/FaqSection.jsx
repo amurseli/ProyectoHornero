@@ -28,6 +28,11 @@ function FaqEditForm({ initial, onSave, onCancel, saving }) {
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }))
   }
 
+  // Valida un solo campo al perder el foco, reutilizando validate().
+  const handleFieldBlur = (key) => {
+    setErrors(prev => ({ ...prev, [key]: validate(form)[key] }))
+  }
+
   const handleSubmit = () => {
     const errs = validate(form)
     if (Object.keys(errs).length > 0) {
@@ -51,6 +56,7 @@ function FaqEditForm({ initial, onSave, onCancel, saving }) {
           placeholder="Ej: ¿Cuándo se entregan las recompensas?"
           value={form.question}
           onChange={e => onChange('question', e.target.value)}
+          onBlur={() => handleFieldBlur('question')}
         />
         {errors.question && <span className="edc-error"><AlertCircle size={12} /> {errors.question}</span>}
         <span className="edc-hint">{form.question.length}/{QUESTION_MAX} caracteres</span>
@@ -65,6 +71,7 @@ function FaqEditForm({ initial, onSave, onCancel, saving }) {
           placeholder="Respondé la duda con la mayor claridad posible."
           value={form.answer}
           onChange={e => onChange('answer', e.target.value)}
+          onBlur={() => handleFieldBlur('answer')}
         />
         {errors.answer && <span className="edc-error"><AlertCircle size={12} /> {errors.answer}</span>}
         <span className="edc-hint">{form.answer.length}/{ANSWER_MAX} caracteres</span>

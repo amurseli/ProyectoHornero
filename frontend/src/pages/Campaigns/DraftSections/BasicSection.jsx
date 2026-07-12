@@ -8,7 +8,7 @@ import { browserDiffersFromArgentina, argentinaYmd, formatArgentinaCloseDateTime
 import { useFeeRates } from '../../../hooks/useFeeRates'
 import {
   TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
-  GOAL_MIN, MAX_IMAGE_BYTES, CROP_ASPECT,
+  GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
   sanitizeDuration, formatAmountInput, parseAmount, amountToInput, formatMoney,
   computeNetAmount, computeGrossAmount,
 } from '../campaignFormUtils'
@@ -107,11 +107,25 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+
+  // Validación por campo, en línea con validate() del guardado.
+  const validateField = (name, value) => {
+    const v = (value ?? '').trim()
+    if (name === 'title') return v ? '' : 'El título es obligatorio.'
+    if (name === 'shortDescription') return v ? '' : 'La descripción corta es obligatoria.'
+    return ''
+  }
+
+  const handleFieldBlur = (name, value) => {
+    setFieldErrors(prev => ({ ...prev, [name]: validateField(name, value) }))
+  }
 
   const onChange = (key, value) => {
     setForm(prev => ({ ...prev, [key]: value }))
     setSaved(false)
     setError('')
+    setFieldErrors(prev => (prev[key] ? { ...prev, [key]: validateField(key, value) } : prev))
   }
 
   const pickCover = (files) => {
@@ -133,6 +147,8 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
   const goalError =
     form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN)
       ? `La meta debe ser de al menos ${formatMoney(GOAL_MIN, currency.symbol)}`
+      : form.goal !== '' && goalNum > GOAL_MAX
+      ? `La meta no puede superar ${formatMoney(GOAL_MAX, currency.symbol)}`
       : ''
 
   // Meta y "monto a recibir" son dos vistas del mismo valor: al editar una se
@@ -174,6 +190,9 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
     const g = parseAmount(form.goal)
     if (!Number.isFinite(g) || g < GOAL_MIN) {
       return `La meta debe ser de al menos ${formatMoney(GOAL_MIN, currency.symbol)}.`
+    }
+    if (g > GOAL_MAX) {
+      return `La meta no puede superar ${formatMoney(GOAL_MAX, currency.symbol)}.`
     }
     return ''
   }
@@ -232,22 +251,26 @@ export default function SectionBasicos({ campaign, onSaved, disableImmutableFiel
     <div className="edc-form">
       <div className="edc-field">
         <label className="edc-label">Título del proyecto</label>
-        <input className="edc-input" type="text" maxLength={TITLE_MAX}
+        <input className={`edc-input ${fieldErrors.title ? 'edc-input--error' : ''}`} type="text" maxLength={TITLE_MAX}
           placeholder="Ej: Album debut de Los Horneros"
-          value={form.title} onChange={e => onChange('title', e.target.value)} />
+          value={form.title} onChange={e => onChange('title', e.target.value)}
+          onBlur={e => handleFieldBlur('title', e.target.value)} />
+        {fieldErrors.title && <span className="edc-error">{fieldErrors.title}</span>}
         <span className="edc-hint">{form.title.length}/{TITLE_MAX} caracteres</span>
       </div>
 
       <div className="edc-field">
         <label className="edc-label">Descripción corta <span className="edc-optional">se muestra en las cards</span></label>
         <textarea
-          className="edc-textarea"
+          className={`edc-textarea ${fieldErrors.shortDescription ? 'edc-input--error' : ''}`}
           rows={3}
           maxLength={SHORT_DESC_MAX}
           placeholder="Una frase que resuma tu proyecto"
           value={form.shortDescription}
           onChange={e => onChange('shortDescription', e.target.value)}
+          onBlur={e => handleFieldBlur('shortDescription', e.target.value)}
         />
+        {fieldErrors.shortDescription && <span className="edc-error">{fieldErrors.shortDescription}</span>}
         <span className="edc-hint">{form.shortDescription.length}/{SHORT_DESC_MAX} caracteres</span>
       </div>
 

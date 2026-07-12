@@ -3,6 +3,7 @@ package com.hornero.controller;
 import com.hornero.dto.CampaignCommentRequest;
 import com.hornero.service.CampaignCommentService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class CampaignCommentController {
 
     @PostMapping
     public ResponseEntity<?> create(@PathVariable Long campaignId,
-                                    @RequestBody CampaignCommentRequest requestBody,
+                                    @Valid @RequestBody CampaignCommentRequest requestBody,
                                     HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         String userRole = (String) request.getAttribute("userRole");

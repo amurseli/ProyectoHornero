@@ -3,12 +3,14 @@ import { useNavigate, Link } from "react-router-dom"
 import { Eye, EyeOff } from "lucide-react"
 import { Button } from "../../components/ui"
 import PasswordRequirements from "../../components/PasswordRequirements/PasswordRequirements"
-import { evaluatePassword } from "../../utils/passwordPolicy"
+import { evaluatePassword, PASSWORD_MAX_LENGTH } from "../../utils/passwordPolicy"
 import api from "../../utils/api/api"
 import { useUser } from "../../store/useUser"
 import { initiateGoogleLogin } from "../../utils/auth/oauth"
 import { usePostLoginNavigate } from "../../utils/auth/usePostLoginNavigate"
 import "../auth.css"
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Google SVG icon
 const GoogleIcon = () => (
@@ -33,6 +35,7 @@ function Register() {
     confirm: ""
   })
   const [error, setError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -45,8 +48,30 @@ function Register() {
     if (user) goPostLogin()
   }, [user, goPostLogin])
 
+  // Validación por campo (los requisitos de contraseña se muestran aparte).
+  const validateField = (name, value) => {
+    const v = (value ?? "").trim()
+    switch (name) {
+      case "userName": return v ? "" : "El nombre de usuario es obligatorio"
+      case "firstName": return v ? "" : "El nombre es obligatorio"
+      case "email":
+        if (!v) return "El correo electrónico es obligatorio"
+        return EMAIL_RE.test(v) ? "" : "Ingresá un correo electrónico válido"
+      default: return ""
+    }
+  }
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
+    // Si el campo ya mostraba error, lo revalidamos al escribir para limpiarlo al corregir.
+    setFieldErrors(prev => (prev[name] ? { ...prev, [name]: validateField(name, value) } : prev))
+  }
+
+  // Valida el campo al perder el foco.
+  const handleBlur = (e) => {
+    const { name, value } = e.target
+    setFieldErrors(prev => ({ ...prev, [name]: validateField(name, value) }))
   }
 
   const handleSubmit = async (e) => {
@@ -126,11 +151,16 @@ function Register() {
                   className="auth-input"
                   type="text"
                   required
+                  maxLength={50}
                   value={formData.userName}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="tu_usuario"
                   autoComplete="username"
                 />
+                {fieldErrors.userName && (
+                  <span className="auth-field-hint auth-field-hint--error">{fieldErrors.userName}</span>
+                )}
               </div>
 
               <div className="auth-form-group">
@@ -141,11 +171,16 @@ function Register() {
                   className="auth-input"
                   type="text"
                   required
+                  maxLength={100}
                   value={formData.firstName}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="Tu nombre"
                   autoComplete="given-name"
                 />
+                {fieldErrors.firstName && (
+                  <span className="auth-field-hint auth-field-hint--error">{fieldErrors.firstName}</span>
+                )}
               </div>
             </div>
 
@@ -157,11 +192,16 @@ function Register() {
                 className="auth-input"
                 type="email"
                 required
+                maxLength={255}
                 value={formData.email}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="tu@email.com"
                 autoComplete="email"
               />
+              {fieldErrors.email && (
+                <span className="auth-field-hint auth-field-hint--error">{fieldErrors.email}</span>
+              )}
             </div>
 
             <div className="auth-form-group">
@@ -173,6 +213,7 @@ function Register() {
                   className="auth-input"
                   type={showPassword ? "text" : "password"}
                   required
+                  maxLength={PASSWORD_MAX_LENGTH}
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Creá una contraseña segura"
@@ -200,6 +241,7 @@ function Register() {
                   className="auth-input"
                   type={showConfirm ? "text" : "password"}
                   required
+                  maxLength={PASSWORD_MAX_LENGTH}
                   value={formData.confirm}
                   onChange={handleChange}
                   placeholder="Repetí tu contraseña"

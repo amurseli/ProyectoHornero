@@ -218,6 +218,32 @@
   color: var(--color-text-primary);
 }
 
+.bc-field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-error, #dc2626);
+}
+
+.bc-input-error,
+.bc-input-error:focus {
+  border-color: var(--color-error, #dc2626);
+}
+
+.bc-upload-submit {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-sm);
+}
+
+.bc-upload-preview {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
 .bc-upload-success {
   color: #22c55e;
 }

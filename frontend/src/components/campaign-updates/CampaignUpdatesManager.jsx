@@ -64,14 +64,27 @@ export default function CampaignUpdatesManager({ campaignId, updates, onUpdatesC
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [editingId, setEditingId] = useState(null)
 
   const orderedUpdates = useMemo(() => sortUpdatesDesc(updates), [updates])
+
+  const validateField = (name, value) => {
+    const v = (value ?? '').trim()
+    if (name === 'title') return v ? '' : 'El título es obligatorio.'
+    if (name === 'content') return v ? '' : 'El texto de la actualización es obligatorio.'
+    return ''
+  }
+
+  const handleFieldBlur = (name, value) => {
+    setFieldErrors(prev => ({ ...prev, [name]: validateField(name, value) }))
+  }
 
   const handleChange = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }))
     setSaved(false)
     setError('')
+    setFieldErrors(prev => (prev[field] ? { ...prev, [field]: validateField(field, value) } : prev))
   }
 
   const resetForm = () => {
@@ -80,6 +93,7 @@ export default function CampaignUpdatesManager({ campaignId, updates, onUpdatesC
     setMode('edit')
     setSaved(false)
     setError('')
+    setFieldErrors({})
   }
 
   const handleSubmit = async () => {
@@ -167,12 +181,14 @@ export default function CampaignUpdatesManager({ campaignId, updates, onUpdatesC
               <label className="edc-label" htmlFor="campaign-update-title">Título</label>
               <input
                 id="campaign-update-title"
-                className="edc-input"
+                className={`edc-input ${fieldErrors.title ? 'edc-input--error' : ''}`}
                 maxLength={180}
                 placeholder="Ej: Terminamos el prototipo funcional"
                 value={form.title}
                 onChange={(event) => handleChange('title', event.target.value)}
+                onBlur={(event) => handleFieldBlur('title', event.target.value)}
               />
+              {fieldErrors.title && <span className="edc-error">{fieldErrors.title}</span>}
             </div>
 
             <div className="edc-historia-tabs">
@@ -199,13 +215,15 @@ export default function CampaignUpdatesManager({ campaignId, updates, onUpdatesC
                 <label className="edc-label" htmlFor="campaign-update-content">Texto</label>
                 <textarea
                   id="campaign-update-content"
-                  className="edc-textarea edc-textarea--large"
+                  className={`edc-textarea edc-textarea--large ${fieldErrors.content ? 'edc-input--error' : ''}`}
                   rows={14}
                   maxLength={CAMPAIGN_UPDATE_MAX_LENGTH}
                   placeholder="Contá qué estuvieron trabajando, qué lograron y qué sigue."
                   value={form.content}
                   onChange={(event) => handleChange('content', event.target.value)}
+                  onBlur={(event) => handleFieldBlur('content', event.target.value)}
                 />
+                {fieldErrors.content && <span className="edc-error">{fieldErrors.content}</span>}
                 <span className="edc-hint">{form.content.length}/{CAMPAIGN_UPDATE_MAX_LENGTH} caracteres</span>
               </div>
             ) : (

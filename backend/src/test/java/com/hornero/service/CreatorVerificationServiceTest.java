@@ -8,11 +8,14 @@ import com.hornero.model.CreatorVerification.VerificationStatus;
 import com.hornero.model.Role;
 import com.hornero.model.User;
 import com.hornero.repository.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.unit.DataSize;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +37,14 @@ class CreatorVerificationServiceTest {
     @Mock S3StorageService s3StorageService;
 
     @InjectMocks CreatorVerificationService service;
+
+    private static final long MAX_DOCUMENT_BYTES = 15L * 1024 * 1024;
+
+    @BeforeEach
+    void setUp() {
+        // El campo @Value no se inyecta con @InjectMocks; lo seteamos a mano.
+        ReflectionTestUtils.setField(service, "maxDocumentSize", DataSize.ofBytes(MAX_DOCUMENT_BYTES));
+    }
 
     private CreatorVerification verificationWithStatus(VerificationStatus status) {
         CreatorVerification v = new CreatorVerification();
@@ -132,7 +143,7 @@ class CreatorVerificationServiceTest {
     @Test
     void uploadDocument_whenFileTooLarge_throws() {
         when(userRepository.findById(5L)).thenReturn(Optional.of(new User()));
-        byte[] big = new byte[5 * 1024 * 1024 + 1];
+        byte[] big = new byte[(int) MAX_DOCUMENT_BYTES + 1];
 
         assertThatThrownBy(() ->
                 service.uploadDocument(5L, "DNI_FRONT", big, "image/png"))

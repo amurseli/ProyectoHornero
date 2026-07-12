@@ -11,7 +11,7 @@ import SouthAmericaMap from '$components/SouthAmericaMap/SouthAmericaMap'
 import ImageCropModal from '$components/ImageCropModal/ImageCropModal'
 import {
   TITLE_MAX, SHORT_DESC_MAX, DURATION_MIN, DURATION_MAX,
-  GOAL_MIN, MAX_IMAGE_BYTES, CROP_ASPECT,
+  GOAL_MIN, GOAL_MAX, MAX_IMAGE_BYTES, CROP_ASPECT,
   sanitizeDuration, formatAmountInput, parseAmount, amountToInput, formatMoney,
   computeNetAmount, computeGrossAmount,
 } from './campaignFormUtils'
@@ -139,6 +139,8 @@ function StepDetalles({ form, currency, onChange }) {
   const goalError =
     form.goal !== '' && (Number.isNaN(goalNum) || goalNum < GOAL_MIN)
       ? `La meta debe ser de al menos ${formatMoney(GOAL_MIN, currency.symbol)}`
+      : form.goal !== '' && goalNum > GOAL_MAX
+      ? `La meta no puede superar ${formatMoney(GOAL_MAX, currency.symbol)}`
       : ''
 
   // Meta y "monto a recibir" son dos vistas del mismo valor: al editar una se
@@ -435,6 +437,9 @@ function CreateCampaign() {
         const g = parseAmount(form.goal)
         if (!Number.isFinite(g) || g < GOAL_MIN) {
           return `La meta debe ser de al menos ${formatMoney(GOAL_MIN, currency.symbol)}.`
+        }
+        if (g > GOAL_MAX) {
+          return `La meta no puede superar ${formatMoney(GOAL_MAX, currency.symbol)}.`
         }
         return ''
       }

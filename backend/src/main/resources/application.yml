@@ -51,8 +51,11 @@ server:
 
 spring.servlet:
   multipart:
-    max-file-size: 5MB
-    max-request-size: 5MB
+    # Tamaño maximo de cada foto (DNI/selfie). Configurable por env para evitar el
+    # error 413 con fotos de celular, que suelen superar los 5MB.
+    max-file-size: ${MAX_UPLOAD_FILE_SIZE:15MB}
+    # El request total lleva algo de overhead extra respecto del archivo.
+    max-request-size: ${MAX_UPLOAD_REQUEST_SIZE:20MB}
 
 jwt:
   secret: ${JWT_SECRET:hornero-secret-key-change-this-in-production-minimum-256-bits-for-security}

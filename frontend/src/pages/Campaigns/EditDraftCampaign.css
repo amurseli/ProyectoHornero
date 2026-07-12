@@ -310,6 +310,26 @@
   margin-top: -0.2rem;
 }
 
+/* Inline field-level validation errors (más específico que el contenedor
+   de página .edc-error). Se usa en básicos, recompensas, equipo, FAQ y updates. */
+.edc-field .edc-error {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.3rem;
+  min-height: 0;
+  text-align: left;
+  font-size: var(--font-size-xs);
+  color: var(--color-error, #dc2626);
+}
+
+.edc-input--error,
+.edc-input--error:focus,
+.edc-textarea.edc-input--error,
+.edc-textarea.edc-input--error:focus {
+  border-color: var(--color-error, #dc2626);
+}
+
 /* Currency-prefixed input */
 .edc-input-prefix {
   display: flex;

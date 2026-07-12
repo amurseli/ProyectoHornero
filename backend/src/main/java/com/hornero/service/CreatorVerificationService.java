@@ -8,8 +8,10 @@ import com.hornero.model.CreatorVerification.TaxCondition;
 import com.hornero.model.CreatorVerification.VerificationStatus;
 import com.hornero.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.unit.DataSize;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +39,11 @@ public class CreatorVerificationService {
 
     @Autowired
     private S3StorageService s3StorageService;
+
+    // Reutiliza el mismo limite configurado para el multipart, asi el chequeo del
+    // servicio y el que aplica Spring/Tomcat (error 413) siempre coinciden.
+    @Value("${spring.servlet.multipart.max-file-size}")
+    private DataSize maxDocumentSize;
 
     /**
      * Submit a full creator verification request (personal info + bank info + terms).
@@ -117,9 +124,10 @@ public class CreatorVerificationService {
             throw new RuntimeException("Tipo de archivo no permitido. Use JPEG, PNG o WebP.");
         }
 
-        // Max 5MB
-        if (fileContent.length > 5 * 1024 * 1024) {
-            throw new RuntimeException("El archivo es demasiado grande. Máximo 5MB.");
+        // Tamaño maximo configurable (ver spring.servlet.multipart.max-file-size)
+        if (fileContent.length > maxDocumentSize.toBytes()) {
+            throw new RuntimeException("El archivo es demasiado grande. Máximo "
+                    + (maxDocumentSize.toBytes() / (1024 * 1024)) + "MB.");
         }
 
         // Delete existing document of same type if present

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom"
 import { Eye, EyeOff } from "lucide-react"
 import { Button } from "../../components/ui"
 import PasswordRequirements from "../../components/PasswordRequirements/PasswordRequirements"
-import { evaluatePassword } from "../../utils/passwordPolicy"
+import { evaluatePassword, PASSWORD_MAX_LENGTH } from "../../utils/passwordPolicy"
 import api from "../../utils/api/api"
 import "../auth.css"
 
@@ -113,6 +113,7 @@ function ResetPassword() {
                     className="auth-input"
                     type={showPassword ? "text" : "password"}
                     required
+                    maxLength={PASSWORD_MAX_LENGTH}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Creá una contraseña segura"
@@ -140,6 +141,7 @@ function ResetPassword() {
                     className="auth-input"
                     type={showConfirm ? "text" : "password"}
                     required
+                    maxLength={PASSWORD_MAX_LENGTH}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repetí tu contraseña"

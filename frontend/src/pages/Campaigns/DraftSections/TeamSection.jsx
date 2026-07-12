@@ -45,6 +45,11 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }))
   }
 
+  // Valida un solo campo al perder el foco, reutilizando validate().
+  const handleFieldBlur = (key) => {
+    setErrors(prev => ({ ...prev, [key]: validate(form)[key] }))
+  }
+
   const pickImage = (files) => {
     const file = files?.[0]
     if (!file) return
@@ -117,6 +122,7 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
           maxLength={NAME_MAX}
           value={form.name}
           onChange={e => onChange('name', e.target.value)}
+          onBlur={() => handleFieldBlur('name')}
         />
         {errors.name && <span className="edc-error">{errors.name}</span>}
       </div>
@@ -130,6 +136,7 @@ function MemberEditForm({ initial, onSave, onCancel, saving }) {
           maxLength={ROLE_MAX}
           value={form.role}
           onChange={e => onChange('role', e.target.value)}
+          onBlur={() => handleFieldBlur('role')}
         />
         {errors.role && <span className="edc-error">{errors.role}</span>}
       </div>

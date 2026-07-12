@@ -2,6 +2,7 @@ package com.hornero.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMax;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,6 +46,7 @@ public class Campaign {
     private BigDecimal currentAmount = BigDecimal.ZERO;
 
     @Column(name = "target_amount", precision = 15, scale = 2)
+    @DecimalMax(value = "1000000000", message = "La meta no puede superar los $1.000.000.000")
     private BigDecimal targetAmount;
 
     @Column(name = "country")

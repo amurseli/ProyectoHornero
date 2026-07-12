@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -161,7 +162,7 @@ public class CampaignController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createCampaign(@RequestBody Campaign campaign, HttpServletRequest request) {
+    public ResponseEntity<?> createCampaign(@Valid @RequestBody Campaign campaign, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -178,7 +179,7 @@ public class CampaignController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateCampaign(@PathVariable Long id, @RequestBody Campaign campaignDetails, HttpServletRequest request) {
+    public ResponseEntity<?> updateCampaign(@PathVariable Long id, @Valid @RequestBody Campaign campaignDetails, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         String userRole = (String) request.getAttribute("userRole");
 
