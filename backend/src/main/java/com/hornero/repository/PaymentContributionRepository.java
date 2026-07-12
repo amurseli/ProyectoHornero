@@ -1,7 +1,5 @@
 package com.hornero.repository;
 
-import com.hornero.model.payments.PaymentContribution;
-import com.hornero.model.payments.PaymentTransaction;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
@@ -12,64 +10,16 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-// The payments.contribution / payments.transaction tables are owned by the
-// payments microservice; hornero reads them via native SQL so it can boot
-// independently of that schema's lifecycle.
+// The payments.contribution / payments.transaction / payments.payout / payments.refund
+// tables are owned by the payments microservice; hornero reads them via native SQL
+// for the public transaction-history feed, which needs a single UNION ALL across all
+// of them joined against hornero's own campaign/user tables — doing that over HTTP
+// would mean fetching everything from payments and re-joining/sorting in memory.
 @Repository
 public class PaymentContributionRepository {
 
     @PersistenceContext
     private EntityManager em;
-
-    @SuppressWarnings("unchecked")
-    public List<PaymentContribution> findDetailedByCampaignId(Long campaignId) {
-        String sql = """
-                SELECT
-                    c.id, c.id_user, c.id_campaign, c.amount, c.reward_id, c.reward_price,
-                    c.status, c.created_at, c.updated_at,
-                    t.id, t.amount, t.transaction_method, t."CBU_origin", t."CBU_destination",
-                    t.id_transaction_external, t.payment_provider, t.hash_tx, t.created_at
-                FROM payments.contribution c
-                LEFT JOIN payments.transaction t ON t.id_contribution = c.id
-                WHERE c.id_campaign = :campaignId
-                ORDER BY c.created_at DESC
-                """;
-
-        List<Object[]> rows = em.createNativeQuery(sql)
-                .setParameter("campaignId", campaignId)
-                .getResultList();
-
-        List<PaymentContribution> result = new ArrayList<>(rows.size());
-        for (Object[] row : rows) {
-            PaymentContribution c = new PaymentContribution();
-            c.setId(toLong(row[0]));
-            c.setIdUser(toLong(row[1]));
-            c.setIdCampaign(toLong(row[2]));
-            c.setAmount(toBigDecimal(row[3]));
-            c.setRewardId(toLong(row[4]));
-            c.setRewardPrice(toBigDecimal(row[5]));
-            c.setStatus((String) row[6]);
-            c.setCreatedAt(toLocalDateTime(row[7]));
-            c.setUpdatedAt(toLocalDateTime(row[8]));
-
-            if (row[9] != null) {
-                PaymentTransaction t = new PaymentTransaction();
-                t.setId(toLong(row[9]));
-                t.setAmount(toBigDecimal(row[10]));
-                t.setTransactionMethod((String) row[11]);
-                t.setCbuOrigin((String) row[12]);
-                t.setCbuDestination((String) row[13]);
-                t.setIdTransactionExternal((String) row[14]);
-                t.setPaymentProvider((String) row[15]);
-                t.setHashTx((String) row[16]);
-                t.setCreatedAt(toLocalDateTime(row[17]));
-                c.setTransaction(t);
-            }
-
-            result.add(c);
-        }
-        return result;
-    }
 
     public long countByIdCampaignAndStatus(Long campaignId, String status) {
         Object result = em.createNativeQuery(

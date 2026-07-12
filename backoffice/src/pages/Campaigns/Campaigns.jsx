@@ -303,6 +303,17 @@ export default function CampaignsPage() {
     fetchCampaigns()
   }, [])
 
+  // Bloquea el scroll de la página de atrás mientras haya un modal abierto,
+  // para que la rueda del mouse scrollee el contenido del modal (si tiene) en
+  // vez de mover la pantalla detrás del overlay.
+  const isAnyModalOpen = modalLoading || Boolean(transferData) || detailLoading || Boolean(detailData)
+  useEffect(() => {
+    if (!isAnyModalOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previousOverflow }
+  }, [isAnyModalOpen])
+
   const filteredCampaigns = useMemo(() => {
     const normalized = query.trim().toLowerCase()
     return campaigns
