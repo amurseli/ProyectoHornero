@@ -41,7 +41,7 @@ public class EmailService {
     public void sendDonationSuccessEmail(String eventId, String email, String firstName,
                                           String campaignTitle, BigDecimal amount) {
         send(eventId, email, "DONATION_SUCCESS",
-                "Donación confirmada - Proyecto Hornero",
+                "Aporte confirmado - Proyecto Hornero",
                 buildDonationSuccessBody(firstName, campaignTitle, amount));
     }
 
@@ -50,10 +50,10 @@ public class EmailService {
             """
             ¡Hola %s!
 
-            Tu donación fue confirmada con éxito.
+            Tu aporte fue confirmado con éxito.
 
             Campaña: %s
-            Monto donado: %s
+            Monto aportado: %s
 
             Gracias por apoyar este proyecto. Te avisaremos por acá cuando la campaña
             llegue a su fecha límite para contarte si alcanzó su objetivo.
