@@ -476,6 +476,19 @@
   resize: vertical;
 }
 
+/* Mirrors the .edc-textarea--large box so switching Editar/Vista previa never
+   shifts the layout. */
+.edc-historia-preview {
+  width: 100%;
+  min-height: 420px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
 .edc-historia-intro {
   font-size: 0.92rem;
   color: var(--color-text-secondary, #555);

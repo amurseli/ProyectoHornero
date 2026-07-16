@@ -84,8 +84,8 @@ public class NotificationEventProcessor {
         ContributionApprovedEvent event = objectMapper.readValue(payload, ContributionApprovedEvent.class);
 
         saveNotification(event.getUserId(), "DONATION_SUCCESS",
-                "Donación confirmada",
-                String.format("Tu donación de %s a \"%s\" fue confirmada con éxito.",
+                "Aporte confirmado",
+                String.format("Tu aporte de %s a \"%s\" fue confirmado con éxito.",
                         formatAmount(event.getAmount()), event.getCampaignTitle()),
                 event.getCampaignId());
 

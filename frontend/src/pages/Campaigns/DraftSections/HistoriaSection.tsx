@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Eye, Pencil, HelpCircle, Save } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { Button } from '$components/ui'
+import MarkdownContent from '$components/markdown/MarkdownContent'
 import api from '$utils/api/api'
 
 const MAX_LENGTH = 6000
@@ -115,12 +114,11 @@ export default function SectionHistoria({ campaign, onSaved }) {
           </span>
         </div>
       ) : (
-        <div className="edc-historia-preview">
-          {description.trim()
-            ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{description}</ReactMarkdown>
-            : <p className="edc-historia-preview-empty">Todavía no escribiste nada. Pasá a "Editar" para empezar.</p>
-          }
-        </div>
+        <MarkdownContent
+          content={description}
+          className="edc-historia-preview"
+          emptyText='Todavía no escribiste nada. Pasá a "Editar" para empezar.'
+        />
       )}
 
       {error && <p className="auth-error" style={{ margin: 0 }}>{error}</p>}
